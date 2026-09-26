@@ -14,6 +14,7 @@ from pathlib import Path
 from .daemon import capability_report, run_foreground, start_background, status as daemon_status, stop_background
 from .query import history as qhistory
 from .query import impact as qimpact
+from .query import raw_process_events
 from .query import why as qwhy
 from .store import connect, import_log, normalize
 
@@ -132,7 +133,10 @@ def _root_and_con(path=None):
 
 def cmd_why(a):
     _root, con = _root_and_con(a.file)
-    result = qwhy(con, a.file, a.all)
+    show_all = a.all or a.raw
+    result = qwhy(con, a.file, show_all)
+    if result and a.raw and result.get("run_id"):
+        result["raw_events"] = [dict(r) for r in raw_process_events(con, result["run_id"], result["process_key"])]
     con.close()
     if a.json:
         print(json.dumps(result, indent=2))
@@ -141,6 +145,11 @@ def cmd_why(a):
         print(f"No recorded origin for {normalize(a.file)}")
         return 1
     print(result["path"])
+    for mv in result.get("renamed_from") or []:
+        print(f"├── moved from {mv['from']}  (by {mv['exe'] or '?'}, pid {mv['pid']})")
+    if result.get("run_id") is None:
+        print("└── original writer not observed")
+        return 0
     print(f"└── created by {result['exe']}  (pid {result['pid']})")
     print(f"    run: {result['command']}")
     print(f"    evidence: {result['collector']}")
@@ -152,8 +161,20 @@ def cmd_why(a):
             print(f"      └── +{len(result['inputs']) - a.limit} more")
     else:
         print("    inputs: none recorded")
-    if result.get("hidden_input_count") and not a.all:
-        print(f"    ({result['hidden_input_count']} system/runtime reads hidden; use --all)")
+    for t in result.get("temporaries") or []:
+        print(f"    via temporary {t['temporary']}  (written by {t['written_by'] or '?'}, pid {t['pid']})")
+    if result.get("inputs_via_temporaries"):
+        print("    inputs through temporaries:")
+        for p in result["inputs_via_temporaries"][: a.limit]:
+            print(f"      ├── {p}")
+    if result.get("hidden_input_count") and not show_all:
+        print(f"    ({result['hidden_input_count']} system/runtime reads hidden; use --raw)")
+    if a.raw:
+        print("    raw evidence (creator process, unfiltered):")
+        for r in result.get("raw_events", []):
+            flag = "r" if r["is_read"] else ("w" if r["is_write"] else "-")
+            tail = f" -> {r['path2']}" if r["path2"] else ""
+            print(f"      {r['ts_ns']}  {r['kind']:<7} {flag}  {r['path']}{tail}  [{r['api']}]")
     return 0
 
 
@@ -197,8 +218,10 @@ def cmd_stats(a):
     counts = {}
     for table in ("runs", "processes", "events"):
         counts[table] = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-    drops = con.execute("SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE key='kernel_drops'").fetchone()[0]
-    counts["kernel_drops"] = drops
+    for key, value in con.execute("SELECT key, COALESCE(SUM(value),0) FROM collector_stats GROUP BY key"):
+        counts[key] = value
+    counts.setdefault("kernel_drops", 0)
+    counts.setdefault("queue_drops", 0)
     con.close()
     db = root / ROOT_MARKER / "whyfs.db"
     counts["bytes"] = db.stat().st_size if db.exists() else 0
@@ -207,7 +230,8 @@ def cmd_stats(a):
     else:
         print(
             f"runs {counts['runs']} · processes {counts['processes']} · events {counts['events']} "
-            f"· kernel drops {counts['kernel_drops']} · db {counts['bytes']/1024:.1f} KiB"
+            f"· kernel drops {counts['kernel_drops']} · queue drops {counts['queue_drops']} "
+            f"· db {counts['bytes']/1024:.1f} KiB"
         )
 
 
@@ -217,12 +241,14 @@ def cmd_doctor(a):
         print(json.dumps(report, indent=2))
     else:
         print("whyfs eBPF capability check")
-        for key in ("linux", "bcc_importable", "bpf_fs", "btf_vmlinux", "cap_bpf", "cap_perfmon", "euid", "ready"):
+        for key in ("linux", "bcc_importable", "bpf_fs", "btf_vmlinux", "kernel_headers", "cap_bpf", "cap_perfmon", "euid", "ready"):
             print(f"  {key:16} {report.get(key)}")
         if not report["ready"]:
             print("\nAlways-on capture is not ready on this host. `whyfs trace` remains available as the explicit fallback.")
             if not report["bcc_importable"]:
                 print("Install BCC (Ubuntu/Debian: bpfcc-tools python3-bpfcc) and Clang/kernel headers.")
+            if not report.get("kernel_headers"):
+                print("Kernel headers missing. On WSL2: `sudo modprobe kheaders` (provides /sys/kernel/kheaders.tar.xz).")
             if report["euid"] != 0 and not (report.get("cap_bpf") and report.get("cap_perfmon")):
                 print("Run the daemon with sufficient BPF/perf capabilities (commonly via sudo during alpha testing).")
     return 0 if report["ready"] else 2
@@ -275,6 +301,7 @@ def parser():
     q = sp.add_parser("why", help="show the last observed creator and inputs of a file")
     q.add_argument("file")
     q.add_argument("--all", action="store_true", help="include system/library reads")
+    q.add_argument("--raw", action="store_true", help="unfiltered inputs plus the creator's raw stored events")
     q.add_argument("--limit", type=int, default=20)
     q.add_argument("--json", action="store_true")
     q.set_defaults(func=cmd_why)
@@ -288,7 +315,7 @@ def parser():
     q = sp.add_parser("impact", help="show downstream outputs that consumed this file")
     q.add_argument("file")
     q.add_argument("--depth", type=int, default=5)
-    q.add_argument("--all", action="store_true", help="include system/runtime outputs")
+    q.add_argument("--all", "--raw", dest="all", action="store_true", help="include system/runtime outputs")
     q.add_argument("--json", action="store_true")
     q.set_defaults(func=cmd_impact)
 

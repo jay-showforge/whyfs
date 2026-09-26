@@ -76,6 +76,12 @@ def connect(root: Path) -> sqlite3.Connection:
     _ensure_column(con, "processes", "command", "TEXT")
     _ensure_column(con, "processes", "source", "TEXT")
     _ensure_column(con, "events", "source", "TEXT")
+    # v0.2 eBPF: `pid` is a per-run process-instance key (unique even when the OS
+    # re-uses a PID); `os_pid` is the real kernel pid; `parent_key` links the
+    # process tree by instance rather than by re-usable pid.
+    _ensure_column(con, "events", "os_pid", "INTEGER")
+    _ensure_column(con, "processes", "os_pid", "INTEGER")
+    _ensure_column(con, "processes", "parent_key", "INTEGER")
     con.commit()
     return con
 
@@ -110,6 +116,8 @@ def ingest_events(con: sqlite3.Connection, events: Iterable[dict]) -> int:
                 e.get("command"),
                 e.get("source"),
                 ts,
+                e.get("os_pid", pid),
+                e.get("parent_key"),
             ))
         else:
             p = normalize(e["path"]) if e.get("path") else None
@@ -127,15 +135,18 @@ def ingest_events(con: sqlite3.Connection, events: Iterable[dict]) -> int:
                 e.get("flags"),
                 e.get("api"),
                 e.get("source"),
+                e.get("os_pid", pid),
             ))
         n += 1
 
     if process_rows:
         con.executemany(
-            """INSERT INTO processes(run_id,pid,ppid,exe,cwd,command,source,first_seen_ns)
-               VALUES(?,?,?,?,?,?,?,?)
+            """INSERT INTO processes(run_id,pid,ppid,exe,cwd,command,source,first_seen_ns,os_pid,parent_key)
+               VALUES(?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(run_id,pid) DO UPDATE SET
                  ppid=COALESCE(excluded.ppid,processes.ppid),
+                 os_pid=COALESCE(excluded.os_pid,processes.os_pid),
+                 parent_key=COALESCE(excluded.parent_key,processes.parent_key),
                  exe=COALESCE(excluded.exe,processes.exe),
                  cwd=COALESCE(excluded.cwd,processes.cwd),
                  command=COALESCE(excluded.command,processes.command),
@@ -144,8 +155,8 @@ def ingest_events(con: sqlite3.Connection, events: Iterable[dict]) -> int:
         )
     if event_rows:
         con.executemany(
-            """INSERT INTO events(run_id,ts_ns,pid,ppid,kind,path,path2,is_read,is_write,flags,api,source)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+            """INSERT INTO events(run_id,ts_ns,pid,ppid,kind,path,path2,is_read,is_write,flags,api,source,os_pid)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             event_rows,
         )
     con.commit()

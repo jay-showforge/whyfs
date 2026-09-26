@@ -42,7 +42,16 @@ class EbpfUserspaceTests(unittest.TestCase):
             finally:
                 os.close(fd)
 
-            got = [collector.q.get_nowait(), collector.q.get_nowait()]
+            items = []
+            while not collector.q.empty():
+                items.append(collector.q.get_nowait())
+            # A process that predates the collector is announced once (v0.2
+            # process-instance model); file evidence follows in order.
+            procs = [x for x in items if x["kind"] == "process"]
+            self.assertEqual(len(procs), 1)
+            self.assertEqual(procs[0]["os_pid"], os.getpid())
+            got = [x for x in items if x["kind"] != "process"]
+            self.assertEqual(len(got), 2)
             self.assertEqual(got[0]["kind"], "open")
             self.assertEqual(got[0]["path"], str(p))
             self.assertEqual(got[1]["kind"], "io")

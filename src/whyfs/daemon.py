@@ -85,6 +85,7 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
     con.commit()
     con.close()
 
+    ensure_kernel_headers()
     collector = BCCCollector(root, run_id, capture_all=capture_all)
     try:
         collector.start()
@@ -129,12 +130,16 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
         con.execute("UPDATE runs SET ended_ns=?,exit_code=? WHERE id=?", (ended, exit_code, run_id))
         for key, value in vars(stats).items():
             set_collector_stat(con, run_id, key, int(value))
+        set_collector_stat(con, run_id, "writer_rows", collector.writer.written)
+        set_collector_stat(con, run_id, "writer_batches", collector.writer.batches)
+        set_collector_stat(con, run_id, "writer_max_batch", collector.writer.max_batch)
         con.close()
         _clear_state(root, os.getpid())
         if not quiet:
             print(
                 f"whyfs daemon: stopped · events {stats.submitted} · filtered {stats.filtered} "
-                f"· drops {stats.kernel_drops} · unresolved-fd {stats.unresolved_fd}",
+                f"· kernel drops {stats.kernel_drops} · queue drops {stats.queue_drops} "
+                f"· unresolved-fd {stats.unresolved_fd}",
                 file=sys.stderr,
             )
     return exit_code
@@ -206,6 +211,21 @@ def status(root: Path) -> dict:
     return result
 
 
+def _kernel_headers_present() -> bool:
+    rel = os.uname().release if hasattr(os, "uname") else ""
+    return Path("/sys/kernel/kheaders.tar.xz").exists() or Path(f"/lib/modules/{rel}/build").exists()
+
+
+def ensure_kernel_headers() -> bool:
+    """BCC compiles against kernel headers.  WSL2 kernels ship them as the
+    in-kernel `kheaders` module; load it when running privileged."""
+    if _kernel_headers_present():
+        return True
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        subprocess.run(["modprobe", "kheaders"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    return _kernel_headers_present()
+
+
 def capability_report() -> dict:
     linux = sys.platform.startswith("linux")
     report = {
@@ -214,6 +234,7 @@ def capability_report() -> dict:
         "bcc_importable": False,
         "bpf_fs": Path("/sys/fs/bpf").exists(),
         "btf_vmlinux": Path("/sys/kernel/btf/vmlinux").exists(),
+        "kernel_headers": _kernel_headers_present() if linux else False,
         "cap_bpf": None,
         "cap_perfmon": None,
     }
@@ -235,6 +256,7 @@ def capability_report() -> dict:
     report["ready"] = bool(
         linux
         and report["bcc_importable"]
+        and report["kernel_headers"]
         and (report["euid"] == 0 or (report["cap_bpf"] and report["cap_perfmon"]))
     )
     return report

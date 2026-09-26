@@ -78,26 +78,106 @@ def process_outputs(con: sqlite3.Connection, run_id: str, pid: int, workspace: s
     return out
 
 
+def _in_workspace(path: str, workspace: str) -> bool:
+    return path == workspace or path.startswith(workspace.rstrip(os.sep) + os.sep)
+
+
+def _through_temporaries(con: sqlite3.Connection, inputs: list[str], workspace: str, before_ns: int, depth: int = 3):
+    """Expand observed out-of-workspace temporaries (e.g. gcc's /tmp/ccXXXX.s)
+    to the workspace inputs of the process that wrote them.  Every hop is an
+    observed write followed by an observed read; nothing is inferred."""
+    via: list[dict] = []
+    found: list[str] = []
+    frontier = [(p, before_ns) for p in inputs if not _in_workspace(p, workspace)]
+    seen = set(frontier)
+    for _ in range(depth):
+        nxt = []
+        for tmp, bound in frontier:
+            w, _r = _content_origin(con, tmp, before=bound)
+            if not w or w["kind"] == "rename":
+                continue
+            ins = [r["path"] for r in _input_rows(con, w["run_id"], w["pid"], w["ts_ns"]) if r["path"] != tmp]
+            via.append({"temporary": tmp, "written_by": w["exe"],
+                        "pid": w["os_pid"] if w["os_pid"] is not None else w["pid"], "inputs": ins})
+            for p in ins:
+                if _in_workspace(p, workspace):
+                    if p not in found:
+                        found.append(p)
+                elif (p, w["ts_ns"]) not in seen:
+                    seen.add((p, w["ts_ns"]))
+                    nxt.append((p, w["ts_ns"]))
+        frontier = nxt
+        if not frontier:
+            break
+    return found, via
+
+
+def _content_origin(con: sqlite3.Connection, path: str, max_hops: int = 16, before: int | None = None):
+    """Follow rename/move events backwards to the process that wrote the bytes.
+
+    Returns (writer_row, renames) where ``renames`` lists the observed
+    rename/move steps, newest first.  A rename is recorded evidence of a move,
+    not of content creation, so the creator is the last *writer* before it.
+    """
+    p = normalize(path)
+    renames: list[dict] = []
+    for _ in range(max_hops):
+        row = con.execute(
+            """
+          SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector,
+                 pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS process_source
+          FROM events e JOIN runs r ON r.id=e.run_id
+          LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
+          WHERE ((e.path=? AND e.is_write=1) OR (e.kind='rename' AND e.path2=?))
+            AND (? IS NULL OR e.ts_ns<=?)
+          ORDER BY e.ts_ns DESC, e.id DESC LIMIT 1
+        """,
+            (p, p, before, before),
+        ).fetchone()
+        if row is None or row["kind"] != "rename":
+            return row, renames
+        renames.append({
+            "from": row["path"], "to": row["path2"], "ts_ns": row["ts_ns"], "exe": row["exe"],
+            "pid": row["os_pid"] if row["os_pid"] is not None else row["pid"],
+        })
+        p, before = row["path"], row["ts_ns"]
+    return None, renames
+
+
 def why(con: sqlite3.Connection, path: str, include_noise=False):
-    w = last_writer(con, path)
+    w, renames = _content_origin(con, path)
+    if not w and renames:
+        # Moved into place, but the bytes' original writer was never observed.
+        r0 = renames[-1]
+        return {
+            "path": normalize(path), "renamed_from": renames, "exe": r0["exe"] or "?", "pid": r0["pid"],
+            "run_id": None, "ts_ns": r0["ts_ns"], "process_key": None, "process_cwd": None,
+            "command": None, "collector": "unknown", "inputs": [], "hidden_input_count": 0, "outputs": [],
+        }
     if not w:
         return None
     inputs, hidden = process_inputs(con, w["run_id"], w["pid"], w["ts_ns"], w["workspace"], include_noise)
     target = normalize(path)
     # O_RDWR output files can appear as both read and write.  A file is not its
-    # own upstream cause, so suppress the self-edge from the human view while
-    # preserving the raw event in SQLite.
-    inputs = [p for p in inputs if p != target]
+    # own upstream cause (under its current or any earlier name), so suppress
+    # the self-edge from the human view while preserving the raw event.
+    self_names = {target} | {r["from"] for r in renames}
+    inputs = [p for p in inputs if p not in self_names]
+    via_inputs, via_temps = _through_temporaries(con, inputs, w["workspace"], w["ts_ns"])
     return {
         "path": target,
         "run_id": w["run_id"],
         "ts_ns": w["ts_ns"],
-        "pid": w["pid"],
+        "pid": w["os_pid"] if w["os_pid"] is not None else w["pid"],
+        "process_key": w["pid"],
         "exe": w["exe"] or "?",
         "process_cwd": w["process_cwd"] or w["run_cwd"],
         "command": w["process_command"] or w["run_command"],
         "collector": w["collector"] or w["process_source"] or "unknown",
         "inputs": inputs,
+        "inputs_via_temporaries": via_inputs,
+        "temporaries": via_temps,
+        "renamed_from": renames,
         "hidden_input_count": hidden,
         "outputs": process_outputs(con, w["run_id"], w["pid"], w["workspace"], include_noise),
     }
@@ -107,7 +187,7 @@ def history(con: sqlite3.Connection, path: str, limit=20):
     p = normalize(path)
     return con.execute(
         """
-      SELECT e.ts_ns,e.run_id,e.pid,e.kind,e.path,e.path2,
+      SELECT e.ts_ns,e.run_id,COALESCE(e.os_pid,e.pid) AS pid,e.pid AS process_key,e.kind,e.path,e.path2,
              COALESCE(pr.command,r.command) AS command,pr.exe,r.collector,e.source
       FROM events e JOIN runs r ON r.id=e.run_id
       LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
@@ -134,6 +214,19 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
             """,
                 (f,),
             ).fetchall()
+            # A rename/move carries the file's lineage to its new name.
+            for mv in con.execute(
+                """SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e
+                   LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
+                   WHERE e.kind='rename' AND e.path=?""",
+                (f,),
+            ).fetchall():
+                o = mv["path2"]
+                if o and o != f:
+                    edges.append((f, o, (mv["exe"] or "?") + " (rename)", mv["run_id"]))
+                    if o not in seen_files:
+                        seen_files.add(o)
+                        nxt.append(o)
             for rr in readers:
                 outs = process_outputs(con, rr["run_id"], rr["pid"], rr["workspace"], include_noise)
                 for o in outs:
@@ -147,3 +240,14 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
         if not frontier:
             break
     return edges
+
+
+def raw_process_events(con: sqlite3.Connection, run_id: str, pid: int, limit: int = 500):
+    """Every stored event of one process instance, unfiltered (``why --raw``)."""
+    return con.execute(
+        """
+      SELECT ts_ns,kind,path,path2,is_read,is_write,api,source FROM events
+      WHERE run_id=? AND pid=? ORDER BY ts_ns, id LIMIT ?
+    """,
+        (run_id, pid, limit),
+    ).fetchall()
