@@ -1,0 +1,8164 @@
+{
+ "started": "2026-09-26T09:07:31-0700",
+ "params": {
+  "user": "ftmon",
+  "out": "/home/ftmon/whyfs-daemon-gap/20260926-state-d2cdeb7",
+  "big_db": "/home/ftmon/whyfs-gap-ws/perf/.whyfs/whyfs.db",
+  "base": "/home/{user}/whyfs-state-ws",
+  "rounds": 16,
+  "warm": 3,
+  "block_runs": 12,
+  "base_runs": 6,
+  "big_db_info": {
+   "bytes": 148000768,
+   "events": 488529,
+   "processes": 63539
+  }
+ },
+ "git": {
+  "head": "d2cdeb7a23d4470c348d1ccf3344b102fa6a755c",
+  "dirty_files": [],
+  "diff_bytes": 0
+ },
+ "environment": {
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "machine": "x86_64",
+  "python": "3.12.3",
+  "cpu": "Intel(R) Core(TM) i5-14400F",
+  "cpus": 16,
+  "mem": "MemTotal:       16292024 kB",
+  "bcc": "0.29.1",
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "node": "v18.19.1",
+  "make": "GNU Make 4.3",
+  "doctor": {
+   "linux": true,
+   "euid": 0,
+   "bcc_importable": true,
+   "bpf_fs": true,
+   "btf_vmlinux": true,
+   "kernel_headers": true,
+   "cap_bpf": true,
+   "cap_perfmon": true,
+   "ready": true
+  }
+ },
+ "fresh": {
+  "rows": [
+   {
+    "warmup": true,
+    "order": [
+     "base",
+     "S1",
+     "S2"
+    ],
+    "base": {
+     "outer_s": 0.13821605399425607,
+     "s": 0.129899692,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.13,
+     "wl_user_s": 0.03,
+     "wl_sys_s": 0.04,
+     "wl_majflt": 0,
+     "wl_minflt": 23130,
+     "wl_vol_ctx": 387,
+     "wl_invol_ctx": 8
+    },
+    "S1": {
+     "start_s": 2.6152191162109375,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.1382699079986196,
+      "s": 0.128782484,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23129,
+      "wl_vol_ctx": 356,
+      "wl_invol_ctx": 7
+     },
+     "on": {
+      "outer_s": 0.13771156100119697,
+      "s": 0.128999611,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22546,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 11
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 361,
+       "majflt": 0,
+       "utime_s": 0.050000000000000044,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 1626,
+       "invol_ctx": 0,
+       "migrations": 27,
+       "rchar": 45,
+       "wchar": 173242,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 445,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 1,
+       "migrations": 1,
+       "rchar": 173242,
+       "wchar": 984725,
+       "syscr": 10,
+       "syscw": 483,
+       "read_bytes": 0,
+       "write_bytes": 983040
+      },
+      "db_events": 1594,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 86,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2588,
+       "invol_ctx": 0,
+       "migrations": 21,
+       "rchar": 72,
+       "wchar": 320039,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 316,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 1,
+       "migrations": 3,
+       "rchar": 320039,
+       "wchar": 2241352,
+       "syscr": 16,
+       "syscw": 1096,
+       "read_bytes": 0,
+       "write_bytes": 2240512
+      },
+      "db_events": 2934,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3431776,
+     "daemon_final": {
+      "filtered": 1573,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7371,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 17,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    },
+    "S2": {
+     "start_s": 2.617292881011963,
+     "db_bytes_at_start": 148173648,
+     "first": {
+      "outer_s": 0.15019008499803022,
+      "s": 0.137326979,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.14,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23142,
+      "wl_vol_ctx": 356,
+      "wl_invol_ctx": 12
+     },
+     "on": {
+      "outer_s": 0.14393386300071143,
+      "s": 0.134723914,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 23123,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 5
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 353,
+       "majflt": 0,
+       "utime_s": 0.06000000000000005,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 1634,
+       "invol_ctx": 3,
+       "migrations": 30,
+       "rchar": 36,
+       "wchar": 172980,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 495,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 258996,
+       "wchar": 1293716,
+       "syscr": 29,
+       "syscw": 632,
+       "read_bytes": 0,
+       "write_bytes": 1294336
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 72,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.03,
+       "vol_ctx": 2671,
+       "invol_ctx": 0,
+       "migrations": 2,
+       "rchar": 72,
+       "wchar": 320220,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 325,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.01,
+       "vol_ctx": 8,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 344796,
+       "wchar": 2463832,
+       "syscr": 22,
+       "syscw": 1204,
+       "read_bytes": 0,
+       "write_bytes": 2461696
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151931088,
+     "daemon_final": {
+      "filtered": 1571,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7365,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149643264
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S1",
+     "S2",
+     "base"
+    ],
+    "S1": {
+     "start_s": 2.5633578300476074,
+     "db_bytes_at_start": 172856,
+     "first": {
+      "outer_s": 0.14056480299768737,
+      "s": 0.129798306,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22838,
+      "wl_vol_ctx": 348,
+      "wl_invol_ctx": 3
+     },
+     "on": {
+      "outer_s": 0.14060999800130958,
+      "s": 0.131780379,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22537,
+      "wl_vol_ctx": 356,
+      "wl_invol_ctx": 6
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 373,
+       "majflt": 0,
+       "utime_s": 0.06000000000000005,
+       "stime_s": 0.010000000000000009,
+       "vol_ctx": 2032,
+       "invol_ctx": 0,
+       "migrations": 29,
+       "rchar": 45,
+       "wchar": 175062,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 441,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 175062,
+       "wchar": 1001205,
+       "syscr": 10,
+       "syscw": 491,
+       "read_bytes": 0,
+       "write_bytes": 999424
+      },
+      "db_events": 1608,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 74,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2277,
+       "invol_ctx": 2,
+       "migrations": 27,
+       "rchar": 72,
+       "wchar": 318584,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 317,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 1,
+       "migrations": 1,
+       "rchar": 318584,
+       "wchar": 2237232,
+       "syscr": 16,
+       "syscw": 1094,
+       "read_bytes": 0,
+       "write_bytes": 2236416
+      },
+      "db_events": 2920,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3411176,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    },
+    "S2": {
+     "start_s": 2.5627894401550293,
+     "db_bytes_at_start": 148107728,
+     "first": {
+      "outer_s": 0.14205029599543195,
+      "s": 0.131349027,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22548,
+      "wl_vol_ctx": 348,
+      "wl_invol_ctx": 5
+     },
+     "on": {
+      "outer_s": 0.13861564999388065,
+      "s": 0.129419146,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23136,
+      "wl_vol_ctx": 347,
+      "wl_invol_ctx": 12
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 367,
+       "majflt": 0,
+       "utime_s": 0.050000000000000044,
+       "stime_s": 0.03,
+       "vol_ctx": 2010,
+       "invol_ctx": 2,
+       "migrations": 4,
+       "rchar": 45,
+       "wchar": 216198,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 540,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 2,
+       "rchar": 310406,
+       "wchar": 1536805,
+       "syscr": 33,
+       "syscw": 751,
+       "read_bytes": 0,
+       "write_bytes": 1536000
+      },
+      "db_events": 1991,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 76,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.03,
+       "vol_ctx": 2547,
+       "invol_ctx": 2,
+       "migrations": 39,
+       "rchar": 63,
+       "wchar": 277002,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 279,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 293386,
+       "wchar": 2146583,
+       "syscr": 18,
+       "syscw": 1049,
+       "read_bytes": 0,
+       "write_bytes": 2146304
+      },
+      "db_events": 2537,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151791008,
+     "daemon_final": {
+      "filtered": 1567,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7361,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149647360
+    },
+    "base": {
+     "outer_s": 0.13434630099800415,
+     "s": 0.125409355,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.04,
+     "wl_majflt": 0,
+     "wl_minflt": 22535,
+     "wl_vol_ctx": 358,
+     "wl_invol_ctx": 5
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S2",
+     "base",
+     "S1"
+    ],
+    "S2": {
+     "start_s": 2.566162347793579,
+     "db_bytes_at_start": 148107728,
+     "first": {
+      "outer_s": 0.1485484649965656,
+      "s": 0.132545859,
+      "loop_shell_migrations": 5,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22526,
+      "wl_vol_ctx": 349,
+      "wl_invol_ctx": 6
+     },
+     "on": {
+      "outer_s": 0.142255695995118,
+      "s": 0.133053471,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22535,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 8
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 371,
+       "majflt": 0,
+       "utime_s": 0.04999999999999982,
+       "stime_s": 0.04000000000000001,
+       "vol_ctx": 2194,
+       "invol_ctx": 4,
+       "migrations": 26,
+       "rchar": 54,
+       "wchar": 223242,
+       "syscr": 6,
+       "syscw": 6,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 542,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 6,
+       "invol_ctx": 0,
+       "migrations": 4,
+       "rchar": 317450,
+       "wchar": 1718094,
+       "syscr": 35,
+       "syscw": 840,
+       "read_bytes": 0,
+       "write_bytes": 1716224
+      },
+      "db_events": 2052,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 82,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.009999999999999981,
+       "vol_ctx": 2145,
+       "invol_ctx": 2,
+       "migrations": 29,
+       "rchar": 63,
+       "wchar": 268846,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 270,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 293422,
+       "wchar": 2101263,
+       "syscr": 20,
+       "syscw": 1027,
+       "read_bytes": 0,
+       "write_bytes": 2101248
+      },
+      "db_events": 2476,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151926968,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149626880
+    },
+    "base": {
+     "outer_s": 0.14143174399941927,
+     "s": 0.132094136,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.13,
+     "wl_user_s": 0.01,
+     "wl_sys_s": 0.04,
+     "wl_majflt": 0,
+     "wl_minflt": 22533,
+     "wl_vol_ctx": 357,
+     "wl_invol_ctx": 4
+    },
+    "S1": {
+     "start_s": 2.617785930633545,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.142303381995589,
+      "s": 0.129697798,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23131,
+      "wl_vol_ctx": 361,
+      "wl_invol_ctx": 6
+     },
+     "on": {
+      "outer_s": 0.13885622099769535,
+      "s": 0.129534837,
+      "loop_shell_migrations": 4,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22849,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 11
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 322,
+       "majflt": 0,
+       "utime_s": 0.050000000000000044,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 1884,
+       "invol_ctx": 0,
+       "migrations": 43,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 401,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 133,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03,
+       "vol_ctx": 2842,
+       "invol_ctx": 0,
+       "migrations": 48,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 353,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 363392,
+       "wchar": 2513281,
+       "syscr": 18,
+       "syscw": 1229,
+       "read_bytes": 0,
+       "write_bytes": 2510848
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3411176,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "base",
+     "S2",
+     "S1"
+    ],
+    "base": {
+     "outer_s": 0.13395986199611798,
+     "s": 0.125199987,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 22552,
+     "wl_vol_ctx": 361,
+     "wl_invol_ctx": 2
+    },
+    "S2": {
+     "start_s": 2.5614285469055176,
+     "db_bytes_at_start": 148194248,
+     "first": {
+      "outer_s": 0.1389595910004573,
+      "s": 0.129267867,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22839,
+      "wl_vol_ctx": 344,
+      "wl_invol_ctx": 6
+     },
+     "on": {
+      "outer_s": 0.14195487200049683,
+      "s": 0.132583989,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23165,
+      "wl_vol_ctx": 385,
+      "wl_invol_ctx": 9
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 347,
+       "majflt": 0,
+       "utime_s": 0.040000000000000036,
+       "stime_s": 0.030000000000000013,
+       "vol_ctx": 1484,
+       "invol_ctx": 2,
+       "migrations": 39,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 446,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 207632,
+       "wchar": 964107,
+       "syscr": 25,
+       "syscw": 471,
+       "read_bytes": 0,
+       "write_bytes": 962560
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 115,
+       "majflt": 0,
+       "utime_s": 0.10000000000000009,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2491,
+       "invol_ctx": 2,
+       "migrations": 5,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 368,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 387968,
+       "wchar": 2785201,
+       "syscr": 24,
+       "syscw": 1361,
+       "read_bytes": 0,
+       "write_bytes": 2785280
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151943448,
+     "daemon_final": {
+      "filtered": 1568,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7362,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149647360
+    },
+    "S1": {
+     "start_s": 2.778999090194702,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.1405024699997739,
+      "s": 0.127725038,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22529,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 5
+     },
+     "on": {
+      "outer_s": 0.141422392000095,
+      "s": 0.132303009,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22821,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 8
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 349,
+       "majflt": 0,
+       "utime_s": 0.06000000000000005,
+       "stime_s": 0.009999999999999981,
+       "vol_ctx": 1731,
+       "invol_ctx": 1,
+       "migrations": 44,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 397,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 1,
+       "migrations": 0,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 90,
+       "majflt": 0,
+       "utime_s": 0.1100000000000001,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 2962,
+       "invol_ctx": 2,
+       "migrations": 21,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 353,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.01,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 2,
+       "rchar": 363392,
+       "wchar": 2513281,
+       "syscr": 18,
+       "syscw": 1229,
+       "read_bytes": 0,
+       "write_bytes": 2510848
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3411176,
+     "daemon_final": {
+      "filtered": 1571,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7365,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S2",
+     "S1",
+     "base"
+    ],
+    "S2": {
+     "start_s": 2.564199686050415,
+     "db_bytes_at_start": 148115968,
+     "first": {
+      "outer_s": 0.14085759300360223,
+      "s": 0.129421431,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22842,
+      "wl_vol_ctx": 353,
+      "wl_invol_ctx": 6
+     },
+     "on": {
+      "outer_s": 0.14202330500120297,
+      "s": 0.133043434,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23130,
+      "wl_vol_ctx": 353,
+      "wl_invol_ctx": 11
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 343,
+       "majflt": 0,
+       "utime_s": 0.06999999999999984,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2336,
+       "invol_ctx": 4,
+       "migrations": 37,
+       "rchar": 45,
+       "wchar": 184860,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 495,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 283164,
+       "wchar": 1417325,
+       "syscr": 34,
+       "syscw": 693,
+       "read_bytes": 0,
+       "write_bytes": 1417216
+      },
+      "db_events": 1700,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 106,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.03,
+       "vol_ctx": 2698,
+       "invol_ctx": 1,
+       "migrations": 26,
+       "rchar": 63,
+       "wchar": 306668,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 313,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 1,
+       "migrations": 2,
+       "rchar": 331244,
+       "wchar": 2274303,
+       "syscr": 20,
+       "syscw": 1111,
+       "read_bytes": 0,
+       "write_bytes": 2273280
+      },
+      "db_events": 2828,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151807488,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149614592
+    },
+    "S1": {
+     "start_s": 2.513374090194702,
+     "db_bytes_at_start": 172856,
+     "first": {
+      "outer_s": 0.14193009500013432,
+      "s": 0.129077696,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22810,
+      "wl_vol_ctx": 327,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.13943277100042906,
+      "s": 0.130146135,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22534,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 6
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 338,
+       "majflt": 0,
+       "utime_s": 0.04999999999999982,
+       "stime_s": 0.009999999999999981,
+       "vol_ctx": 1554,
+       "invol_ctx": 1,
+       "migrations": 31,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 392,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 124,
+       "majflt": 0,
+       "utime_s": 0.10000000000000009,
+       "stime_s": 0.03,
+       "vol_ctx": 3131,
+       "invol_ctx": 4,
+       "migrations": 29,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 353,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 363392,
+       "wchar": 2513281,
+       "syscr": 18,
+       "syscw": 1229,
+       "read_bytes": 0,
+       "write_bytes": 2510848
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3378216,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    },
+    "base": {
+     "outer_s": 0.13374361200112617,
+     "s": 0.125279319,
+     "loop_shell_migrations": 0,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 22838,
+     "wl_vol_ctx": 349,
+     "wl_invol_ctx": 3
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S1",
+     "base",
+     "S2"
+    ],
+    "S1": {
+     "start_s": 2.5662801265716553,
+     "db_bytes_at_start": 172856,
+     "first": {
+      "outer_s": 0.13909104699996533,
+      "s": 0.128872705,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22874,
+      "wl_vol_ctx": 355,
+      "wl_invol_ctx": 4
+     },
+     "on": {
+      "outer_s": 0.1397199470011401,
+      "s": 0.13082197,
+      "loop_shell_migrations": 7,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22840,
+      "wl_vol_ctx": 376,
+      "wl_invol_ctx": 8
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 363,
+       "majflt": 0,
+       "utime_s": 0.05999999999999983,
+       "stime_s": 0.009999999999999981,
+       "vol_ctx": 1856,
+       "invol_ctx": 1,
+       "migrations": 32,
+       "rchar": 36,
+       "wchar": 173820,
+       "syscr": 4,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 442,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 1,
+       "migrations": 0,
+       "rchar": 173820,
+       "wchar": 795196,
+       "syscr": 10,
+       "syscw": 390,
+       "read_bytes": 0,
+       "write_bytes": 794624
+      },
+      "db_events": 1598,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 76,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03,
+       "vol_ctx": 2642,
+       "invol_ctx": 2,
+       "migrations": 49,
+       "rchar": 81,
+       "wchar": 319554,
+       "syscr": 9,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 311,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 1,
+       "migrations": 1,
+       "rchar": 319554,
+       "wchar": 2426761,
+       "syscr": 16,
+       "syscw": 1187,
+       "read_bytes": 0,
+       "write_bytes": 2424832
+      },
+      "db_events": 2930,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3394696,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    },
+    "base": {
+     "outer_s": 0.13456740300171077,
+     "s": 0.125599289,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.04,
+     "wl_majflt": 0,
+     "wl_minflt": 22833,
+     "wl_vol_ctx": 354,
+     "wl_invol_ctx": 4
+    },
+    "S2": {
+     "start_s": 2.5591187477111816,
+     "db_bytes_at_start": 148107728,
+     "first": {
+      "outer_s": 0.14125451399740996,
+      "s": 0.131183903,
+      "loop_shell_migrations": 5,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22538,
+      "wl_vol_ctx": 354,
+      "wl_invol_ctx": 11
+     },
+     "on": {
+      "outer_s": 0.14141695300349966,
+      "s": 0.132532258,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22832,
+      "wl_vol_ctx": 361,
+      "wl_invol_ctx": 9
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 365,
+       "majflt": 0,
+       "utime_s": 0.06000000000000005,
+       "stime_s": 0.010000000000000009,
+       "vol_ctx": 2095,
+       "invol_ctx": 4,
+       "migrations": 31,
+       "rchar": 45,
+       "wchar": 189369,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 508,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 283577,
+       "wchar": 1466765,
+       "syscr": 33,
+       "syscw": 717,
+       "read_bytes": 0,
+       "write_bytes": 1466368
+      },
+      "db_events": 1742,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 87,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03,
+       "vol_ctx": 2511,
+       "invol_ctx": 2,
+       "migrations": 32,
+       "rchar": 63,
+       "wchar": 305425,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 303,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 330001,
+       "wchar": 2261943,
+       "syscr": 20,
+       "syscw": 1105,
+       "read_bytes": 0,
+       "write_bytes": 2260992
+      },
+      "db_events": 2786,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151836328,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149626880
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "base",
+     "S1",
+     "S2"
+    ],
+    "base": {
+     "outer_s": 0.13703253000130644,
+     "s": 0.128502848,
+     "loop_shell_migrations": 3,
+     "wl_elapsed": 0.13,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.04,
+     "wl_majflt": 0,
+     "wl_minflt": 23143,
+     "wl_vol_ctx": 356,
+     "wl_invol_ctx": 6
+    },
+    "S1": {
+     "start_s": 2.616647958755493,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.1425191729940707,
+      "s": 0.127357686,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.05,
+      "wl_majflt": 0,
+      "wl_minflt": 22228,
+      "wl_vol_ctx": 340,
+      "wl_invol_ctx": 5
+     },
+     "on": {
+      "outer_s": 0.14043815700279083,
+      "s": 0.131231959,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22533,
+      "wl_vol_ctx": 349,
+      "wl_invol_ctx": 5
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 341,
+       "majflt": 0,
+       "utime_s": 0.040000000000000036,
+       "stime_s": 0.03,
+       "vol_ctx": 1840,
+       "invol_ctx": 0,
+       "migrations": 36,
+       "rchar": 36,
+       "wchar": 172980,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 448,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 1,
+       "migrations": 2,
+       "rchar": 172980,
+       "wchar": 964116,
+       "syscr": 8,
+       "syscw": 472,
+       "read_bytes": 0,
+       "write_bytes": 962560
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 87,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03999999999999998,
+       "vol_ctx": 3384,
+       "invol_ctx": 1,
+       "migrations": 21,
+       "rchar": 72,
+       "wchar": 320220,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 312,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 1,
+       "migrations": 0,
+       "rchar": 320220,
+       "wchar": 2241352,
+       "syscr": 16,
+       "syscw": 1096,
+       "read_bytes": 0,
+       "write_bytes": 2240512
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3411176,
+     "daemon_final": {
+      "filtered": 1568,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7362,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    },
+    "S2": {
+     "start_s": 2.5613906383514404,
+     "db_bytes_at_start": 148095368,
+     "first": {
+      "outer_s": 0.14107248399523087,
+      "s": 0.128628016,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22535,
+      "wl_vol_ctx": 351,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.141191193004488,
+      "s": 0.132199507,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.05,
+      "wl_majflt": 0,
+      "wl_minflt": 22865,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 5
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 352,
+       "majflt": 0,
+       "utime_s": 0.06000000000000005,
+       "stime_s": 0.03,
+       "vol_ctx": 1978,
+       "invol_ctx": 6,
+       "migrations": 37,
+       "rchar": 45,
+       "wchar": 174149,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 502,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 276549,
+       "wchar": 1359645,
+       "syscr": 35,
+       "syscw": 665,
+       "read_bytes": 0,
+       "write_bytes": 1359872
+      },
+      "db_events": 1599,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 85,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2481,
+       "invol_ctx": 2,
+       "migrations": 21,
+       "rchar": 72,
+       "wchar": 319539,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 320,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 335923,
+       "wchar": 2459712,
+       "syscr": 20,
+       "syscw": 1202,
+       "read_bytes": 0,
+       "write_bytes": 2457600
+      },
+      "db_events": 2929,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151914608,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149651456
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S1",
+     "S2",
+     "base"
+    ],
+    "S1": {
+     "start_s": 2.6700809001922607,
+     "db_bytes_at_start": 172856,
+     "first": {
+      "outer_s": 0.14002263699512696,
+      "s": 0.130373907,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22515,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.1424379640011466,
+      "s": 0.133483916,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22826,
+      "wl_vol_ctx": 364,
+      "wl_invol_ctx": 13
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 363,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.03,
+       "vol_ctx": 2139,
+       "invol_ctx": 0,
+       "migrations": 45,
+       "rchar": 45,
+       "wchar": 204325,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 463,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 204325,
+       "wchar": 1190725,
+       "syscr": 10,
+       "syscw": 583,
+       "read_bytes": 0,
+       "write_bytes": 1187840
+      },
+      "db_events": 1881,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 84,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 2528,
+       "invol_ctx": 0,
+       "migrations": 30,
+       "rchar": 63,
+       "wchar": 287989,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 290,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 1,
+       "migrations": 1,
+       "rchar": 287989,
+       "wchar": 2010623,
+       "syscr": 14,
+       "syscw": 983,
+       "read_bytes": 0,
+       "write_bytes": 2011136
+      },
+      "db_events": 2647,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3374096,
+     "daemon_final": {
+      "filtered": 1567,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7361,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1683456
+    },
+    "S2": {
+     "start_s": 2.562878370285034,
+     "db_bytes_at_start": 148107728,
+     "first": {
+      "outer_s": 0.13812180899549276,
+      "s": 0.129037729,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22822,
+      "wl_vol_ctx": 353,
+      "wl_invol_ctx": 8
+     },
+     "on": {
+      "outer_s": 0.1373885130014969,
+      "s": 0.128180843,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22833,
+      "wl_vol_ctx": 334,
+      "wl_invol_ctx": 10
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 348,
+       "majflt": 0,
+       "utime_s": 0.040000000000000036,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 1564,
+       "invol_ctx": 1,
+       "migrations": 39,
+       "rchar": 36,
+       "wchar": 130611,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 460,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 2,
+       "rchar": 233011,
+       "wchar": 1009436,
+       "syscr": 33,
+       "syscw": 494,
+       "read_bytes": 0,
+       "write_bytes": 1007616
+      },
+      "db_events": 1200,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 91,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03,
+       "vol_ctx": 2773,
+       "invol_ctx": 0,
+       "migrations": 25,
+       "rchar": 81,
+       "wchar": 362763,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 364,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 379147,
+       "wchar": 2772841,
+       "syscr": 22,
+       "syscw": 1355,
+       "read_bytes": 0,
+       "write_bytes": 2772992
+      },
+      "db_events": 3328,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151889888,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149647360
+    },
+    "base": {
+     "outer_s": 0.13386534299934283,
+     "s": 0.125784764,
+     "loop_shell_migrations": 2,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.03,
+     "wl_sys_s": 0.02,
+     "wl_majflt": 0,
+     "wl_minflt": 22824,
+     "wl_vol_ctx": 369,
+     "wl_invol_ctx": 7
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S2",
+     "base",
+     "S1"
+    ],
+    "S2": {
+     "start_s": 2.565802574157715,
+     "db_bytes_at_start": 148136568,
+     "first": {
+      "outer_s": 0.14337137799884658,
+      "s": 0.130817865,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23147,
+      "wl_vol_ctx": 364,
+      "wl_invol_ctx": 13
+     },
+     "on": {
+      "outer_s": 0.13952855399838882,
+      "s": 0.130765922,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22847,
+      "wl_vol_ctx": 348,
+      "wl_invol_ctx": 7
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 342,
+       "majflt": 0,
+       "utime_s": 0.040000000000000036,
+       "stime_s": 0.03,
+       "vol_ctx": 1497,
+       "invol_ctx": 3,
+       "migrations": 36,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 455,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 232208,
+       "wchar": 955867,
+       "syscr": 31,
+       "syscw": 467,
+       "read_bytes": 0,
+       "write_bytes": 954368
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 148,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.04999999999999999,
+       "vol_ctx": 3175,
+       "invol_ctx": 1,
+       "migrations": 46,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 366,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 387968,
+       "wchar": 2809921,
+       "syscr": 24,
+       "syscw": 1373,
+       "read_bytes": 0,
+       "write_bytes": 2809856
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151902248,
+     "daemon_final": {
+      "filtered": 1569,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7363,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149647360
+    },
+    "base": {
+     "outer_s": 0.13261786599468905,
+     "s": 0.123858423,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.04,
+     "wl_majflt": 0,
+     "wl_minflt": 23159,
+     "wl_vol_ctx": 348,
+     "wl_invol_ctx": 6
+    },
+    "S1": {
+     "start_s": 2.5133113861083984,
+     "db_bytes_at_start": 172856,
+     "first": {
+      "outer_s": 0.14412756499950774,
+      "s": 0.132079066,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22812,
+      "wl_vol_ctx": 371,
+      "wl_invol_ctx": 6
+     },
+     "on": {
+      "outer_s": 0.1424206410010811,
+      "s": 0.133016016,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22830,
+      "wl_vol_ctx": 362,
+      "wl_invol_ctx": 7
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 350,
+       "majflt": 0,
+       "utime_s": 0.039999999999999813,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 1767,
+       "invol_ctx": 3,
+       "migrations": 29,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 397,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 134,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03,
+       "vol_ctx": 2867,
+       "invol_ctx": 1,
+       "migrations": 11,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 352,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 1,
+       "migrations": 3,
+       "rchar": 363392,
+       "wchar": 2509161,
+       "syscr": 18,
+       "syscw": 1227,
+       "read_bytes": 0,
+       "write_bytes": 2506752
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3374096,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "base",
+     "S2",
+     "S1"
+    ],
+    "base": {
+     "outer_s": 0.134091450003325,
+     "s": 0.124529201,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 23112,
+     "wl_vol_ctx": 357,
+     "wl_invol_ctx": 5
+    },
+    "S2": {
+     "start_s": 2.7631797790527344,
+     "db_bytes_at_start": 148095368,
+     "first": {
+      "outer_s": 0.14706272799958242,
+      "s": 0.131089832,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22830,
+      "wl_vol_ctx": 341,
+      "wl_invol_ctx": 4
+     },
+     "on": {
+      "outer_s": 0.13795031599875074,
+      "s": 0.128684223,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22540,
+      "wl_vol_ctx": 351,
+      "wl_invol_ctx": 7
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 359,
+       "majflt": 0,
+       "utime_s": 0.06999999999999984,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2067,
+       "invol_ctx": 0,
+       "migrations": 9,
+       "rchar": 45,
+       "wchar": 213873,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 539,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 2,
+       "migrations": 0,
+       "rchar": 316273,
+       "wchar": 1557405,
+       "syscr": 35,
+       "syscw": 761,
+       "read_bytes": 0,
+       "write_bytes": 1556480
+      },
+      "db_events": 1969,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 99,
+       "majflt": 0,
+       "utime_s": 0.06000000000000005,
+       "stime_s": 0.03,
+       "vol_ctx": 2093,
+       "invol_ctx": 0,
+       "migrations": 2,
+       "rchar": 63,
+       "wchar": 279246,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 291,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 1,
+       "migrations": 2,
+       "rchar": 303822,
+       "wchar": 2187783,
+       "syscr": 20,
+       "syscw": 1069,
+       "read_bytes": 0,
+       "write_bytes": 2187264
+      },
+      "db_events": 2559,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151840448,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 14,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149655552
+    },
+    "S1": {
+     "start_s": 2.5637199878692627,
+     "db_bytes_at_start": 172856,
+     "first": {
+      "outer_s": 0.14348368100036168,
+      "s": 0.132868003,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22854,
+      "wl_vol_ctx": 363,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.14088590299797943,
+      "s": 0.131593744,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22238,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 5
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 374,
+       "majflt": 0,
+       "utime_s": 0.050000000000000044,
+       "stime_s": 0.03,
+       "vol_ctx": 2086,
+       "invol_ctx": 3,
+       "migrations": 39,
+       "rchar": 45,
+       "wchar": 188616,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 447,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 188616,
+       "wchar": 1116565,
+       "syscr": 10,
+       "syscw": 547,
+       "read_bytes": 0,
+       "write_bytes": 1114112
+      },
+      "db_events": 1735,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 83,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.04000000000000001,
+       "vol_ctx": 2684,
+       "invol_ctx": 0,
+       "migrations": 49,
+       "rchar": 63,
+       "wchar": 305989,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 303,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.01,
+       "vol_ctx": 7,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 305989,
+       "wchar": 2047703,
+       "syscr": 14,
+       "syscw": 1001,
+       "read_bytes": 0,
+       "write_bytes": 2048000
+      },
+      "db_events": 2793,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3337016,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S2",
+     "S1",
+     "base"
+    ],
+    "S2": {
+     "start_s": 2.5696523189544678,
+     "db_bytes_at_start": 148107728,
+     "first": {
+      "outer_s": 0.1443024059990421,
+      "s": 0.131504663,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22521,
+      "wl_vol_ctx": 347,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.13864398500300013,
+      "s": 0.129833458,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22519,
+      "wl_vol_ctx": 353,
+      "wl_invol_ctx": 11
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 384,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.010000000000000009,
+       "vol_ctx": 1875,
+       "invol_ctx": 3,
+       "migrations": 44,
+       "rchar": 54,
+       "wchar": 216987,
+       "syscr": 6,
+       "syscw": 6,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 550,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 6,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 311195,
+       "wchar": 1619214,
+       "syscr": 35,
+       "syscw": 792,
+       "read_bytes": 0,
+       "write_bytes": 1617920
+      },
+      "db_events": 1996,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 70,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2337,
+       "invol_ctx": 3,
+       "migrations": 52,
+       "rchar": 63,
+       "wchar": 276387,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 282,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 300963,
+       "wchar": 2187783,
+       "syscr": 20,
+       "syscw": 1069,
+       "read_bytes": 0,
+       "write_bytes": 2187264
+      },
+      "db_events": 2532,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151914608,
+     "daemon_final": {
+      "filtered": 1584,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7378,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149651456
+    },
+    "S1": {
+     "start_s": 2.5150821208953857,
+     "db_bytes_at_start": 172856,
+     "first": {
+      "outer_s": 0.1445469989994308,
+      "s": 0.132461468,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22839,
+      "wl_vol_ctx": 368,
+      "wl_invol_ctx": 11
+     },
+     "on": {
+      "outer_s": 0.14087903600011487,
+      "s": 0.132123391,
+      "loop_shell_migrations": 5,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22845,
+      "wl_vol_ctx": 354,
+      "wl_invol_ctx": 11
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 367,
+       "majflt": 0,
+       "utime_s": 0.04999999999999982,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 1674,
+       "invol_ctx": 4,
+       "migrations": 20,
+       "rchar": 27,
+       "wchar": 172980,
+       "syscr": 3,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 426,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 172980,
+       "wchar": 692187,
+       "syscr": 8,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 72,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.05000000000000002,
+       "vol_ctx": 2829,
+       "invol_ctx": 3,
+       "migrations": 49,
+       "rchar": 81,
+       "wchar": 320220,
+       "syscr": 9,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 321,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 1,
+       "migrations": 0,
+       "rchar": 320220,
+       "wchar": 2509161,
+       "syscr": 16,
+       "syscw": 1227,
+       "read_bytes": 0,
+       "write_bytes": 2506752
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3374096,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    },
+    "base": {
+     "outer_s": 0.12972448200162034,
+     "s": 0.121601247,
+     "loop_shell_migrations": 0,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.01,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 22816,
+     "wl_vol_ctx": 338,
+     "wl_invol_ctx": 4
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S1",
+     "base",
+     "S2"
+    ],
+    "S1": {
+     "start_s": 2.6173617839813232,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.1442961299981107,
+      "s": 0.132414055,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22822,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.13584949399955804,
+      "s": 0.12667949,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22232,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 11
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 326,
+       "majflt": 0,
+       "utime_s": 0.06000000000000005,
+       "stime_s": 0.010000000000000009,
+       "vol_ctx": 1967,
+       "invol_ctx": 3,
+       "migrations": 47,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 409,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 1,
+       "migrations": 1,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 130,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.04999999999999999,
+       "vol_ctx": 2819,
+       "invol_ctx": 4,
+       "migrations": 29,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 352,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 1,
+       "migrations": 1,
+       "rchar": 363392,
+       "wchar": 2509161,
+       "syscr": 18,
+       "syscw": 1227,
+       "read_bytes": 0,
+       "write_bytes": 2506752
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3407056,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    },
+    "base": {
+     "outer_s": 0.15368445199419511,
+     "s": 0.145602512,
+     "loop_shell_migrations": 1,
+     "wl_elapsed": 0.14,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.05,
+     "wl_majflt": 0,
+     "wl_minflt": 22837,
+     "wl_vol_ctx": 369,
+     "wl_invol_ctx": 2
+    },
+    "S2": {
+     "start_s": 2.562350273132324,
+     "db_bytes_at_start": 148153048,
+     "first": {
+      "outer_s": 0.15038806699885754,
+      "s": 0.135784239,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.14,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22529,
+      "wl_vol_ctx": 372,
+      "wl_invol_ctx": 23
+     },
+     "on": {
+      "outer_s": 0.1415506099947379,
+      "s": 0.132689063,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.05,
+      "wl_majflt": 0,
+      "wl_minflt": 22853,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 17
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 361,
+       "majflt": 0,
+       "utime_s": 0.050000000000000044,
+       "stime_s": 0.03,
+       "vol_ctx": 1975,
+       "invol_ctx": 4,
+       "migrations": 35,
+       "rchar": 36,
+       "wchar": 172980,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 508,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 275380,
+       "wchar": 1268996,
+       "syscr": 33,
+       "syscw": 620,
+       "read_bytes": 0,
+       "write_bytes": 1265664
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 70,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.03,
+       "vol_ctx": 2343,
+       "invol_ctx": 3,
+       "migrations": 18,
+       "rchar": 72,
+       "wchar": 320220,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 321,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.01,
+       "vol_ctx": 8,
+       "invol_ctx": 1,
+       "migrations": 0,
+       "rchar": 336604,
+       "wchar": 2463832,
+       "syscr": 20,
+       "syscw": 1204,
+       "read_bytes": 0,
+       "write_bytes": 2465792
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151885768,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149651456
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "base",
+     "S1",
+     "S2"
+    ],
+    "base": {
+     "outer_s": 0.13167544900352368,
+     "s": 0.123215962,
+     "loop_shell_migrations": 2,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.01,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 22563,
+     "wl_vol_ctx": 340,
+     "wl_invol_ctx": 3
+    },
+    "S1": {
+     "start_s": 2.6142759323120117,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.13702297399868257,
+      "s": 0.126759515,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22521,
+      "wl_vol_ctx": 345,
+      "wl_invol_ctx": 14
+     },
+     "on": {
+      "outer_s": 0.13828490300511476,
+      "s": 0.129731402,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22555,
+      "wl_vol_ctx": 337,
+      "wl_invol_ctx": 9
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 376,
+       "majflt": 0,
+       "utime_s": 0.06999999999999984,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2091,
+       "invol_ctx": 0,
+       "migrations": 44,
+       "rchar": 36,
+       "wchar": 172980,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 446,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 172980,
+       "wchar": 964116,
+       "syscr": 8,
+       "syscw": 472,
+       "read_bytes": 0,
+       "write_bytes": 962560
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 53,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.04000000000000001,
+       "vol_ctx": 2892,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 72,
+       "wchar": 320220,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 309,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 320220,
+       "wchar": 2237232,
+       "syscr": 16,
+       "syscw": 1094,
+       "read_bytes": 0,
+       "write_bytes": 2236416
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3407056,
+     "daemon_final": {
+      "filtered": 1568,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7362,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    },
+    "S2": {
+     "start_s": 2.561675786972046,
+     "db_bytes_at_start": 148095368,
+     "first": {
+      "outer_s": 0.14350976200512378,
+      "s": 0.131089869,
+      "loop_shell_migrations": 4,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22554,
+      "wl_vol_ctx": 360,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.14132433300255798,
+      "s": 0.132014268,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22533,
+      "wl_vol_ctx": 349,
+      "wl_invol_ctx": 11
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 367,
+       "majflt": 0,
+       "utime_s": 0.04999999999999982,
+       "stime_s": 0.03,
+       "vol_ctx": 2005,
+       "invol_ctx": 1,
+       "migrations": 26,
+       "rchar": 45,
+       "wchar": 173820,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 499,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 276220,
+       "wchar": 1347285,
+       "syscr": 35,
+       "syscw": 659,
+       "read_bytes": 0,
+       "write_bytes": 1347584
+      },
+      "db_events": 1598,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 74,
+       "majflt": 0,
+       "utime_s": 0.10000000000000009,
+       "stime_s": 0.010000000000000009,
+       "vol_ctx": 2486,
+       "invol_ctx": 1,
+       "migrations": 33,
+       "rchar": 72,
+       "wchar": 319554,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 324,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 344130,
+       "wchar": 2472072,
+       "syscr": 22,
+       "syscw": 1208,
+       "read_bytes": 0,
+       "write_bytes": 2469888
+      },
+      "db_events": 2930,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151914608,
+     "daemon_final": {
+      "filtered": 1567,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7361,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149647360
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S1",
+     "S2",
+     "base"
+    ],
+    "S1": {
+     "start_s": 2.56585693359375,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.14083253799617523,
+      "s": 0.128322947,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22829,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 11
+     },
+     "on": {
+      "outer_s": 0.1393894110005931,
+      "s": 0.130218974,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22562,
+      "wl_vol_ctx": 337,
+      "wl_invol_ctx": 15
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 333,
+       "majflt": 0,
+       "utime_s": 0.050000000000000044,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 1631,
+       "invol_ctx": 1,
+       "migrations": 34,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 401,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 139,
+       "majflt": 0,
+       "utime_s": 0.10000000000000009,
+       "stime_s": 0.03,
+       "vol_ctx": 3175,
+       "invol_ctx": 4,
+       "migrations": 43,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 352,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 363392,
+       "wchar": 2509161,
+       "syscr": 18,
+       "syscw": 1227,
+       "read_bytes": 0,
+       "write_bytes": 2506752
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3407056,
+     "daemon_final": {
+      "filtered": 1565,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7359,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    },
+    "S2": {
+     "start_s": 2.5723061561584473,
+     "db_bytes_at_start": 148107728,
+     "first": {
+      "outer_s": 0.14381330200558295,
+      "s": 0.128946269,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23137,
+      "wl_vol_ctx": 347,
+      "wl_invol_ctx": 13
+     },
+     "on": {
+      "outer_s": 0.1405606499974965,
+      "s": 0.13147831,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22846,
+      "wl_vol_ctx": 357,
+      "wl_invol_ctx": 10
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 350,
+       "majflt": 0,
+       "utime_s": 0.05999999999999983,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 1743,
+       "invol_ctx": 2,
+       "migrations": 43,
+       "rchar": 45,
+       "wchar": 182533,
+       "syscr": 5,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 502,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 5,
+       "invol_ctx": 1,
+       "migrations": 0,
+       "rchar": 276741,
+       "wchar": 1429685,
+       "syscr": 33,
+       "syscw": 699,
+       "read_bytes": 0,
+       "write_bytes": 1429504
+      },
+      "db_events": 1678,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 102,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2559,
+       "invol_ctx": 0,
+       "migrations": 31,
+       "rchar": 63,
+       "wchar": 309005,
+       "syscr": 7,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 322,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 7,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 333581,
+       "wchar": 2307263,
+       "syscr": 20,
+       "syscw": 1127,
+       "read_bytes": 0,
+       "write_bytes": 2306048
+      },
+      "db_events": 2850,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151844568,
+     "daemon_final": {
+      "filtered": 1567,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7361,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149651456
+    },
+    "base": {
+     "outer_s": 0.12965682499634568,
+     "s": 0.120796433,
+     "loop_shell_migrations": 0,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.01,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 23159,
+     "wl_vol_ctx": 333,
+     "wl_invol_ctx": 6
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S2",
+     "base",
+     "S1"
+    ],
+    "S2": {
+     "start_s": 2.5112087726593018,
+     "db_bytes_at_start": 148095368,
+     "first": {
+      "outer_s": 0.14261227599490667,
+      "s": 0.129931923,
+      "loop_shell_migrations": 5,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22531,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 9
+     },
+     "on": {
+      "outer_s": 0.1438012790022185,
+      "s": 0.13449821,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22832,
+      "wl_vol_ctx": 354,
+      "wl_invol_ctx": 10
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 350,
+       "majflt": 0,
+       "utime_s": 0.04999999999999982,
+       "stime_s": 0.010000000000000009,
+       "vol_ctx": 1570,
+       "invol_ctx": 2,
+       "migrations": 29,
+       "rchar": 36,
+       "wchar": 172980,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 502,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 275380,
+       "wchar": 1277236,
+       "syscr": 33,
+       "syscw": 624,
+       "read_bytes": 0,
+       "write_bytes": 1273856
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 107,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03,
+       "vol_ctx": 2364,
+       "invol_ctx": 1,
+       "migrations": 19,
+       "rchar": 72,
+       "wchar": 320220,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 325,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 344796,
+       "wchar": 2472072,
+       "syscr": 22,
+       "syscw": 1208,
+       "read_bytes": 0,
+       "write_bytes": 2473984
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151844568,
+     "daemon_final": {
+      "filtered": 1566,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7360,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 15,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149651456
+    },
+    "base": {
+     "outer_s": 0.13491721700120252,
+     "s": 0.126112204,
+     "loop_shell_migrations": 2,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.02,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 23149,
+     "wl_vol_ctx": 354,
+     "wl_invol_ctx": 6
+    },
+    "S1": {
+     "start_s": 2.5719566345214844,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.13397979499859503,
+      "s": 0.123299599,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23138,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 4
+     },
+     "on": {
+      "outer_s": 0.1376136899998528,
+      "s": 0.128848125,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22845,
+      "wl_vol_ctx": 367,
+      "wl_invol_ctx": 6
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 340,
+       "majflt": 0,
+       "utime_s": 0.05999999999999983,
+       "stime_s": 0.009999999999999981,
+       "vol_ctx": 1568,
+       "invol_ctx": 1,
+       "migrations": 11,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 401,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 1,
+       "migrations": 4,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 108,
+       "majflt": 0,
+       "utime_s": 0.08000000000000007,
+       "stime_s": 0.03,
+       "vol_ctx": 2957,
+       "invol_ctx": 5,
+       "migrations": 36,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 353,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.01,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 2,
+       "rchar": 363392,
+       "wchar": 2509161,
+       "syscr": 18,
+       "syscw": 1227,
+       "read_bytes": 0,
+       "write_bytes": 2506752
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3407056,
+     "daemon_final": {
+      "filtered": 1568,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7362,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "base",
+     "S2",
+     "S1"
+    ],
+    "base": {
+     "outer_s": 0.13631938400067156,
+     "s": 0.127972496,
+     "loop_shell_migrations": 2,
+     "wl_elapsed": 0.13,
+     "wl_user_s": 0.03,
+     "wl_sys_s": 0.03,
+     "wl_majflt": 0,
+     "wl_minflt": 22554,
+     "wl_vol_ctx": 348,
+     "wl_invol_ctx": 7
+    },
+    "S2": {
+     "start_s": 2.5625510215759277,
+     "db_bytes_at_start": 148140688,
+     "first": {
+      "outer_s": 0.14412037700094515,
+      "s": 0.132121176,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22832,
+      "wl_vol_ctx": 365,
+      "wl_invol_ctx": 11
+     },
+     "on": {
+      "outer_s": 0.14020288300525863,
+      "s": 0.130786721,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23157,
+      "wl_vol_ctx": 342,
+      "wl_invol_ctx": 7
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 339,
+       "majflt": 0,
+       "utime_s": 0.06999999999999984,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 1990,
+       "invol_ctx": 6,
+       "migrations": 32,
+       "rchar": 36,
+       "wchar": 172980,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 508,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 275380,
+       "wchar": 1277236,
+       "syscr": 33,
+       "syscw": 624,
+       "read_bytes": 0,
+       "write_bytes": 1273856
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 106,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.04999999999999999,
+       "vol_ctx": 2736,
+       "invol_ctx": 3,
+       "migrations": 29,
+       "rchar": 72,
+       "wchar": 320220,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 324,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 0,
+       "migrations": 2,
+       "rchar": 344796,
+       "wchar": 2472072,
+       "syscr": 22,
+       "syscw": 1208,
+       "read_bytes": 0,
+       "write_bytes": 2473984
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151889888,
+     "daemon_final": {
+      "filtered": 1567,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7361,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149651456
+    },
+    "S1": {
+     "start_s": 2.666717529296875,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.13819259800220607,
+      "s": 0.128031893,
+      "loop_shell_migrations": 5,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22802,
+      "wl_vol_ctx": 346,
+      "wl_invol_ctx": 6
+     },
+     "on": {
+      "outer_s": 0.13662452699645655,
+      "s": 0.127240315,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22841,
+      "wl_vol_ctx": 356,
+      "wl_invol_ctx": 5
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 340,
+       "majflt": 0,
+       "utime_s": 0.050000000000000044,
+       "stime_s": 0.010000000000000009,
+       "vol_ctx": 1654,
+       "invol_ctx": 3,
+       "migrations": 41,
+       "rchar": 27,
+       "wchar": 129808,
+       "syscr": 3,
+       "syscw": 3,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 403,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 3,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 129808,
+       "wchar": 692187,
+       "syscr": 6,
+       "syscw": 339,
+       "read_bytes": 0,
+       "write_bytes": 692224
+      },
+      "db_events": 1195,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 80,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.03,
+       "vol_ctx": 2986,
+       "invol_ctx": 5,
+       "migrations": 35,
+       "rchar": 81,
+       "wchar": 363392,
+       "syscr": 9,
+       "syscw": 9,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 353,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 9,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 363392,
+       "wchar": 2509161,
+       "syscr": 18,
+       "syscw": 1227,
+       "read_bytes": 0,
+       "write_bytes": 2506752
+      },
+      "db_events": 3333,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3407056,
+     "daemon_final": {
+      "filtered": 1568,
+      "kernel_drops": 0,
+      "proc_fallbacks": 3,
+      "queue_drops": 0,
+      "received": 7362,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    }
+   },
+   {
+    "warmup": false,
+    "order": [
+     "S2",
+     "S1",
+     "base"
+    ],
+    "S2": {
+     "start_s": 2.815577268600464,
+     "db_bytes_at_start": 148173648,
+     "first": {
+      "outer_s": 0.14908951199322473,
+      "s": 0.133947348,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22549,
+      "wl_vol_ctx": 362,
+      "wl_invol_ctx": 4
+     },
+     "on": {
+      "outer_s": 0.13895638400572352,
+      "s": 0.13027385,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.02,
+      "wl_majflt": 0,
+      "wl_minflt": 22217,
+      "wl_vol_ctx": 341,
+      "wl_invol_ctx": 10
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 352,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2322,
+       "invol_ctx": 3,
+       "migrations": 15,
+       "rchar": 36,
+       "wchar": 216198,
+       "syscr": 4,
+       "syscw": 5,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 532,
+       "majflt": 0,
+       "utime_s": 0.01,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 310406,
+       "wchar": 1260756,
+       "syscr": 33,
+       "syscw": 616,
+       "read_bytes": 0,
+       "write_bytes": 1257472
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 85,
+       "majflt": 0,
+       "utime_s": 0.06999999999999984,
+       "stime_s": 0.03999999999999998,
+       "vol_ctx": 2498,
+       "invol_ctx": 0,
+       "migrations": 4,
+       "rchar": 72,
+       "wchar": 277002,
+       "syscr": 8,
+       "syscw": 7,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 290,
+       "majflt": 0,
+       "utime_s": 0.019999999999999997,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 0,
+       "migrations": 1,
+       "rchar": 301578,
+       "wchar": 2463832,
+       "syscr": 20,
+       "syscw": 1204,
+       "read_bytes": 0,
+       "write_bytes": 2465792
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 151898128,
+     "daemon_final": {
+      "filtered": 1567,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7361,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 149655552
+    },
+    "S1": {
+     "start_s": 2.619022846221924,
+     "db_bytes_at_start": 205816,
+     "first": {
+      "outer_s": 0.14523211299820105,
+      "s": 0.131195978,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22842,
+      "wl_vol_ctx": 351,
+      "wl_invol_ctx": 3
+     },
+     "on": {
+      "outer_s": 0.1386302920000162,
+      "s": 0.12922647,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22249,
+      "wl_vol_ctx": 354,
+      "wl_invol_ctx": 7
+     },
+     "first_daemon": {
+      "self": {
+       "minflt": 343,
+       "majflt": 0,
+       "utime_s": 0.07000000000000006,
+       "stime_s": 0.01999999999999999,
+       "vol_ctx": 2019,
+       "invol_ctx": 3,
+       "migrations": 2,
+       "rchar": 36,
+       "wchar": 172980,
+       "syscr": 4,
+       "syscw": 4,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 448,
+       "majflt": 0,
+       "utime_s": 0.0,
+       "stime_s": 0.0,
+       "vol_ctx": 4,
+       "invol_ctx": 0,
+       "migrations": 0,
+       "rchar": 172980,
+       "wchar": 964116,
+       "syscr": 8,
+       "syscw": 472,
+       "read_bytes": 0,
+       "write_bytes": 962560
+      },
+      "db_events": 1593,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "on_daemon": {
+      "self": {
+       "minflt": 84,
+       "majflt": 0,
+       "utime_s": 0.09000000000000008,
+       "stime_s": 0.020000000000000018,
+       "vol_ctx": 2738,
+       "invol_ctx": 0,
+       "migrations": 13,
+       "rchar": 72,
+       "wchar": 320220,
+       "syscr": 8,
+       "syscw": 8,
+       "read_bytes": 0,
+       "write_bytes": 0
+      },
+      "store": {
+       "minflt": 309,
+       "majflt": 0,
+       "utime_s": 0.02,
+       "stime_s": 0.0,
+       "vol_ctx": 8,
+       "invol_ctx": 2,
+       "migrations": 2,
+       "rchar": 320220,
+       "wchar": 2237232,
+       "syscr": 16,
+       "syscw": 1094,
+       "read_bytes": 0,
+       "write_bytes": 2236416
+      },
+      "db_events": 2935,
+      "bpf": {
+       "run_cnt": 0,
+       "run_time_ns": 0
+      }
+     },
+     "db_bytes_before_stop": 3407056,
+     "daemon_final": {
+      "filtered": 1591,
+      "kernel_drops": 0,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 7385,
+      "submitted": 5757,
+      "truncated_paths": 1,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 16,
+      "writer_max_batch": 512,
+      "writer_rows": 5757
+     },
+     "db_bytes_after_stop": 1687552
+    },
+    "base": {
+     "outer_s": 0.13305940500140423,
+     "s": 0.124362374,
+     "loop_shell_migrations": 0,
+     "wl_elapsed": 0.12,
+     "wl_user_s": 0.03,
+     "wl_sys_s": 0.02,
+     "wl_majflt": 0,
+     "wl_minflt": 22847,
+     "wl_vol_ctx": 356,
+     "wl_invol_ctx": 5
+    }
+   }
+  ],
+  "S1_overhead_pct": {
+   "n": 16,
+   "median": 4.619195731939585,
+   "mean": 3.276475924202023,
+   "stdev": 5.190425823914905,
+   "q1": 2.135189533533449,
+   "q3": 6.009005667886624,
+   "min": -12.996356821096589,
+   "max": 8.652990211523083,
+   "median_ci90": [
+    3.027103024817135,
+    5.673170995404364
+   ]
+  },
+  "S2_overhead_pct": {
+   "n": 16,
+   "median": 5.136669549486605,
+   "mean": 3.920019853580143,
+   "stdev": 4.066188387822423,
+   "q1": 2.3684927758803767,
+   "q3": 6.536589943589799,
+   "min": -8.86897404627195,
+   "max": 8.842874524283339,
+   "median_ci90": [
+    3.0370378126345687,
+    6.0476046391803155
+   ]
+  },
+  "S1_delta_ms": {
+   "n": 16,
+   "median": 5.796852500000005,
+   "mean": 3.8787238750000035,
+   "stdev": 7.024005285475417,
+   "q1": 2.7308135000000053,
+   "q3": 7.550119500000008,
+   "min": -18.923021999999985,
+   "max": 10.522144000000011,
+   "median_ci90": [
+    3.8000085000000072,
+    7.083782499999996
+   ]
+  },
+  "S2_delta_ms": {
+   "n": 16,
+   "median": 6.4094875000000044,
+   "mean": 4.757257687499998,
+   "stdev": 5.424510118931055,
+   "q1": 3.0348335000000004,
+   "q3": 8.11518700000001,
+   "min": -12.913448999999993,
+   "max": 10.681876999999993,
+   "median_ci90": [
+    3.853225000000002,
+    7.574058499999994
+   ]
+  },
+  "S2_minus_S1_ms": {
+   "n": 16,
+   "median": 1.1533579999999932,
+   "mean": 0.8785338124999952,
+   "stdev": 3.1973533856794583,
+   "q1": -2.2799732499999905,
+   "q3": 3.363300249999993,
+   "min": -5.303073000000019,
+   "max": 6.009572999999991,
+   "median_ci90": [
+    -0.9845569999999831,
+    2.590082499999993
+   ]
+  },
+  "S1_first_overhead_pct": {
+   "n": 16,
+   "median": 2.9539072746985418,
+   "mean": 2.3576303485735917,
+   "stdev": 4.425109415862437,
+   "q1": -0.6567642070979873,
+   "q3": 6.04678464548704,
+   "min": -9.057849908523552,
+   "max": 8.931011209120253,
+   "median_ci90": [
+    0.9923655222210614,
+    4.57166103602672
+   ]
+  },
+  "S2_first_overhead_pct": {
+   "n": 16,
+   "median": 3.8763376968245167,
+   "mean": 3.6354225700419867,
+   "stdev": 3.6111905563576534,
+   "q1": 2.6968084172593,
+   "q3": 6.197464895173843,
+   "min": -6.743203029354317,
+   "max": 8.144173060988425,
+   "median_ci90": [
+    3.02882582243984,
+    5.443608015364099
+   ]
+  }
+ },
+ "persistent": {
+  "blocks": [
+   {
+    "series": [
+     {
+      "outer_s": 0.1364306800023769,
+      "s": 0.127587566,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22847,
+      "wl_vol_ctx": 342,
+      "wl_invol_ctx": 9,
+      "daemon": {
+       "self": {
+        "minflt": 361,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.01999999999999999,
+        "vol_ctx": 2381,
+        "invol_ctx": 0,
+        "migrations": 12,
+        "rchar": 54,
+        "wchar": 260054,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 521,
+        "majflt": 0,
+        "utime_s": 0.01,
+        "stime_s": 0.0,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 260054,
+        "wchar": 1516214,
+        "syscr": 12,
+        "syscw": 742,
+        "read_bytes": 0,
+        "write_bytes": 1515520
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1516160,
+      "warmup": true,
+      "index": 1
+     },
+     {
+      "outer_s": 0.14044028199714376,
+      "s": 0.131617342,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22835,
+      "wl_vol_ctx": 343,
+      "wl_invol_ctx": 2,
+      "daemon": {
+       "self": {
+        "minflt": 101,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.03,
+        "vol_ctx": 2789,
+        "invol_ctx": 4,
+        "migrations": 3,
+        "rchar": 54,
+        "wchar": 261944,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 260,
+        "majflt": 0,
+        "utime_s": 0.019999999999999997,
+        "stime_s": 0.0,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 261944,
+        "wchar": 1837574,
+        "syscr": 12,
+        "syscw": 898,
+        "read_bytes": 0,
+        "write_bytes": 1839104
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1837520,
+      "warmup": true,
+      "index": 2
+     },
+     {
+      "outer_s": 0.14145325800200226,
+      "s": 0.132410216,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23146,
+      "wl_vol_ctx": 364,
+      "wl_invol_ctx": 5,
+      "daemon": {
+       "self": {
+        "minflt": 59,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.03,
+        "vol_ctx": 2185,
+        "invol_ctx": 0,
+        "migrations": 16,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 108,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.01,
+        "vol_ctx": 48,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2296737,
+        "wchar": 4050535,
+        "syscr": 509,
+        "syscw": 1485,
+        "read_bytes": 0,
+        "write_bytes": 4055040
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 2814464,
+      "warmup": true,
+      "index": 3
+     },
+     {
+      "outer_s": 0.13858424600039143,
+      "s": 0.128115865,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22833,
+      "wl_vol_ctx": 328,
+      "wl_invol_ctx": 4,
+      "daemon": {
+       "self": {
+        "minflt": 68,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.03999999999999998,
+        "vol_ctx": 2568,
+        "invol_ctx": 2,
+        "migrations": 12,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 5,
+        "majflt": 0,
+        "utime_s": 0.009999999999999995,
+        "stime_s": 0.0,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 267288,
+        "wchar": 2158934,
+        "syscr": 12,
+        "syscw": 1054,
+        "read_bytes": 0,
+        "write_bytes": 2158592
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 4
+     },
+     {
+      "outer_s": 0.1402072400014731,
+      "s": 0.131323842,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22558,
+      "wl_vol_ctx": 365,
+      "wl_invol_ctx": 3,
+      "daemon": {
+       "self": {
+        "minflt": 144,
+        "majflt": 0,
+        "utime_s": 0.06000000000000005,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1602,
+        "invol_ctx": 1,
+        "migrations": 5,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.0,
+        "vol_ctx": 103,
+        "invol_ctx": 0,
+        "migrations": 3,
+        "rchar": 2266136,
+        "wchar": 4281414,
+        "syscr": 500,
+        "syscw": 1603,
+        "read_bytes": 0,
+        "write_bytes": 4288512
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1704080,
+      "warmup": false,
+      "index": 5
+     },
+     {
+      "outer_s": 0.1404000949987676,
+      "s": 0.131484094,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23132,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 5,
+        "majflt": 0,
+        "utime_s": 0.06000000000000005,
+        "stime_s": 0.030000000000000027,
+        "vol_ctx": 2113,
+        "invol_ctx": 2,
+        "migrations": 0,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 1,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.0,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 271384,
+        "wchar": 2443214,
+        "syscr": 13,
+        "syscw": 1192,
+        "read_bytes": 0,
+        "write_bytes": 2445312
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 6
+     },
+     {
+      "outer_s": 0.1436127389970352,
+      "s": 0.134583529,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23169,
+      "wl_vol_ctx": 360,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 43,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.03999999999999998,
+        "vol_ctx": 2414,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 3,
+        "majflt": 0,
+        "utime_s": 0.009999999999999995,
+        "stime_s": 0.01,
+        "vol_ctx": 93,
+        "invol_ctx": 0,
+        "migrations": 1,
+        "rchar": 2266136,
+        "wchar": 4582174,
+        "syscr": 500,
+        "syscw": 1749,
+        "read_bytes": 0,
+        "write_bytes": 4587520
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1676008,
+      "warmup": false,
+      "index": 7
+     },
+     {
+      "outer_s": 0.17083183400245616,
+      "s": 0.160994884,
+      "loop_shell_migrations": 49,
+      "wl_elapsed": 0.16,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.05,
+      "wl_majflt": 0,
+      "wl_minflt": 22844,
+      "wl_vol_ctx": 369,
+      "wl_invol_ctx": 35,
+      "daemon": {
+       "self": {
+        "minflt": 95,
+        "majflt": 0,
+        "utime_s": 0.10000000000000009,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2075,
+        "invol_ctx": 2,
+        "migrations": 92,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.030000000000000013,
+        "stime_s": 0.0,
+        "vol_ctx": 54,
+        "invol_ctx": 1,
+        "migrations": 5,
+        "rchar": 2262040,
+        "wchar": 4701678,
+        "syscr": 499,
+        "syscw": 1808,
+        "read_bytes": 0,
+        "write_bytes": 4710400
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1425408,
+      "warmup": false,
+      "index": 8
+     },
+     {
+      "outer_s": 0.13973799000086728,
+      "s": 0.129520448,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22558,
+      "wl_vol_ctx": 349,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 87,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.019999999999999962,
+        "vol_ctx": 2589,
+        "invol_ctx": 1,
+        "migrations": 14,
+        "rchar": 63,
+        "wchar": 267053,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.009999999999999981,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 271149,
+        "wchar": 3044743,
+        "syscr": 15,
+        "syscw": 1485,
+        "read_bytes": 0,
+        "write_bytes": 3043328
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 9
+     },
+     {
+      "outer_s": 0.14344881999568315,
+      "s": 0.134368768,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.04,
+      "wl_sys_s": 0.02,
+      "wl_majflt": 0,
+      "wl_minflt": 22862,
+      "wl_vol_ctx": 357,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 19,
+        "majflt": 0,
+        "utime_s": 0.08999999999999986,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2206,
+        "invol_ctx": 0,
+        "migrations": 4,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 2,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.009999999999999998,
+        "vol_ctx": 70,
+        "invol_ctx": 0,
+        "migrations": 2,
+        "rchar": 2112417,
+        "wchar": 4892095,
+        "syscr": 464,
+        "syscw": 1938,
+        "read_bytes": 0,
+        "write_bytes": 4902912
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1150976,
+      "warmup": false,
+      "index": 10
+     },
+     {
+      "outer_s": 0.14211696800339269,
+      "s": 0.132473232,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22508,
+      "wl_vol_ctx": 353,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 91,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2265,
+        "invol_ctx": 0,
+        "migrations": 7,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.009999999999999981,
+        "stime_s": 0.0,
+        "vol_ctx": 52,
+        "invol_ctx": 0,
+        "migrations": 3,
+        "rchar": 2335768,
+        "wchar": 5228606,
+        "syscr": 517,
+        "syscw": 2046,
+        "read_bytes": 0,
+        "write_bytes": 5234688
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1269760,
+      "warmup": false,
+      "index": 11
+     },
+     {
+      "outer_s": 0.1386507760034874,
+      "s": 0.129907144,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23164,
+      "wl_vol_ctx": 337,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 80,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.02999999999999997,
+        "vol_ctx": 2339,
+        "invol_ctx": 0,
+        "migrations": 6,
+        "rchar": 63,
+        "wchar": 269316,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.0,
+        "vol_ctx": 74,
+        "invol_ctx": 0,
+        "migrations": 2,
+        "rchar": 2288644,
+        "wchar": 5331895,
+        "syscr": 507,
+        "syscw": 2109,
+        "read_bytes": 0,
+        "write_bytes": 5328896
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1134592,
+      "warmup": false,
+      "index": 12
+     },
+     {
+      "outer_s": 0.1399244929998531,
+      "s": 0.130519442,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22533,
+      "wl_vol_ctx": 355,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 22,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2341,
+        "invol_ctx": 0,
+        "migrations": 32,
+        "rchar": 63,
+        "wchar": 269264,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 9,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 269264,
+        "wchar": 3432055,
+        "syscr": 14,
+        "syscw": 1674,
+        "read_bytes": 0,
+        "write_bytes": 3436544
+       },
+       "db_events": 2415,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 13
+     },
+     {
+      "outer_s": 0.13948943699506344,
+      "s": 0.130512618,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23126,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 149,
+        "majflt": 0,
+        "utime_s": 0.06000000000000005,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1360,
+        "invol_ctx": 0,
+        "migrations": 7,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.03,
+        "stime_s": 0.0,
+        "vol_ctx": 56,
+        "invol_ctx": 1,
+        "migrations": 5,
+        "rchar": 2241560,
+        "wchar": 5480502,
+        "syscr": 494,
+        "syscw": 2192,
+        "read_bytes": 0,
+        "write_bytes": 5488640
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1139456,
+      "warmup": false,
+      "index": 14
+     },
+     {
+      "outer_s": 0.13822160600102507,
+      "s": 0.129832327,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23141,
+      "wl_vol_ctx": 337,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 6,
+        "majflt": 0,
+        "utime_s": 0.07999999999999963,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2452,
+        "invol_ctx": 0,
+        "migrations": 15,
+        "rchar": 63,
+        "wchar": 270443,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 154,
+        "majflt": 0,
+        "utime_s": 0.010000000000000009,
+        "stime_s": 0.0,
+        "vol_ctx": 91,
+        "invol_ctx": 0,
+        "migrations": 4,
+        "rchar": 2363499,
+        "wchar": 5842423,
+        "syscr": 525,
+        "syscw": 2342,
+        "read_bytes": 0,
+        "write_bytes": 5844992
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1007616,
+      "warmup": false,
+      "index": 15
+     }
+    ],
+    "final": {
+     "filtered": 11611,
+     "kernel_drops": 0,
+     "proc_fallbacks": 2,
+     "queue_drops": 0,
+     "received": 57260,
+     "submitted": 45335,
+     "truncated_paths": 15,
+     "unreadable_paths": 0,
+     "unresolved_fd": 0,
+     "writer_batches": 99,
+     "writer_max_batch": 512,
+     "writer_rows": 45335
+    },
+    "tables_after": {
+     "events": 36256,
+     "processes": 4579,
+     "runs": 1,
+     "collector_stats": 12
+    },
+    "tag": "S3",
+    "baseline_before": [
+     {
+      "outer_s": 0.12955002999660792,
+      "s": 0.120690088,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.02,
+      "wl_majflt": 0,
+      "wl_minflt": 22856,
+      "wl_vol_ctx": 347,
+      "wl_invol_ctx": 6
+     },
+     {
+      "outer_s": 0.133095310004137,
+      "s": 0.123947724,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22522,
+      "wl_vol_ctx": 342,
+      "wl_invol_ctx": 3
+     },
+     {
+      "outer_s": 0.13789221399929374,
+      "s": 0.129436785,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23131,
+      "wl_vol_ctx": 375,
+      "wl_invol_ctx": 3
+     },
+     {
+      "outer_s": 0.13322352200339083,
+      "s": 0.124369888,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22243,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 3
+     },
+     {
+      "outer_s": 0.13366751099965768,
+      "s": 0.125212236,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22545,
+      "wl_vol_ctx": 360,
+      "wl_invol_ctx": 4
+     },
+     {
+      "outer_s": 0.13473986699682428,
+      "s": 0.125777381,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22545,
+      "wl_vol_ctx": 349,
+      "wl_invol_ctx": 5
+     }
+    ],
+    "baseline_ref_s": 0.124158806,
+    "overhead_pct": [
+     3.1870949209998,
+     5.770864130249453,
+     5.899934314767807,
+     8.39628161372623,
+     29.668518236233687,
+     4.3183743245726935,
+     8.22330878407449,
+     6.696605958017998,
+     4.629827061964509,
+     5.122984188491642,
+     5.117488001616244,
+     4.569567945104103
+    ],
+    "median_overhead_pct": 5.446924159370548,
+    "median_delta_ms": 6.762836000000008
+   },
+   {
+    "series": [
+     {
+      "outer_s": 0.14029317400127184,
+      "s": 0.130643755,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22857,
+      "wl_vol_ctx": 353,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 376,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.03,
+        "vol_ctx": 2409,
+        "invol_ctx": 0,
+        "migrations": 20,
+        "rchar": 63,
+        "wchar": 263209,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 585,
+        "majflt": 0,
+        "utime_s": 0.01,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 369705,
+        "wchar": 1981783,
+        "syscr": 40,
+        "syscw": 969,
+        "read_bytes": 0,
+        "write_bytes": 1978368
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1981720,
+      "warmup": true,
+      "index": 1
+     },
+     {
+      "outer_s": 0.13953072900039842,
+      "s": 0.129436519,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22833,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 11,
+      "daemon": {
+       "self": {
+        "minflt": 81,
+        "majflt": 0,
+        "utime_s": 0.09000000000000008,
+        "stime_s": 0.03,
+        "vol_ctx": 2195,
+        "invol_ctx": 0,
+        "migrations": 42,
+        "rchar": 54,
+        "wchar": 261944,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 273,
+        "majflt": 0,
+        "utime_s": 0.01,
+        "stime_s": 0.01,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 290616,
+        "wchar": 2027094,
+        "syscr": 19,
+        "syscw": 990,
+        "read_bytes": 0,
+        "write_bytes": 2027520
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 2027040,
+      "warmup": true,
+      "index": 2
+     },
+     {
+      "outer_s": 0.1466102070044144,
+      "s": 0.137133725,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.14,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22232,
+      "wl_vol_ctx": 375,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 315,
+        "majflt": 0,
+        "utime_s": 0.050000000000000044,
+        "stime_s": 0.009999999999999981,
+        "vol_ctx": 523,
+        "invol_ctx": 0,
+        "migrations": 7,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 38,
+        "majflt": 0,
+        "utime_s": 0.009999999999999998,
+        "stime_s": 0.019999999999999997,
+        "vol_ctx": 661,
+        "invol_ctx": 0,
+        "migrations": 3,
+        "rchar": 2393112,
+        "wchar": 4293078,
+        "syscr": 531,
+        "syscw": 1580,
+        "read_bytes": 4096,
+        "write_bytes": 4046848
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 2353960,
+      "warmup": true,
+      "index": 3
+     },
+     {
+      "outer_s": 0.14564194600097835,
+      "s": 0.135551821,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.05,
+      "wl_majflt": 0,
+      "wl_minflt": 22252,
+      "wl_vol_ctx": 340,
+      "wl_invol_ctx": 4,
+      "daemon": {
+       "self": {
+        "minflt": 2,
+        "majflt": 0,
+        "utime_s": 0.09999999999999987,
+        "stime_s": 0.0,
+        "vol_ctx": 2398,
+        "invol_ctx": 0,
+        "migrations": 36,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.010000000000000002,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 275480,
+        "wchar": 2348454,
+        "syscr": 14,
+        "syscw": 1146,
+        "read_bytes": 0,
+        "write_bytes": 2347008
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 4
+     },
+     {
+      "outer_s": 0.14208538599632448,
+      "s": 0.132578364,
+      "loop_shell_migrations": 4,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23134,
+      "wl_vol_ctx": 354,
+      "wl_invol_ctx": 5,
+      "daemon": {
+       "self": {
+        "minflt": 2,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1994,
+        "invol_ctx": 1,
+        "migrations": 38,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.0,
+        "vol_ctx": 86,
+        "invol_ctx": 0,
+        "migrations": 1,
+        "rchar": 2446360,
+        "wchar": 4754326,
+        "syscr": 544,
+        "syscw": 1796,
+        "read_bytes": 0,
+        "write_bytes": 4759552
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1827464,
+      "warmup": false,
+      "index": 5
+     },
+     {
+      "outer_s": 0.14154473699454684,
+      "s": 0.130394588,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22839,
+      "wl_vol_ctx": 339,
+      "wl_invol_ctx": 16,
+      "daemon": {
+       "self": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2173,
+        "invol_ctx": 1,
+        "migrations": 29,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 1,
+        "majflt": 0,
+        "utime_s": 0.009999999999999995,
+        "stime_s": 0.0,
+        "vol_ctx": 101,
+        "invol_ctx": 1,
+        "migrations": 3,
+        "rchar": 2286616,
+        "wchar": 4685126,
+        "syscr": 505,
+        "syscw": 1797,
+        "read_bytes": 0,
+        "write_bytes": 4694016
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1449984,
+      "warmup": false,
+      "index": 6
+     },
+     {
+      "outer_s": 0.13957599500281503,
+      "s": 0.130559068,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22540,
+      "wl_vol_ctx": 346,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 51,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.03999999999999998,
+        "vol_ctx": 2691,
+        "invol_ctx": 0,
+        "migrations": 46,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.010000000000000002,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 279576,
+        "wchar": 2809894,
+        "syscr": 15,
+        "syscw": 1370,
+        "read_bytes": 0,
+        "write_bytes": 2809856
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 7
+     },
+     {
+      "outer_s": 0.14191595900047105,
+      "s": 0.132570044,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22832,
+      "wl_vol_ctx": 364,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 57,
+        "majflt": 0,
+        "utime_s": 0.09000000000000008,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 2310,
+        "invol_ctx": 1,
+        "migrations": 19,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 3,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 34,
+        "invol_ctx": 0,
+        "migrations": 5,
+        "rchar": 2243489,
+        "wchar": 4870847,
+        "syscr": 496,
+        "syscw": 1901,
+        "read_bytes": 0,
+        "write_bytes": 4878336
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1310720,
+      "warmup": false,
+      "index": 8
+     },
+     {
+      "outer_s": 0.14241653199860593,
+      "s": 0.133402333,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22551,
+      "wl_vol_ctx": 342,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 62,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.019999999999999962,
+        "vol_ctx": 2192,
+        "invol_ctx": 1,
+        "migrations": 40,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.0,
+        "vol_ctx": 96,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2349985,
+        "wchar": 5158695,
+        "syscr": 522,
+        "syscw": 2018,
+        "read_bytes": 0,
+        "write_bytes": 5165056
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1290240,
+      "warmup": false,
+      "index": 9
+     },
+     {
+      "outer_s": 0.13799588399706408,
+      "s": 0.128819504,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22528,
+      "wl_vol_ctx": 338,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 38,
+        "majflt": 0,
+        "utime_s": 0.08999999999999986,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 2295,
+        "invol_ctx": 3,
+        "migrations": 7,
+        "rchar": 63,
+        "wchar": 267325,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 1,
+        "migrations": 2,
+        "rchar": 271421,
+        "wchar": 3341383,
+        "syscr": 15,
+        "syscw": 1629,
+        "read_bytes": 0,
+        "write_bytes": 3342336
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 10
+     },
+     {
+      "outer_s": 0.13929188899783185,
+      "s": 0.130259445,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22827,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 3,
+      "daemon": {
+       "self": {
+        "minflt": 151,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1571,
+        "invol_ctx": 6,
+        "migrations": 14,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 94,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2311192,
+        "wchar": 5299006,
+        "syscr": 511,
+        "syscw": 2095,
+        "read_bytes": 0,
+        "write_bytes": 5304320
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1299200,
+      "warmup": false,
+      "index": 11
+     },
+     {
+      "outer_s": 0.13826546099880943,
+      "s": 0.129524486,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23166,
+      "wl_vol_ctx": 358,
+      "wl_invol_ctx": 3,
+      "daemon": {
+       "self": {
+        "minflt": 98,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1534,
+        "invol_ctx": 3,
+        "migrations": 2,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.0,
+        "vol_ctx": 71,
+        "invol_ctx": 0,
+        "migrations": 3,
+        "rchar": 2417688,
+        "wchar": 5508430,
+        "syscr": 537,
+        "syscw": 2168,
+        "read_bytes": 0,
+        "write_bytes": 5513216
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1150976,
+      "warmup": false,
+      "index": 12
+     },
+     {
+      "outer_s": 0.13845459599542664,
+      "s": 0.12944853,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22841,
+      "wl_vol_ctx": 369,
+      "wl_invol_ctx": 5,
+      "daemon": {
+       "self": {
+        "minflt": 4,
+        "majflt": 0,
+        "utime_s": 0.07000000000000028,
+        "stime_s": 0.019999999999999962,
+        "vol_ctx": 1717,
+        "invol_ctx": 4,
+        "migrations": 2,
+        "rchar": 63,
+        "wchar": 267408,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 3,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.009999999999999995,
+        "vol_ctx": 93,
+        "invol_ctx": 0,
+        "migrations": 2,
+        "rchar": 2471056,
+        "wchar": 5738799,
+        "syscr": 552,
+        "syscw": 2266,
+        "read_bytes": 0,
+        "write_bytes": 5746688
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1142784,
+      "warmup": false,
+      "index": 13
+     },
+     {
+      "outer_s": 0.13457566699798917,
+      "s": 0.126477108,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22829,
+      "wl_vol_ctx": 341,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 34,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2313,
+        "invol_ctx": 1,
+        "migrations": 9,
+        "rchar": 63,
+        "wchar": 269316,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 157,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 82,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2493444,
+        "wchar": 5879063,
+        "syscr": 557,
+        "syscw": 2342,
+        "read_bytes": 0,
+        "write_bytes": 5877760
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1007616,
+      "warmup": false,
+      "index": 14
+     },
+     {
+      "outer_s": 0.14052145300229313,
+      "s": 0.131326363,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22519,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 10,
+      "daemon": {
+       "self": {
+        "minflt": 46,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.02999999999999997,
+        "vol_ctx": 2078,
+        "invol_ctx": 2,
+        "migrations": 48,
+        "rchar": 63,
+        "wchar": 267001,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.0,
+        "vol_ctx": 9,
+        "invol_ctx": 0,
+        "migrations": 2,
+        "rchar": 414457,
+        "wchar": 3963535,
+        "syscr": 50,
+        "syscw": 1932,
+        "read_bytes": 0,
+        "write_bytes": 3969024
+       },
+       "db_events": 2415,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 15
+     }
+    ],
+    "final": {
+     "filtered": 11612,
+     "kernel_drops": 0,
+     "proc_fallbacks": 2,
+     "queue_drops": 0,
+     "received": 57261,
+     "submitted": 45335,
+     "truncated_paths": 15,
+     "unreadable_paths": 0,
+     "unresolved_fd": 0,
+     "writer_batches": 100,
+     "writer_max_batch": 512,
+     "writer_rows": 45335
+    },
+    "tables_after": {
+     "events": 524785,
+     "processes": 68118,
+     "runs": 49,
+     "collector_stats": 582
+    },
+    "tag": "S4",
+    "baseline_before": [
+     {
+      "outer_s": 0.1318294710072223,
+      "s": 0.122562083,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.0,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23135,
+      "wl_vol_ctx": 331,
+      "wl_invol_ctx": 3
+     },
+     {
+      "outer_s": 0.1312823850021232,
+      "s": 0.121870116,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22226,
+      "wl_vol_ctx": 346,
+      "wl_invol_ctx": 8
+     },
+     {
+      "outer_s": 0.13152733400056604,
+      "s": 0.122748845,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22831,
+      "wl_vol_ctx": 346,
+      "wl_invol_ctx": 1
+     },
+     {
+      "outer_s": 0.13663842499954626,
+      "s": 0.127384477,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22850,
+      "wl_vol_ctx": 336,
+      "wl_invol_ctx": 7
+     },
+     {
+      "outer_s": 0.1366975220007589,
+      "s": 0.127626123,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.04,
+      "wl_sys_s": 0.02,
+      "wl_majflt": 0,
+      "wl_minflt": 22237,
+      "wl_vol_ctx": 353,
+      "wl_invol_ctx": 1
+     },
+     {
+      "outer_s": 0.13155581500177504,
+      "s": 0.122971534,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23143,
+      "wl_vol_ctx": 327,
+      "wl_invol_ctx": 8
+     }
+    ],
+    "baseline_ref_s": 0.123433128,
+    "overhead_pct": [
+     9.818023083721883,
+     7.40906120437943,
+     5.639863554296376,
+     5.773117894249591,
+     7.402320712475174,
+     8.076604037775015,
+     4.363800940052331,
+     5.530376739703136,
+     4.93494582750913,
+     4.8734096732929055,
+     2.4660964599390267,
+     6.394745987479156
+    ],
+    "median_overhead_pct": 5.706490724272983,
+    "median_delta_ms": 7.043699999999999
+   },
+   {
+    "series": [
+     {
+      "outer_s": 0.1396211190003669,
+      "s": 0.130345837,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22829,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 11,
+      "daemon": {
+       "self": {
+        "minflt": 362,
+        "majflt": 0,
+        "utime_s": 0.09000000000000008,
+        "stime_s": 0.01999999999999999,
+        "vol_ctx": 2495,
+        "invol_ctx": 1,
+        "migrations": 47,
+        "rchar": 63,
+        "wchar": 260091,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 576,
+        "majflt": 0,
+        "utime_s": 0.02,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 1,
+        "migrations": 2,
+        "rchar": 358395,
+        "wchar": 1969423,
+        "syscr": 38,
+        "syscw": 963,
+        "read_bytes": 0,
+        "write_bytes": 1966080
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1969360,
+      "warmup": true,
+      "index": 1
+     },
+     {
+      "outer_s": 0.14128038900526008,
+      "s": 0.132062608,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22531,
+      "wl_vol_ctx": 370,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 91,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.03,
+        "vol_ctx": 2672,
+        "invol_ctx": 2,
+        "migrations": 42,
+        "rchar": 63,
+        "wchar": 263873,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 276,
+        "majflt": 0,
+        "utime_s": 0.009999999999999998,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 0,
+        "migrations": 1,
+        "rchar": 284353,
+        "wchar": 2027103,
+        "syscr": 19,
+        "syscw": 991,
+        "read_bytes": 0,
+        "write_bytes": 2027520
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1994080,
+      "warmup": true,
+      "index": 2
+     },
+     {
+      "outer_s": 0.1422239739986253,
+      "s": 0.133390807,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22244,
+      "wl_vol_ctx": 356,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 320,
+        "majflt": 0,
+        "utime_s": 0.06000000000000005,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 602,
+        "invol_ctx": 0,
+        "migrations": 10,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 40,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.02,
+        "vol_ctx": 705,
+        "invol_ctx": 1,
+        "migrations": 4,
+        "rchar": 2380824,
+        "wchar": 4260190,
+        "syscr": 528,
+        "syscw": 1567,
+        "read_bytes": 4096,
+        "write_bytes": 4026368
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 2341600,
+      "warmup": true,
+      "index": 3
+     },
+     {
+      "outer_s": 0.13903123899945058,
+      "s": 0.129754817,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22553,
+      "wl_vol_ctx": 359,
+      "wl_invol_ctx": 5,
+      "daemon": {
+       "self": {
+        "minflt": 4,
+        "majflt": 0,
+        "utime_s": 0.07999999999999985,
+        "stime_s": 0.01999999999999999,
+        "vol_ctx": 2117,
+        "invol_ctx": 3,
+        "migrations": 37,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 1,
+        "majflt": 0,
+        "utime_s": 0.009999999999999995,
+        "stime_s": 0.009999999999999998,
+        "vol_ctx": 7,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 277409,
+        "wchar": 2331983,
+        "syscr": 16,
+        "syscw": 1139,
+        "read_bytes": 0,
+        "write_bytes": 2330624
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 4
+     },
+     {
+      "outer_s": 0.14267306300462224,
+      "s": 0.133751806,
+      "loop_shell_migrations": 6,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22824,
+      "wl_vol_ctx": 355,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 3,
+        "majflt": 0,
+        "utime_s": 0.06000000000000005,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1774,
+        "invol_ctx": 4,
+        "migrations": 29,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.010000000000000009,
+        "stime_s": 0.0,
+        "vol_ctx": 81,
+        "invol_ctx": 1,
+        "migrations": 7,
+        "rchar": 2448289,
+        "wchar": 4774959,
+        "syscr": 546,
+        "syscw": 1808,
+        "read_bytes": 0,
+        "write_bytes": 4780032
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1889216,
+      "warmup": false,
+      "index": 5
+     },
+     {
+      "outer_s": 0.14166706800460815,
+      "s": 0.132069005,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.05,
+      "wl_majflt": 0,
+      "wl_minflt": 22537,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 11,
+      "daemon": {
+       "self": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.02999999999999997,
+        "vol_ctx": 2345,
+        "invol_ctx": 1,
+        "migrations": 48,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 1,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.010000000000000002,
+        "vol_ctx": 33,
+        "invol_ctx": 0,
+        "migrations": 3,
+        "rchar": 2282520,
+        "wchar": 4627470,
+        "syscr": 504,
+        "syscw": 1770,
+        "read_bytes": 0,
+        "write_bytes": 4632576
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1441792,
+      "warmup": false,
+      "index": 6
+     },
+     {
+      "outer_s": 0.1390257669991115,
+      "s": 0.130226431,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22826,
+      "wl_vol_ctx": 366,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 48,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2105,
+        "invol_ctx": 5,
+        "migrations": 37,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 281505,
+        "wchar": 2772823,
+        "syscr": 17,
+        "syscw": 1353,
+        "read_bytes": 0,
+        "write_bytes": 2772992
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 7
+     },
+     {
+      "outer_s": 0.14265038200392155,
+      "s": 0.133197195,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23136,
+      "wl_vol_ctx": 349,
+      "wl_invol_ctx": 10,
+      "daemon": {
+       "self": {
+        "minflt": 29,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.030000000000000027,
+        "vol_ctx": 2207,
+        "invol_ctx": 1,
+        "migrations": 6,
+        "rchar": 63,
+        "wchar": 269316,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 160,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.0,
+        "vol_ctx": 67,
+        "invol_ctx": 0,
+        "migrations": 7,
+        "rchar": 2243588,
+        "wchar": 4870943,
+        "syscr": 496,
+        "syscw": 1905,
+        "read_bytes": 0,
+        "write_bytes": 4878336
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1302528,
+      "warmup": false,
+      "index": 8
+     },
+     {
+      "outer_s": 0.1426649219938554,
+      "s": 0.133162781,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22530,
+      "wl_vol_ctx": 360,
+      "wl_invol_ctx": 9,
+      "daemon": {
+       "self": {
+        "minflt": 90,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.019999999999999962,
+        "vol_ctx": 2486,
+        "invol_ctx": 6,
+        "migrations": 18,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 3,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.010000000000000002,
+        "vol_ctx": 100,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2360344,
+        "wchar": 5105054,
+        "syscr": 523,
+        "syscw": 1988,
+        "read_bytes": 0,
+        "write_bytes": 5111808
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1286144,
+      "warmup": false,
+      "index": 9
+     },
+     {
+      "outer_s": 0.13871995099907508,
+      "s": 0.129343466,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22206,
+      "wl_vol_ctx": 354,
+      "wl_invol_ctx": 1,
+      "daemon": {
+       "self": {
+        "minflt": 36,
+        "majflt": 0,
+        "utime_s": 0.08999999999999986,
+        "stime_s": 0.030000000000000027,
+        "vol_ctx": 2300,
+        "invol_ctx": 5,
+        "migrations": 7,
+        "rchar": 63,
+        "wchar": 269217,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 1,
+        "migrations": 0,
+        "rchar": 281505,
+        "wchar": 3155983,
+        "syscr": 17,
+        "syscw": 1539,
+        "read_bytes": 0,
+        "write_bytes": 3158016
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 10
+     },
+     {
+      "outer_s": 0.141676744002325,
+      "s": 0.132533568,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 23136,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 116,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 1666,
+        "invol_ctx": 4,
+        "migrations": 27,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.009999999999999981,
+        "stime_s": 0.0,
+        "vol_ctx": 70,
+        "invol_ctx": 0,
+        "migrations": 7,
+        "rchar": 2307096,
+        "wchar": 5278382,
+        "syscr": 510,
+        "syscw": 2084,
+        "read_bytes": 0,
+        "write_bytes": 5283840
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1159168,
+      "warmup": false,
+      "index": 11
+     },
+     {
+      "outer_s": 0.14163500399445184,
+      "s": 0.132861405,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22856,
+      "wl_vol_ctx": 368,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 80,
+        "majflt": 0,
+        "utime_s": 0.06000000000000005,
+        "stime_s": 0.019999999999999962,
+        "vol_ctx": 1619,
+        "invol_ctx": 1,
+        "migrations": 14,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.009999999999999995,
+        "vol_ctx": 75,
+        "invol_ctx": 0,
+        "migrations": 4,
+        "rchar": 2438168,
+        "wchar": 5541390,
+        "syscr": 542,
+        "syscw": 2184,
+        "read_bytes": 0,
+        "write_bytes": 5545984
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1146880,
+      "warmup": false,
+      "index": 12
+     },
+     {
+      "outer_s": 0.13987751699460205,
+      "s": 0.130398801,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23152,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 33,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.030000000000000027,
+        "vol_ctx": 1980,
+        "invol_ctx": 4,
+        "migrations": 30,
+        "rchar": 54,
+        "wchar": 267288,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 97,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2475032,
+        "wchar": 5693446,
+        "syscr": 551,
+        "syscw": 2242,
+        "read_bytes": 0,
+        "write_bytes": 5701632
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1142784,
+      "warmup": false,
+      "index": 13
+     },
+     {
+      "outer_s": 0.1398797219953849,
+      "s": 0.131022413,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22530,
+      "wl_vol_ctx": 363,
+      "wl_invol_ctx": 12,
+      "daemon": {
+       "self": {
+        "minflt": 44,
+        "majflt": 0,
+        "utime_s": 0.06000000000000005,
+        "stime_s": 0.03999999999999998,
+        "vol_ctx": 2277,
+        "invol_ctx": 4,
+        "migrations": 46,
+        "rchar": 63,
+        "wchar": 274459,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.010000000000000009,
+        "stime_s": 0.009999999999999995,
+        "vol_ctx": 93,
+        "invol_ctx": 1,
+        "migrations": 0,
+        "rchar": 2543643,
+        "wchar": 6039695,
+        "syscr": 568,
+        "syscw": 2418,
+        "read_bytes": 0,
+        "write_bytes": 6041600
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1003520,
+      "warmup": false,
+      "index": 14
+     },
+     {
+      "outer_s": 0.14101654600381153,
+      "s": 0.131330404,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22548,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 71,
+        "majflt": 0,
+        "utime_s": 0.0900000000000003,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 2295,
+        "invol_ctx": 3,
+        "migrations": 36,
+        "rchar": 63,
+        "wchar": 276399,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 1,
+        "majflt": 0,
+        "utime_s": 0.009999999999999981,
+        "stime_s": 0.009999999999999995,
+        "vol_ctx": 9,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 411567,
+        "wchar": 3823455,
+        "syscr": 47,
+        "syscw": 1864,
+        "read_bytes": 0,
+        "write_bytes": 3829760
+       },
+       "db_events": 2415,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 15
+     }
+    ],
+    "final": {
+     "filtered": 11626,
+     "kernel_drops": 0,
+     "proc_fallbacks": 2,
+     "queue_drops": 0,
+     "received": 57275,
+     "submitted": 45335,
+     "truncated_paths": 15,
+     "unreadable_paths": 0,
+     "unresolved_fd": 0,
+     "writer_batches": 101,
+     "writer_max_batch": 512,
+     "writer_rows": 45335
+    },
+    "tables_after": {
+     "events": 524785,
+     "processes": 68118,
+     "runs": 49,
+     "collector_stats": 582
+    },
+    "tag": "S4",
+    "baseline_before": [
+     {
+      "outer_s": 0.13717597700451734,
+      "s": 0.12862022,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22833,
+      "wl_vol_ctx": 365,
+      "wl_invol_ctx": 7
+     },
+     {
+      "outer_s": 0.13906049599609105,
+      "s": 0.130311944,
+      "loop_shell_migrations": 5,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22540,
+      "wl_vol_ctx": 350,
+      "wl_invol_ctx": 5
+     },
+     {
+      "outer_s": 0.13455875199724687,
+      "s": 0.123097908,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22848,
+      "wl_vol_ctx": 327,
+      "wl_invol_ctx": 3
+     },
+     {
+      "outer_s": 0.13332744600484148,
+      "s": 0.124880151,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22531,
+      "wl_vol_ctx": 340,
+      "wl_invol_ctx": 4
+     },
+     {
+      "outer_s": 0.13025249999918742,
+      "s": 0.121625094,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22499,
+      "wl_vol_ctx": 337,
+      "wl_invol_ctx": 3
+     },
+     {
+      "outer_s": 0.13224877899483545,
+      "s": 0.123768348,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22820,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 1
+     }
+    ],
+    "baseline_ref_s": 0.1253817745,
+    "overhead_pct": [
+     3.487781631292841,
+     6.675636497711257,
+     5.333494861328503,
+     3.863924018717735,
+     6.233298684092237,
+     6.205851313740984,
+     3.1597028481998413,
+     5.704013624404403,
+     5.965484640672392,
+     4.001400139698941,
+     4.498770672606822,
+     4.7444132320842325
+    ],
+    "median_overhead_pct": 5.038954046706367,
+    "median_delta_ms": 6.317930000000013
+   },
+   {
+    "series": [
+     {
+      "outer_s": 0.1387077970066457,
+      "s": 0.128317149,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22535,
+      "wl_vol_ctx": 347,
+      "wl_invol_ctx": 10,
+      "daemon": {
+       "self": {
+        "minflt": 386,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.03,
+        "vol_ctx": 2649,
+        "invol_ctx": 5,
+        "migrations": 49,
+        "rchar": 63,
+        "wchar": 269316,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 522,
+        "majflt": 0,
+        "utime_s": 0.01,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 1,
+        "migrations": 3,
+        "rchar": 269316,
+        "wchar": 1549183,
+        "syscr": 14,
+        "syscw": 759,
+        "read_bytes": 0,
+        "write_bytes": 1548288
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1549120,
+      "warmup": true,
+      "index": 1
+     },
+     {
+      "outer_s": 0.13985422599944286,
+      "s": 0.130338938,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 23148,
+      "wl_vol_ctx": 348,
+      "wl_invol_ctx": 11,
+      "daemon": {
+       "self": {
+        "minflt": 77,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.03999999999999998,
+        "vol_ctx": 2591,
+        "invol_ctx": 2,
+        "migrations": 55,
+        "rchar": 54,
+        "wchar": 269178,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 260,
+        "majflt": 0,
+        "utime_s": 0.019999999999999997,
+        "stime_s": 0.0,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 269178,
+        "wchar": 1837574,
+        "syscr": 12,
+        "syscw": 898,
+        "read_bytes": 0,
+        "write_bytes": 1839104
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1837520,
+      "warmup": true,
+      "index": 2
+     },
+     {
+      "outer_s": 0.14363720000255853,
+      "s": 0.134829824,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22227,
+      "wl_vol_ctx": 375,
+      "wl_invol_ctx": 3,
+      "daemon": {
+       "self": {
+        "minflt": 145,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1844,
+        "invol_ctx": 3,
+        "migrations": 23,
+        "rchar": 63,
+        "wchar": 276451,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 109,
+        "majflt": 0,
+        "utime_s": 0.020000000000000004,
+        "stime_s": 0.0,
+        "vol_ctx": 60,
+        "invol_ctx": 1,
+        "migrations": 0,
+        "rchar": 2303971,
+        "wchar": 4050535,
+        "syscr": 509,
+        "syscw": 1485,
+        "read_bytes": 0,
+        "write_bytes": 4055040
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 2814464,
+      "warmup": true,
+      "index": 3
+     },
+     {
+      "outer_s": 0.13851313199847937,
+      "s": 0.129578761,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23142,
+      "wl_vol_ctx": 355,
+      "wl_invol_ctx": 10,
+      "daemon": {
+       "self": {
+        "minflt": 12,
+        "majflt": 0,
+        "utime_s": 0.08999999999999986,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2690,
+        "invol_ctx": 0,
+        "migrations": 47,
+        "rchar": 63,
+        "wchar": 276451,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 5,
+        "majflt": 0,
+        "utime_s": 0.009999999999999995,
+        "stime_s": 0.01,
+        "vol_ctx": 7,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 276451,
+        "wchar": 2187783,
+        "syscr": 14,
+        "syscw": 1069,
+        "read_bytes": 0,
+        "write_bytes": 2187264
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 4
+     },
+     {
+      "outer_s": 0.139190014997439,
+      "s": 0.130276059,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22237,
+      "wl_vol_ctx": 361,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 28,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.019999999999999962,
+        "vol_ctx": 2041,
+        "invol_ctx": 1,
+        "migrations": 45,
+        "rchar": 63,
+        "wchar": 276451,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.010000000000000009,
+        "stime_s": 0.0,
+        "vol_ctx": 89,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2275299,
+        "wchar": 4318503,
+        "syscr": 502,
+        "syscw": 1622,
+        "read_bytes": 0,
+        "write_bytes": 4325376
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1765880,
+      "warmup": false,
+      "index": 5
+     },
+     {
+      "outer_s": 0.13944376200379338,
+      "s": 0.130172936,
+      "loop_shell_migrations": 4,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22515,
+      "wl_vol_ctx": 347,
+      "wl_invol_ctx": 12,
+      "daemon": {
+       "self": {
+        "minflt": 64,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2273,
+        "invol_ctx": 4,
+        "migrations": 56,
+        "rchar": 54,
+        "wchar": 274522,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 4,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 6,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 278618,
+        "wchar": 2443214,
+        "syscr": 13,
+        "syscw": 1192,
+        "read_bytes": 0,
+        "write_bytes": 2445312
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 6
+     },
+     {
+      "outer_s": 0.1426752490006038,
+      "s": 0.133427382,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 23137,
+      "wl_vol_ctx": 357,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 145,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.02999999999999997,
+        "vol_ctx": 1702,
+        "invol_ctx": 4,
+        "migrations": 25,
+        "rchar": 54,
+        "wchar": 274522,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 2,
+        "majflt": 0,
+        "utime_s": 0.03,
+        "stime_s": 0.0,
+        "vol_ctx": 105,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2269274,
+        "wchar": 4578078,
+        "syscr": 499,
+        "syscw": 1748,
+        "read_bytes": 0,
+        "write_bytes": 4583424
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1618328,
+      "warmup": false,
+      "index": 7
+     },
+     {
+      "outer_s": 0.14421142299397616,
+      "s": 0.134961808,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23132,
+      "wl_vol_ctx": 364,
+      "wl_invol_ctx": 11,
+      "daemon": {
+       "self": {
+        "minflt": 22,
+        "majflt": 0,
+        "utime_s": 0.07000000000000006,
+        "stime_s": 0.030000000000000027,
+        "vol_ctx": 2467,
+        "invol_ctx": 4,
+        "migrations": 37,
+        "rchar": 63,
+        "wchar": 276451,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.01,
+        "vol_ctx": 80,
+        "invol_ctx": 0,
+        "migrations": 2,
+        "rchar": 2279395,
+        "wchar": 4726359,
+        "syscr": 503,
+        "syscw": 1819,
+        "read_bytes": 0,
+        "write_bytes": 4734976
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1433600,
+      "warmup": false,
+      "index": 8
+     },
+     {
+      "outer_s": 0.1401474180020159,
+      "s": 0.130355121,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22550,
+      "wl_vol_ctx": 361,
+      "wl_invol_ctx": 5,
+      "daemon": {
+       "self": {
+        "minflt": 48,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.02999999999999997,
+        "vol_ctx": 2411,
+        "invol_ctx": 3,
+        "migrations": 23,
+        "rchar": 63,
+        "wchar": 279446,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 157,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 7,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 283542,
+        "wchar": 2974703,
+        "syscr": 15,
+        "syscw": 1451,
+        "read_bytes": 0,
+        "write_bytes": 2973696
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 9
+     },
+     {
+      "outer_s": 0.1413580579974223,
+      "s": 0.132245093,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22529,
+      "wl_vol_ctx": 348,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 100,
+        "majflt": 0,
+        "utime_s": 0.06999999999999984,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 1504,
+        "invol_ctx": 6,
+        "migrations": 30,
+        "rchar": 54,
+        "wchar": 274522,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.010000000000000009,
+        "stime_s": 0.0,
+        "vol_ctx": 64,
+        "invol_ctx": 0,
+        "migrations": 9,
+        "rchar": 2105434,
+        "wchar": 4855078,
+        "syscr": 459,
+        "syscw": 1922,
+        "read_bytes": 0,
+        "write_bytes": 4866048
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1138688,
+      "warmup": false,
+      "index": 10
+     },
+     {
+      "outer_s": 0.13865630999498535,
+      "s": 0.129894783,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23135,
+      "wl_vol_ctx": 352,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 81,
+        "majflt": 0,
+        "utime_s": 0.09000000000000008,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 2086,
+        "invol_ctx": 1,
+        "migrations": 40,
+        "rchar": 63,
+        "wchar": 276451,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.009999999999999998,
+        "vol_ctx": 66,
+        "invol_ctx": 1,
+        "migrations": 6,
+        "rchar": 2353123,
+        "wchar": 5269767,
+        "syscr": 521,
+        "syscw": 2065,
+        "read_bytes": 0,
+        "write_bytes": 5275648
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1277952,
+      "warmup": false,
+      "index": 11
+     },
+     {
+      "outer_s": 0.15254307800205424,
+      "s": 0.137315832,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.14,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23156,
+      "wl_vol_ctx": 368,
+      "wl_invol_ctx": 6,
+      "daemon": {
+       "self": {
+        "minflt": 30,
+        "majflt": 0,
+        "utime_s": 0.09000000000000008,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 2691,
+        "invol_ctx": 0,
+        "migrations": 44,
+        "rchar": 54,
+        "wchar": 274522,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 81,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2293850,
+        "wchar": 5298926,
+        "syscr": 505,
+        "syscw": 2092,
+        "read_bytes": 0,
+        "write_bytes": 5296128
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1130496,
+      "warmup": false,
+      "index": 12
+     },
+     {
+      "outer_s": 0.14582882200193126,
+      "s": 0.135431806,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.14,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 22866,
+      "wl_vol_ctx": 345,
+      "wl_invol_ctx": 8,
+      "daemon": {
+       "self": {
+        "minflt": 34,
+        "majflt": 0,
+        "utime_s": 0.08999999999999986,
+        "stime_s": 0.04999999999999999,
+        "vol_ctx": 2832,
+        "invol_ctx": 2,
+        "migrations": 42,
+        "rchar": 63,
+        "wchar": 274235,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.0,
+        "vol_ctx": 9,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 274235,
+        "wchar": 3588615,
+        "syscr": 14,
+        "syscw": 1750,
+        "read_bytes": 0,
+        "write_bytes": 3596288
+       },
+       "db_events": 2415,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 0,
+      "warmup": false,
+      "index": 13
+     },
+     {
+      "outer_s": 0.1426042610037257,
+      "s": 0.133467097,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23126,
+      "wl_vol_ctx": 360,
+      "wl_invol_ctx": 7,
+      "daemon": {
+       "self": {
+        "minflt": 105,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.010000000000000009,
+        "vol_ctx": 1585,
+        "invol_ctx": 0,
+        "migrations": 25,
+        "rchar": 54,
+        "wchar": 274522,
+        "syscr": 6,
+        "syscw": 6,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.01999999999999999,
+        "stime_s": 0.0,
+        "vol_ctx": 107,
+        "invol_ctx": 1,
+        "migrations": 0,
+        "rchar": 2248794,
+        "wchar": 5480502,
+        "syscr": 494,
+        "syscw": 2192,
+        "read_bytes": 0,
+        "write_bytes": 5484544
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1291896,
+      "warmup": false,
+      "index": 14
+     },
+     {
+      "outer_s": 0.14799445300013758,
+      "s": 0.139244904,
+      "loop_shell_migrations": 3,
+      "wl_elapsed": 0.14,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.05,
+      "wl_majflt": 0,
+      "wl_minflt": 22813,
+      "wl_vol_ctx": 393,
+      "wl_invol_ctx": 9,
+      "daemon": {
+       "self": {
+        "minflt": 58,
+        "majflt": 0,
+        "utime_s": 0.08000000000000007,
+        "stime_s": 0.020000000000000018,
+        "vol_ctx": 2051,
+        "invol_ctx": 0,
+        "migrations": 36,
+        "rchar": 63,
+        "wchar": 276451,
+        "syscr": 7,
+        "syscw": 7,
+        "read_bytes": 0,
+        "write_bytes": 0
+       },
+       "store": {
+        "minflt": 0,
+        "majflt": 0,
+        "utime_s": 0.020000000000000018,
+        "stime_s": 0.0,
+        "vol_ctx": 96,
+        "invol_ctx": 0,
+        "migrations": 0,
+        "rchar": 2365411,
+        "wchar": 5821847,
+        "syscr": 524,
+        "syscw": 2333,
+        "read_bytes": 0,
+        "write_bytes": 5824512
+       },
+       "db_events": 2416,
+       "bpf": {
+        "run_cnt": 0,
+        "run_time_ns": 0
+       }
+      },
+      "db_growth_bytes": 1003520,
+      "warmup": false,
+      "index": 15
+     }
+    ],
+    "final": {
+     "filtered": 11613,
+     "kernel_drops": 0,
+     "proc_fallbacks": 2,
+     "queue_drops": 0,
+     "received": 57262,
+     "submitted": 45335,
+     "truncated_paths": 15,
+     "unreadable_paths": 0,
+     "unresolved_fd": 0,
+     "writer_batches": 101,
+     "writer_max_batch": 512,
+     "writer_rows": 45335
+    },
+    "tables_after": {
+     "events": 36256,
+     "processes": 4579,
+     "runs": 1,
+     "collector_stats": 12
+    },
+    "tag": "S3",
+    "baseline_before": [
+     {
+      "outer_s": 0.1295073389992467,
+      "s": 0.120996862,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 23155,
+      "wl_vol_ctx": 343,
+      "wl_invol_ctx": 3
+     },
+     {
+      "outer_s": 0.134922445002303,
+      "s": 0.125883398,
+      "loop_shell_migrations": 4,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23147,
+      "wl_vol_ctx": 346,
+      "wl_invol_ctx": 7
+     },
+     {
+      "outer_s": 0.1346929560022545,
+      "s": 0.12641707,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.01,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23119,
+      "wl_vol_ctx": 359,
+      "wl_invol_ctx": 9
+     },
+     {
+      "outer_s": 0.13776947899896186,
+      "s": 0.128879574,
+      "loop_shell_migrations": 1,
+      "wl_elapsed": 0.13,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.04,
+      "wl_majflt": 0,
+      "wl_minflt": 23153,
+      "wl_vol_ctx": 377,
+      "wl_invol_ctx": 4
+     },
+     {
+      "outer_s": 0.13205259299866157,
+      "s": 0.123085705,
+      "loop_shell_migrations": 0,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.02,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22834,
+      "wl_vol_ctx": 344,
+      "wl_invol_ctx": 5
+     },
+     {
+      "outer_s": 0.13469799399899784,
+      "s": 0.126293499,
+      "loop_shell_migrations": 2,
+      "wl_elapsed": 0.12,
+      "wl_user_s": 0.03,
+      "wl_sys_s": 0.03,
+      "wl_majflt": 0,
+      "wl_minflt": 22220,
+      "wl_vol_ctx": 381,
+      "wl_invol_ctx": 7
+     }
+    ],
+    "baseline_ref_s": 0.1245222905,
+    "overhead_pct": [
+     4.0606950608574,
+     4.620673517084084,
+     4.537858625400082,
+     7.151403547303059,
+     8.383653607785192,
+     4.684165763879844,
+     6.201943819849687,
+     4.314482554430699,
+     10.274097471729382,
+     8.761094464448504,
+     7.1832974354097745,
+     11.823275528328004
+    ],
+    "median_overhead_pct": 6.676673683576373,
+    "median_delta_ms": 8.313947000000017
+   }
+  ],
+  "baseline_tail": [
+   {
+    "outer_s": 0.13301961300021503,
+    "s": 0.124397115,
+    "loop_shell_migrations": 1,
+    "wl_elapsed": 0.12,
+    "wl_user_s": 0.02,
+    "wl_sys_s": 0.04,
+    "wl_majflt": 0,
+    "wl_minflt": 22260,
+    "wl_vol_ctx": 364,
+    "wl_invol_ctx": 4
+   },
+   {
+    "outer_s": 0.13098321999859763,
+    "s": 0.121924017,
+    "loop_shell_migrations": 2,
+    "wl_elapsed": 0.12,
+    "wl_user_s": 0.01,
+    "wl_sys_s": 0.04,
+    "wl_majflt": 0,
+    "wl_minflt": 22844,
+    "wl_vol_ctx": 335,
+    "wl_invol_ctx": 2
+   },
+   {
+    "outer_s": 0.13133430600282736,
+    "s": 0.122573711,
+    "loop_shell_migrations": 1,
+    "wl_elapsed": 0.12,
+    "wl_user_s": 0.02,
+    "wl_sys_s": 0.03,
+    "wl_majflt": 0,
+    "wl_minflt": 22523,
+    "wl_vol_ctx": 336,
+    "wl_invol_ctx": 4
+   },
+   {
+    "outer_s": 0.13799838000704767,
+    "s": 0.12886342,
+    "loop_shell_migrations": 1,
+    "wl_elapsed": 0.13,
+    "wl_user_s": 0.02,
+    "wl_sys_s": 0.04,
+    "wl_majflt": 0,
+    "wl_minflt": 23152,
+    "wl_vol_ctx": 358,
+    "wl_invol_ctx": 4
+   },
+   {
+    "outer_s": 0.1322628790003364,
+    "s": 0.122727183,
+    "loop_shell_migrations": 1,
+    "wl_elapsed": 0.12,
+    "wl_user_s": 0.01,
+    "wl_sys_s": 0.04,
+    "wl_majflt": 0,
+    "wl_minflt": 22855,
+    "wl_vol_ctx": 342,
+    "wl_invol_ctx": 4
+   },
+   {
+    "outer_s": 0.1332048929980374,
+    "s": 0.124647466,
+    "loop_shell_migrations": 2,
+    "wl_elapsed": 0.12,
+    "wl_user_s": 0.02,
+    "wl_sys_s": 0.04,
+    "wl_majflt": 0,
+    "wl_minflt": 22864,
+    "wl_vol_ctx": 366,
+    "wl_invol_ctx": 6
+   }
+  ]
+ },
+ "finished": "2026-09-26T09:10:59-0700"
+}
