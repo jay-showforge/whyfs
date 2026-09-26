@@ -19,7 +19,7 @@ from .query import why as qwhy
 from .store import connect, import_log, normalize
 
 ROOT_MARKER = ".whyfs"
-VERSION = "0.2.0a0"
+VERSION = "0.2.0a1"
 
 
 def project_root(start: Path | None = None) -> Path:

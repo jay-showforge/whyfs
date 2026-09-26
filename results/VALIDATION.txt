@@ -1,4 +1,4 @@
-# whyfs v0.2 alpha validation
+# whyfs v0.2 alpha validation (original build container: BLOCKED_ENVIRONMENT)
 2026-09-26T04:55:02Z
 
 ## tests
@@ -48,3 +48,47 @@ OK
 
 ## strict preload native compile
 PASS
+
+======================================================================
+# whyfs v0.2 real-kernel validation — 2026-09-25 (WSL2)
+# VERDICT: V0.2 DOES NOT GRADUATE
+# failing gate: performance, median slowdown <5% on the exec-heavy workload
+======================================================================
+
+## host
+Windows 11 Home 10.0.26200 · WSL 2.5.10.0 · kernel 6.6.87.2-microsoft-standard-WSL2 (BTF)
+Ubuntu 24.04 · ext4 · Intel i5-14400F (16 vCPU) · 16 GB · Python 3.12.3
+BCC 0.29.1 · clang 18.1.3 · gcc 13.3 · make 4.3 · Node 18.19.1 · Vite 5.4.21
+doctor: linux, euid 0, bcc_importable, bpf_fs, btf_vmlinux, kernel_headers, cap_bpf, cap_perfmon -> ready
+eBPF programs load: yes
+
+## shipped gate, as received (commit 7d0a9b1)
+FAIL to start: "BPF stack limit is exceeded" (v02-validation/gate-as-received.stderr)
+
+## tests
+before: 8/8 OK (v02-validation/tests-before-*.log)
+final (commit adca5fe): 54 tests, root OK; user OK (16 live tests skipped)
+(v02-validation/tests-final-root.log, tests-final-user.log)
+
+## shipped gate, unmodified, final commit adca5fe
+PASS — static_binary_creator, static_binary_input, node_inputs, parallel_build_transitive,
+zero_kernel_drops, overhead_under_5pct (make -j4: 1.09%)  (v02-validation/gate-original-final.json)
+This run exposed a real bug on the previous commit: in a root-owned workspace, all evidence was lost
+because the in-process store used one SQLite connection across threads. Fixed in adca5fe; covered by a live end-to-end test.
+
+## graduation harness (scripts/v02_graduation.py --pairs 10 --warmups 2)
+run                       commit    make-j8   vite    static-x300   verdict
+grad-final                46b9764    3.06%   -1.83%     7.60%       FAIL
+grad-final2               c8eca9c    0.86%    0.42%     4.29%       PASS
+grad-final2-replication   c8eca9c    1.66%    0.61%     7.92%       FAIL
+grad-final3 (final)       adca5fe    1.11%    1.13%     5.56%       FAIL
+The replication rule was fixed before the replication run: a pass must replicate on the same commit.
+Every run: 45/46 checks pass. Only perf.static_binary_x300.median_overhead_lt_5pct fails.
+
+functional (every run): static binary creator and input; make -j8 parentage (collect2 -> gcc -> make),
+cc1 = as = 75, collect2 = 3; header impact reaches all includers and app, excluding the non-includer;
+rebuild lineage for header and source changes; Vite js/css/html creators and inputs; post-build
+transitive impact; rename-chain creator and input; raw mode keeps dependency reads.
+accuracy: creator attribution 44/44 = 100%; useful direct-input recall 118/118 = 100%
+drops: kernel 0, queue 0, in every functional and performance run
+queries (final): why 0.14 ms median in-process (p95 0.27 ms); CLI 49.9 ms; impact 47.0 ms

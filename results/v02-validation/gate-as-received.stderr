@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/ftmon/whyfs/scripts/v02_gate.py", line 184, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/ftmon/whyfs/scripts/v02_gate.py", line 132, in main
+    run(root, "daemon", "start", "--workspace", str(root))
+  File "/home/ftmon/whyfs/scripts/v02_gate.py", line 33, in run
+    raise RuntimeError(f"whyfs {' '.join(args)} failed ({p.returncode})\nstdout={p.stdout}\nstderr={p.stderr}")
+RuntimeError: whyfs daemon start --workspace /tmp/whyfs-v02-gate-brkc6ilz failed (1)
+stdout=
+stderr=whyfs daemon failed to start (exit 1).
+error: /virtual/main.c:147:24: in function tracepoint__syscalls__sys_exit_openat i32 (ptr): Looks like the BPF stack limit is exceeded. Please move large on stack variables into BPF per-cpu array map. For non-kernel uses, the stack can be increased using -mllvm -bpf-stack-size.
+

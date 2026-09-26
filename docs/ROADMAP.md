@@ -18,11 +18,13 @@
 - retain v0.1 as honest fallback
 
 ### v0.2 blockers before release
-- execute the authoritative kernel gate on BPF-capable Linux/WSL
-- close any BCC/kernel tracepoint compatibility failures found there
-- confirm <5% median slowdown on the real build gate
-- verify zero drops under parallel workload
-- extend coverage where the gate exposes missing syscall families
+- [x] execute the authoritative kernel gate on BPF-capable Linux/WSL (WSL2 6.6, 2026-09-25)
+- [x] close BCC/kernel compatibility failures found there (stack limit, PID namespaces, io_uring blind spot)
+- [x] <5% median slowdown on real builds (make -j8 0.9–3.1%, Vite −1.8–1.1% across 4 runs)
+- [x] zero drops under parallel workload
+- [x] extend coverage where the gate exposed gaps (VFS/LSM hooks cover io_uring, openat2, sendfile/splice)
+- [ ] **<5% median slowdown on exec-heavy work**: the static-binary ×300 loop measured 7.6 / 4.3 / 7.9 / 5.6%.
+  This blocks graduation. See PROJECT_STATUS.md, "What is needed to graduate".
 
 ## v0.3 — useful causal compression
 - separate direct data inputs from incidental runtime/config reads

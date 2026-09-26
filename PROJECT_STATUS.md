@@ -1,35 +1,106 @@
-# whyfs project status — v0.2.0-alpha
+# whyfs project status — v0.2.0a1
 
-## Working now
+## Verdict: **V0.2 DOES NOT GRADUATE**
 
-- v0.1 explicit `LD_PRELOAD` capture remains functional.
-- `why`, `impact`, `history`, JSON output, local SQLite, redaction, workspace filtering.
-- v0.2 schema migration supports per-process commands and evidence-source tags.
-- v0.2 BCC/eBPF collector source uses a BPF ring buffer and first-I/O-per-fd deduplication.
-- user-space fd/path resolution and bounded queue are implemented.
-- SQLite persistence is moved off the capture callback and batched on one writer thread.
-- daemon foreground/background lifecycle and `whyfs doctor` are implemented.
-- kernel/user-space evidence drop accounting is exposed in `whyfs stats`.
-- authoritative v0.2 real-workload gate exists.
+The eBPF backend loads, captures correctly, and passes every functional,
+accuracy, drop, noise, query-latency and build-overhead check on a real
+WSL2 host. It fails one performance check: **median slowdown under 5% on an
+exec-heavy workload** (a statically linked binary run 300 times in a shell loop).
+Across four authoritative 10-pair runs, that workload's median paired overhead
+was 7.60%, 4.29%, 7.92% and 5.56%. Sub-5% is not reliable there, so v0.2 is not
+called graduated. Build workloads were 0.4–3.1% in every run.
 
-## Tests in this build environment
+Do not describe v0.2 as proven always-on host-level provenance yet.
+The capture is proven correct; the overhead on fork/exec-heavy work is not yet within target.
 
-- 8/8 local tests pass.
-- v0.1 end-to-end multi-process lineage remains green.
-- the suite confirms a statically linked binary is *not* falsely explained by v0.1.
-- v0.2 user-space fd resolution/filtering/batched-ingestion tests pass.
-- capability doctor correctly reports this container as unable to run the eBPF gate.
+## Validation host
 
-## Environment blocker here
+| | |
+|---|---|
+| Windows | Windows 11 Home 10.0.26200 |
+| WSL | 2.5.10.0, kernel 6.6.87.2-microsoft-standard-WSL2 (BTF present) |
+| Distro | Ubuntu 24.04, ext4 (`/home`) |
+| CPU / RAM | Intel i5-14400F, 16 vCPUs / 16 GB |
+| Toolchain | Python 3.12.3, BCC 0.29.1, clang 18.1.3, gcc 13.3, GNU make 4.3, Node 18.19.1, Vite 5.4.21 |
+| Privileges | root, CAP_BPF, CAP_PERFMON; kernel headers via `modprobe kheaders` |
+| eBPF load | yes (fentry/LSM hooks, ring buffer) |
 
-This ChatGPT execution container lacks `CAP_BPF`/`CAP_PERFMON`, BCC, kernel BTF, and a Clang BPF target. Package repositories are not reachable from the container. Therefore the kernel program cannot be loaded or verifier-tested here.
+The Windows Python installs were not modified. Everything ran inside the WSL distro.
 
-That is an environment block, not a pass. `scripts/v02_gate.py` returns `BLOCKED_ENVIRONMENT` on this machine and refuses to substitute LD_PRELOAD.
+## What was found and fixed during validation
 
-## Real-workload finding from the fallback backend
+The shipped v0.2.0-alpha gate failed immediately: the BPF program never loaded
+(`BPF stack limit is exceeded`, `gate-as-received.stderr`). The fixes below each have a regression test:
 
-A parallel GCC build exposed exactly why v0.2 matters: the preload backend can identify the final linker process but misses enough compiler/linker internal file access that header→object→binary impact is incomplete. A Node file build is captured cleanly. This is recorded as a fallback limitation, not massaged into a success.
+- **Kernel program** builds events in ring-buffer reservations (the stack limit).
+- **File I/O is observed at the VFS/LSM layer** (`security_file_open` + `bpf_d_path`,
+  `security_file_permission`, `security_mmap_file`, `do_renameat2`, `do_unlinkat`).
+  Syscall tracepoints were blind to io_uring, and Node/libuv on Ubuntu 24.04 does its async
+  file I/O through io_uring: a Vite build issued 97 io_uring requests and its outputs were
+  missed entirely.
+- **Process identity.** PIDs are translated in-kernel to the collector's PID namespace (WSL runs
+  distros in a nested namespace). Per-run process-instance keys survive PID reuse. Threads are
+  not processes.
+- **Resolution.** I/O is keyed by kernel `struct file *`, not fd numbers, which fixes fd reuse,
+  redirection and dup/inheritance. Short-lived processes use a cwd model instead of `/proc`.
+  User strings are read at syscall exit. argv is no longer truncated to argv[0], and timestamps
+  are wall-clock, not monotonic.
+- **Lineage semantics.**
+  - Rename-aware `why` and `impact`.
+  - Exec-image boundaries: `why` counts reads by the program image that wrote.
+  - Causal `impact` only counts reads before the write.
+  - gcc's `cc1 → /tmp/cc*.s → as` hop is bridged through derived temporaries.
+- **Privacy.** Process rows and command lines are persisted only for processes that produced
+  stored evidence, plus a bounded ancestor chain. Before this, every process in the namespace
+  was stored, which is broader than preload.
+- **Root daemon hardening.** The SQLite store runs as the workspace owner via privilege
+  separation. State files are opened with no-follow. Symlinked state is refused. State is
+  created 0700/0600, and non-root queries work.
+- **Lost-evidence bug**, found by the unmodified shipped gate: in a root-owned workspace the
+  in-process store used one SQLite connection across threads, so every event was dropped.
+  Fixed, with live end-to-end daemon tests for root- and user-owned workspaces.
+- **Overhead reductions:**
+  - Batched ring-buffer wakeups instead of one wakeup per event.
+  - A `bpf_get_ns_current_pid_tgid` fast path for pid translation.
+  - One dedup-map delete per open instead of two.
 
-## Next authoritative action
+## Gate results (final commit)
 
-Run `sudo -E python scripts/v02_gate.py` on a BPF-capable Linux/WSL machine with BCC installed. The output JSON is the v0.2 graduation evidence. Do not call the always-on backend release-ready until it passes or its failures are fixed.
+- **Functional:** static binary; `make -j8` of 36 units with header and source rebuilds;
+  Vite build plus a post-build script; cp/mv rename chain; `why` / `why --raw` / `impact` /
+  `history`. All pass.
+- **Creator attribution:** 44/44 (100%). **Useful direct-input recall:** 118/118 (100%).
+- **Parentage and census:** `cc1` and `as` each observed 75 times (2 × 37 translation units + 1 rebuilt source), `collect2` 3 times.
+  Linker ancestry is `collect2 → gcc → make`.
+- **Drops:** 0 kernel, 0 queue, in every run.
+- **Queries:** `why` median 0.14 ms in-process, about 50 ms end-to-end via CLI; `impact` on a header about 45 ms.
+- **Unmodified shipped gate** (`scripts/v02_gate.py`): **PASS**. It times only `make -j4` (1.09%).
+- **Graduation harness** (`scripts/v02_graduation.py`): 45/46 checks. It fails only
+  `perf.static_binary_x300.median_overhead_lt_5pct`.
+
+See [BENCHMARK.md](BENCHMARK.md) for every run, and `results/v02-validation/` for raw data.
+
+## Tests
+
+54 tests: v0.1 preload end-to-end, resolver regressions, privacy, state hardening,
+static BPF-source checks, and 16 live kernel/daemon tests.
+All pass as root; as a normal user, the 16 live tests are skipped and the rest pass
+(`results/v02-validation/tests-final-*.log`). The v0.1 preload backend still works.
+
+## What is needed to graduate
+
+The exec-heavy overhead is kernel-side. Replacing the Python callback with a no-op, or
+pinning the collector to other CPUs, did not change it. In-kernel BPF time is about
+3.1 ms per 300 short processes, and the rest is hook dispatch.
+Candidate work, with the static loop as the benchmark:
+
+1. Cheaper exec/fork handling: skip the upid walk for the child and parent where a cached
+   mapping exists, and shrink exec events (argv is 511 bytes per exec today).
+2. Filter opens of files that can never be stored (pseudo-filesystems, non-workspace
+   read-only opens by processes with no workspace I/O) before `bpf_d_path`.
+3. A CO-RE/libbpf collector (roadmap v0.4), to measure without BCC's runtime-compiled programs.
+4. Re-run `scripts/v02_graduation.py --pairs 10 --warmups 2` at least twice on the same commit.
+   Graduate only if both runs pass.
+
+Also reported and not hidden: the **first build after a daemon (re)start** is slower
+(make 11–20%, static 9–13%, Vite 2–6% median). An always-on daemon pays this once per start.
