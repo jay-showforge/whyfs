@@ -86,10 +86,10 @@ def replace_state_file(root: Path, name: str, data: bytes) -> None:
 
 
 # --------------------------------------------------------------- store proxy
-def _begin_run(con, run_id: str, started: int, root: str) -> int:
+def _begin_run(con, run_id: str, started: int, root: str, collector: str = "ebpf-bcc") -> int:
     con.execute(
         "INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES(?,?,?,?,?,?)",
-        (run_id, started, root, "whyfs daemon", root, "ebpf-bcc"),
+        (run_id, started, root, "whyfs daemon", root, collector),
     )
     con.commit()
     return 1

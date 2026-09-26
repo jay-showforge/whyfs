@@ -10,8 +10,9 @@ import time
 import uuid
 from pathlib import Path
 
+from . import native_collect
 from .ebpf_bcc import BCCCollector, BCCUnavailable, install_signal_stop
-from .privsep import Store, open_state_dirfd, open_state_file, replace_state_file
+from .privsep import Store, open_state_dirfd, open_state_file, replace_state_file, workspace_owner
 
 STATE_NAME = "daemon.json"
 LOG_NAME = "daemon.log"
@@ -93,14 +94,29 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
 
     run_id = "daemon-" + uuid.uuid4().hex
     started = time.time_ns()
+    # Per-event ingestion runs in the native collector (native_collect); the Python
+    # collector path remains as the fallback where it cannot be built, and on request.
+    use_native = os.environ.get("WHYFS_COLLECTOR", "native") != "python"
+    if use_native:
+        try:
+            native_collect.binary()
+        except (native_collect.NativeUnavailable, OSError) as exc:
+            use_native = False
+            print(f"whyfs daemon: native collector unavailable, using the Python collector: {exc}", file=sys.stderr)
     # Forked before any BPF state exists; runs as the workspace owner when we are root.
     store = Store(root).start()
-    store.call("begin_run", run_id, started, str(root))
+    store.call("begin_run", run_id, started, str(root), "ebpf-native" if use_native else "ebpf-bcc")
 
     ensure_kernel_headers()
     collector = BCCCollector(root, run_id, capture_all=capture_all, store=store)
+    native = None
     try:
-        collector.start()
+        if use_native:
+            collector.load_programs()
+            native = native_collect.NativeIngest(collector, root, run_id, capture_all=capture_all,
+                                                 owner=workspace_owner(root) if store.privsep else None).start()
+        else:
+            collector.start()
     except BCCUnavailable as exc:
         store.call("end_run", run_id, time.time_ns(), 2, {})
         store.close()
@@ -115,38 +131,56 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
         "run_id": run_id,
         "workspace": str(root),
         "backend": "ebpf-bcc",
+        "collector": "native" if native else "python",
+        "collector_pid": native.pid if native else os.getpid(),
         "capture_all": bool(capture_all),
         "started_ns": started,
     }
     _write_state(root, state)
     if not quiet:
-        print(f"whyfs daemon: watching {root} · pid {os.getpid()} · run {run_id[:15]}", file=sys.stderr)
+        print(f"whyfs daemon: watching {root} · pid {os.getpid()} · run {run_id[:15]} · "
+              f"{'native' if native else 'python'} collector", file=sys.stderr)
 
     stop = threading.Event()
     install_signal_stop(stop)
     exit_code = 0
     try:
         while not stop.is_set():
-            collector.poll(50)
+            if native:
+                if stop.wait(0.25):
+                    break
+                if not native.alive():
+                    print("whyfs daemon: native collector exited unexpectedly", file=sys.stderr)
+                    exit_code = 1
+                    break
+            else:
+                collector.poll(50)
     except KeyboardInterrupt:
         pass
     except Exception:
         exit_code = 1
         raise
     finally:
-        stats = collector.stop()
+        if native:
+            final, status = native.stop()
+            final = {k: int(v) for k, v in final.items()}
+            if status != 0 or final.get("writer_failed"):
+                exit_code = 1
+                print(f"whyfs daemon: native collector failed (exit {status})", file=sys.stderr)
+        else:
+            stats = collector.stop()
+            final = {k: int(v) for k, v in vars(stats).items()}
+            final.update(writer_rows=collector.writer.written, writer_batches=collector.writer.batches,
+                         writer_max_batch=collector.writer.max_batch)
         ended = time.time_ns()
-        final = {k: int(v) for k, v in vars(stats).items()}
-        final.update(writer_rows=collector.writer.written, writer_batches=collector.writer.batches,
-                     writer_max_batch=collector.writer.max_batch)
         store.call("end_run", run_id, ended, exit_code, final)
         store.close()
         _clear_state(root, os.getpid())
         if not quiet:
             print(
-                f"whyfs daemon: stopped · events {stats.submitted} · filtered {stats.filtered} "
-                f"· kernel drops {stats.kernel_drops} · queue drops {stats.queue_drops} "
-                f"· unresolved-fd {stats.unresolved_fd}",
+                f"whyfs daemon: stopped · events {final.get('submitted', 0)} · filtered {final.get('filtered', 0)} "
+                f"· kernel drops {final.get('kernel_drops', 0)} · queue drops {final.get('queue_drops', 0)} "
+                f"· unresolved-fd {final.get('unresolved_fd', 0)}",
                 file=sys.stderr,
             )
     return exit_code
@@ -260,6 +294,10 @@ def capability_report() -> dict:
         report["cap_bpf"] = bool(mask & (1 << 39))
     except Exception:
         pass
+    # Per-event ingestion: native collector when it builds, else the Python collector.
+    ok, detail = native_collect.available() if linux else (False, "Linux only")
+    report["native_collector"] = ok
+    report["native_collector_detail"] = detail
     report["ready"] = bool(
         linux
         and report["bcc_importable"]

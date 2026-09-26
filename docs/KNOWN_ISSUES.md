@@ -5,7 +5,7 @@
 - **Observed:** 2026-09-26, `results/v02-daemon-gap/`, every G/K session in `dbcounts.json`.
 - **What:** each `whyfs daemon start` writes `.whyfs/daemon.json` atomically: write `daemon.json.tmp`, then rename it over `daemon.json`. That happens after the collector is attached, and `.whyfs/` is inside the watched workspace, so exactly **one `rename` event per daemon start** is stored as provenance.
 - **Impact:** noise only. The event describes whyfs's own state file, not user activity. The cost is negligible (one event per daemon lifetime), and no lineage query result for user files changes.
-- **Status:** open, recorded separately on purpose. It is not bundled with any performance change.
+- **Status:** fixed with the native collector work: both collectors drop events whose path lies under the workspace's own `.whyfs/` state directory (exactly `<workspace>/.whyfs`; other directories named `.whyfs` are recorded as usual). Regression test: `test_state_directory_is_not_evidence_but_other_whyfs_dirs_are` (both collectors). It was needed beyond noise: `whyfs why` queries open the store and created workspace evidence, which kept the native collector's persistence quiet-period from ever expiring.
 - **Possible fixes, not decided:**
   - write the state file before attaching the BPF programs;
   - have the collector drop events whose path lies under the workspace's own `.whyfs/` directory.

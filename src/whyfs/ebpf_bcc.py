@@ -858,6 +858,15 @@ class BCCCollector:
         }))
         self._read_workspace: set[int] = set()        # process keys
         self._derived = _BoundedMap(200_000)
+        # whyfs's own state directory (<workspace>/.whyfs: the store, daemon.json) is
+        # not workspace data: its activity is never evidence (KNOWN_ISSUES KI-1).
+        # Only this exact directory; other directories named .whyfs are user data.
+        self.state_dir = self.root / ".whyfs"
+
+    def _in_ws(self, path: str | None, capture_all: bool) -> bool:
+        if not path or _within(path, self.state_dir, False):
+            return False
+        return _within(path, self.root, capture_all)
 
     def _is_temp(self, path: str) -> bool:
         return any(_within(path, Path(r), False) for r in self.temp_roots)
@@ -979,7 +988,7 @@ class BCCCollector:
         return path
 
     def _keep_path(self, path: str, is_dir: bool) -> bool:
-        return is_dir or _within(path, self.root, self.capture_all) or self._is_temp(path)
+        return is_dir or self._in_ws(path, self.capture_all) or self._is_temp(path)
 
     # ---------------------------------------------------------------- output
     def _put(self, event: dict) -> None:
@@ -1038,7 +1047,7 @@ class BCCCollector:
                 self.files.put(int(e.file), path)
             else:
                 self.files.pop(int(e.file), None)
-            if is_dir or not _within(path, self.root, self.capture_all):
+            if is_dir or not self._in_ws(path, self.capture_all):
                 self.stats.filtered += 1
                 return
             # Open itself is evidence of access intent.  Actual read/write
@@ -1055,8 +1064,8 @@ class BCCCollector:
                 return
             is_write = typ in (EV_WRITE, EV_MMAP_WRITE)
             api = "ebpf:mmap" if typ in (EV_MMAP_READ, EV_MMAP_WRITE) else "ebpf:rw"
-            if _within(path, self.root, self.capture_all):
-                if not is_write and _within(path, self.root, False):
+            if self._in_ws(path, self.capture_all):
+                if not is_write and self._in_ws(path, False):
                     self._read_workspace.add(self.key(pid))
                 self._file_event(pid, ts, "io", path, read=not is_write, write=is_write, api=api)
                 return
@@ -1144,7 +1153,7 @@ class BCCCollector:
         if typ == EV_RENAME:
             a = self._resolve(pid, int(e.dirfd), int(e.file), _cstr(_field_bytes(data, size, OFF_PATH)), follow_final=False)
             b = self._resolve(pid, int(e.dirfd2), int(e.file2), _cstr(_field_bytes(data, size, OFF_PATH2)), follow_final=False)
-            if not (self.capture_all or _within(a, self.root, False) or _within(b, self.root, False)
+            if not (self.capture_all or self._in_ws(a, False) or self._in_ws(b, False)
                     or (a in self._derived)):
                 self.stats.filtered += 1
                 return
@@ -1166,7 +1175,7 @@ class BCCCollector:
                 self._derived.pop(a, None)
                 self._file_event(pid, ts, "unlink", a, api="ebpf:unlink:derived-temp")
                 return
-            if not _within(a, self.root, self.capture_all):
+            if not self._in_ws(a, self.capture_all):
                 self.stats.filtered += 1
                 return
             self._file_event(pid, ts, "unlink", a, api="ebpf:unlink")
@@ -1188,15 +1197,27 @@ class BCCCollector:
 
         self.writer.start()
         try:
-            level, inum = pid_namespace_identity()
-            self.pidns = {"level_visible": level, "inum": inum}
-            self.bpf = BPF(text=BPF_SOURCE, cflags=[f"-DNS_INUM={inum}U", f"-DNS_DEV={pid_namespace_kdev()}ULL",
-                                                   *self.extra_cflags])
+            self.load_programs()
             self.bpf["events"].open_ring_buffer(self._process_event)
         except BaseException:
             self.q.put(None)
             self.writer.join(timeout=2)
             raise
+
+    def load_programs(self) -> None:
+        """Compile, load and attach the BPF programs only.  The native collector
+        (native_collect.NativeIngest) consumes the ring buffer instead of Python."""
+        from bcc import BPF  # type: ignore
+
+        if not BPF.support_kfunc():
+            raise BCCUnavailable(
+                "this kernel/BCC lacks BTF fentry (kfunc) support, which whyfs needs to observe "
+                "file I/O at the VFS layer (including io_uring)."
+            )
+        level, inum = pid_namespace_identity()
+        self.pidns = {"level_visible": level, "inum": inum}
+        self.bpf = BPF(text=BPF_SOURCE, cflags=[f"-DNS_INUM={inum}U", f"-DNS_DEV={pid_namespace_kdev()}ULL",
+                                               *self.extra_cflags])
 
     def poll(self, timeout_ms: int = 100) -> None:
         if self.bpf is None:

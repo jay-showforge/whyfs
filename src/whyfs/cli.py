@@ -156,7 +156,7 @@ def cmd_why(a):
     if par and par.get("exe"):
         cmd = par.get("command") or ""
         cmd = cmd if len(cmd) <= 100 else cmd[:97] + "..."
-        print(f"    parent: {par['exe']}  (pid {par['pid']})" + (f"  · {cmd}" if cmd else ""))
+        print(f"    parent: {par['exe'] or '(image unknown)'}  (pid {par['pid']})" + (f"  · {cmd}" if cmd else ""))
     print(f"    evidence: {result['collector']}")
     if result["inputs"]:
         print("    inputs:")
@@ -246,7 +246,7 @@ def cmd_doctor(a):
         print(json.dumps(report, indent=2))
     else:
         print("whyfs eBPF capability check")
-        for key in ("linux", "bcc_importable", "bpf_fs", "btf_vmlinux", "kernel_headers", "cap_bpf", "cap_perfmon", "euid", "ready"):
+        for key in ("linux", "bcc_importable", "bpf_fs", "btf_vmlinux", "kernel_headers", "cap_bpf", "cap_perfmon", "euid", "native_collector", "ready"):
             print(f"  {key:16} {report.get(key)}")
         if not report["ready"]:
             print("\nAlways-on capture is not ready on this host. `whyfs trace` remains available as the explicit fallback.")

@@ -1,0 +1,46 @@
+11:27:03 tree 1ef41b1 (dirty 14)
+11:27:07   agent pid 95639 store worker 95640 src /home/ftmon/whyfs/src batched_handoff=True
+11:27:10   agent pid 95650 store worker 95651 src /home/ftmon/whyfs/src batched_handoff=True
+11:27:10 rotated rounds A / B / E / NF
+11:27:18   round 0: A=123.4 B=128.8 E=133.6 NF=129.9
+11:27:57   round 5: A=123.3 B=130.3 E=127.7 NF=129.2
+11:28:36   round 10: A=132.1 B=131.3 E=134.4 NF=129.3
+11:29:15   round 15: A=126.9 B=131.0 E=132.3 NF=132.9
+11:29:54   round 20: A=127.8 B=131.2 E=130.2 NF=135.6
+11:30:33   round 25: A=126.4 B=134.8 E=132.6 NF=134.6
+11:31:12   round 30: A=128.7 B=129.6 E=132.2 NF=132.9
+11:31:51   round 35: A=127.4 B=127.2 E=130.4 NF=134.3
+11:32:30   round 40: A=124.9 B=132.5 E=133.1 NF=132.8
+11:32:30   B-A: +6.65 ms (CI90 +3.75..+7.35)
+11:32:30   E-A: +7.77 ms (CI90 +6.11..+8.87)
+11:32:30   NF-A: +6.38 ms (CI90 +5.65..+7.17)
+11:32:30   E-B: +1.28 ms (CI90 +0.74..+2.99)
+11:32:30   NF-B: +1.68 ms (CI90 -0.71..+3.00)
+11:32:30   E-NF: +0.98 ms (CI90 -0.52..+2.66)
+11:32:30   overhead B: +5.35% (CI90 +2.97..+5.88)
+11:32:30   overhead E: +6.17% (CI90 +4.84..+6.95)
+11:32:30   overhead NF: +5.15% (CI90 +4.55..+5.68)
+11:32:30 
+| Metric | Python collector (E) | Native collector (NF) |
+|---|---|---|
+| workload wall time (ms, median) | 133.53 | 132.72 |
+| added overhead vs A (ms, CI90) | +7.77 (+6.11..+8.87) | +6.38 (+5.65..+7.17) |
+| added overhead vs A (%) | +6.17 | +5.15 |
+| collector CPU (ms/run, all collector processes) | 150.0 | 90.0 |
+| collector context switches/run | 518 | 154 |
+| events received/run | 3748 | 3748 |
+| events persisted/run | 3014 | 3014 |
+| kernel drops (sum over runs) | 0 | 0 |
+| userspace drops (sum over runs) | 0 | 0 |
+| store/ingest time (ms/run) | 37.83 (ingest calls) | 20.0 (writer CPU) |
+| query-visible records/run | 2714 | 2714 |
+
+Paired differences (median ms, CI90):
+- B-A: +6.65 (+3.75..+7.35)
+- E-A: +7.77 (+6.11..+8.87)
+- NF-A: +6.38 (+5.65..+7.17)
+- E-B: +1.28 (+0.74..+2.99)
+- NF-B: +1.68 (-0.71..+3.00)
+- E-NF: +0.98 (-0.52..+2.66)
+
+11:32:30 wrote /tmp/v02-native-ab

@@ -13,7 +13,8 @@ without restarting it:
   bpfstats on|off            kernel.bpf_stats_enabled
   snap                       JSON: collector stats, counters, /proc of self and store worker
   native start MODE DB       pause the Python ring consumer; hand the ring map fd to the native
-                             spike (native/spike/spike_ingest, MODE discard|min) writing DB
+                             spike (native/spike/spike_ingest, MODE discard|min) writing DB, or
+                             (MODE full) to the production native collector writing the real store
   native stop                SIGTERM the spike (it drains and commits); reply with its stats
   progstats                  JSON: run_cnt/run_time_ns per BPF program
   quit                       stop collector (drain), end run, exit
@@ -98,7 +99,12 @@ def main() -> int:
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--src", default=str(REPO / "src"))
     ap.add_argument("--cflags", default="", help="extra BPF cflags (diagnostic variants), space separated")
+    ap.add_argument("--native-diag", default="", help="native diagnostic mode: discard | no-store | flush-immediate")
+    ap.add_argument("--native", action="store_true",
+                    help="production native topology: BPF loaded here, one persistent whyfs-collect consumes the ring")
     a = ap.parse_args()
+    if a.native:
+        return native_main(a)
     ws = Path(a.workspace).resolve()
     mode = {"discard": False, "nostore": False}
     counters = {"resolve_calls": 0, "canon_calls": 0, "ingest_calls": 0, "ingest_rows": 0, "ingest_ns": 0}
@@ -223,9 +229,22 @@ def main() -> int:
                 c.poll(0)  # anything already in the ring belongs to the previous run
                 fd = c.bpf["events"].map_fd
                 import subprocess
-                native["p"] = subprocess.Popen([str(spike), "--fd", str(fd), "--mode", cmd[2], "--workspace", str(ws),
-                                                "--db", cmd[3], "--run-id", a.run_id + "-native"],
-                                               pass_fds=(fd,), stdout=subprocess.PIPE, text=True)
+                if cmd[2] == "full":  # the production native collector, writing the real store as the owner
+                    from whyfs import native_collect
+                    from whyfs.privsep import workspace_owner
+                    dfd = c.bpf["drop_count"].map_fd
+                    args = [str(native_collect.binary()), "--ring-fd", str(fd), "--drop-fd", str(dfd), "--root", str(ws),
+                            "--run-id", a.run_id]
+                    for t in c.temp_roots:
+                        args += ["--temp-root", t]
+                    if store.privsep:
+                        uid, gid = workspace_owner(ws)
+                        args += ["--uid", str(uid), "--gid", str(gid)]
+                    native["p"] = subprocess.Popen(args, pass_fds=(fd, dfd), stdout=subprocess.PIPE, text=True)
+                else:
+                    native["p"] = subprocess.Popen([str(spike), "--fd", str(fd), "--mode", cmd[2], "--workspace", str(ws),
+                                                    "--db", cmd[3], "--run-id", a.run_id + "-native"],
+                                                   pass_fds=(fd,), stdout=subprocess.PIPE, text=True)
                 reply({"ok": True, "native_pid": native["p"].pid, "hello": json.loads(native["p"].stdout.readline())})
             elif cmd[0] == "native" and cmd[1] == "stop":
                 import signal as _signal
@@ -250,6 +269,67 @@ def main() -> int:
     store.close()
     c.bpf.cleanup()
     reply({"bye": True, "final": {k: int(v) for k, v in vars(stats).items()}})
+    return 0
+
+
+def native_main(a) -> int:
+    """Persistent native collector exactly as whyfs.daemon.run_foreground wires it."""
+    import signal as _signal
+    from whyfs import native_collect
+    from whyfs.privsep import workspace_owner
+
+    ws = Path(a.workspace).resolve()
+    store = Store(ws).start()
+    store.call("begin_run", a.run_id, time.time_ns(), str(ws), "ebpf-native")
+    c = BCCCollector(ws, a.run_id, store=store, extra_cflags=a.cflags.split() if a.cflags else None)
+    c.load_programs()
+    set_attached(c.bpf, False)
+    extra = ((f"--diag-{a.native_diag}",) if a.native_diag in ("discard", "no-store")
+             else (f"--{a.native_diag}",) if a.native_diag else ())
+    n = native_collect.NativeIngest(c, ws, a.run_id, owner=workspace_owner(ws) if store.privsep else None,
+                                    extra_args=extra).start()
+    writer_pid = n.info.get("writer_pid")
+
+    def reply(obj):
+        sys.stdout.write(json.dumps(obj) + "\n")
+        sys.stdout.flush()
+
+    reply({"ready": True, "pid": os.getpid(), "store_pid": store.pid, "native_pid": n.pid, "native_writer_pid": writer_pid,
+           "src": _SRC, "cflags": a.cflags, "batched_handoff": True, "native": True})
+    for line in sys.stdin:
+        cmd = line.split()
+        if not cmd:
+            continue
+        try:
+            if cmd[0] == "attach":
+                set_attached(c.bpf, True)
+                reply({"ok": True})
+            elif cmd[0] == "detach":
+                set_attached(c.bpf, False)
+                reply({"ok": True})
+            elif cmd[0] == "mode":
+                reply({"ok": True, "mode": "native"})
+            elif cmd[0] == "bpfstats":
+                Path("/proc/sys/kernel/bpf_stats_enabled").write_text("1" if cmd[1] == "on" else "0")
+                reply({"ok": True})
+            elif cmd[0] == "snap":
+                n.p.send_signal(_signal.SIGUSR1)
+                counters = json.loads(n.p.stdout.readline())
+                reply({"stats": counters, "kernel_drops": c.kernel_drop_count(), "self": proc_metrics(os.getpid()),
+                       "native": proc_metrics(n.pid), "native_writer": proc_metrics(writer_pid)})
+            elif cmd[0] == "progstats":
+                reply({str(k): v for k, v in prog_stats(c.bpf).items()})
+            elif cmd[0] == "quit":
+                break
+            else:
+                reply({"error": f"unknown command {cmd[0]}"})
+        except Exception as exc:  # report, keep serving
+            reply({"error": repr(exc)})
+    final, status = n.stop()
+    store.call("end_run", a.run_id, time.time_ns(), status, {k: int(v) for k, v in final.items()})
+    store.close()
+    c.bpf.cleanup()
+    reply({"bye": True, "final": final, "status": status})
     return 0
 
 

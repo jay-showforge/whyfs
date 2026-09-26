@@ -227,7 +227,8 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
 
 def _parent(con: sqlite3.Connection, run_id: str, key: int):
     """The creator's parent process (eBPF: per-run parent key; preload: ppid)."""
-    row = con.execute("SELECT ppid, parent_key FROM processes WHERE run_id=? AND pid=?", (run_id, key)).fetchone()
+    row = con.execute("SELECT ppid, parent_key, first_seen_ns FROM processes WHERE run_id=? AND pid=?",
+                      (run_id, key)).fetchone()
     if not row:
         return None
     pkey = row["parent_key"] if row["parent_key"] is not None else row["ppid"]
@@ -236,7 +237,18 @@ def _parent(con: sqlite3.Connection, run_id: str, key: int):
     p = con.execute("SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?", (run_id, pkey)).fetchone()
     if not p:
         return None
-    return {"pid": p["os_pid"] if p["os_pid"] is not None else p["pid"], "exe": p["exe"], "command": p["command"]}
+    exe, command = p["exe"], p["command"]
+    # The process row holds the parent's latest image.  If the parent exec'd again
+    # after forking this child (`bash -c 'a; b'` execs b in place), report the image
+    # that did the fork; its command line is not recorded, so none is shown.
+    forked = row["first_seen_ns"]
+    later = con.execute("SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns>? LIMIT 1",
+                        (run_id, pkey, forked)).fetchone()
+    if later:
+        img = con.execute("SELECT path FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=? "
+                          "ORDER BY ts_ns DESC, id DESC LIMIT 1", (run_id, pkey, forked)).fetchone()
+        exe, command = (img["path"] if img else None), None
+    return {"pid": p["os_pid"] if p["os_pid"] is not None else p["pid"], "exe": exe, "command": command}
 
 
 def history(con: sqlite3.Connection, path: str, limit=20):

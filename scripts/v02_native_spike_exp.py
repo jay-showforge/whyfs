@@ -39,6 +39,7 @@ from whyfs.daemon import ensure_kernel_headers  # noqa: E402
 
 MODES = ["A", "B", "E", "N0", "N1"]
 PAIRS = [("B", "A"), ("E", "A"), ("N0", "A"), ("N1", "A"), ("E", "B"), ("N1", "N0"), ("N0", "B"), ("E", "N1")]
+NATIVE_MODE = {"N0": "discard", "N1": "min", "NF": "full"}
 
 
 def rounds(wl: GapWorkload, log: Log, n: int, ag: Agent, native_db: Path) -> dict:
@@ -52,9 +53,9 @@ def rounds(wl: GapWorkload, log: Log, n: int, ag: Agent, native_db: Path) -> dic
                 ag.cmd("mode " + ("kernel_only" if m == "B" else "full"))
                 s0 = ag.cmd("snap")
                 ag.cmd("attach")
-            elif m in ("N0", "N1"):
+            elif m in NATIVE_MODE:
                 s0 = ag.cmd("snap")
-                ag.cmd(f"native start {'discard' if m == 'N0' else 'min'} {native_db}")
+                ag.cmd(f"native start {NATIVE_MODE[m]} {native_db}")
                 ag.cmd("attach")
             wl.prep()
             run = wl.run_measured()
@@ -90,11 +91,14 @@ def rounds(wl: GapWorkload, log: Log, n: int, ag: Agent, native_db: Path) -> dic
 
 
 def main() -> int:
+    global MODES, PAIRS
     ap = argparse.ArgumentParser()
     ap.add_argument("--user", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--base", default="/home/{user}/whyfs-native-ws")
     ap.add_argument("--rounds", type=int, default=30)
+    ap.add_argument("--integrated", action="store_true",
+                    help="modes A/B/E/N0/NF: NF is the production native collector (full semantics, privsep store)")
     a = ap.parse_args()
     if os.geteuid() != 0:
         print("run as root", file=sys.stderr)
@@ -126,7 +130,10 @@ def main() -> int:
     try:
         wl.prep()
         wl.run_measured()
-        log("rotated rounds " + " / ".join(MODES))
+        log("rotated rounds " + " / ".join(["A", "B", "E", "N0", "NF"] if a.integrated else MODES))  # noqa
+        if a.integrated:
+            MODES = ["A", "B", "E", "N0", "NF"]
+            PAIRS = [("B", "A"), ("E", "A"), ("N0", "A"), ("NF", "A"), ("E", "B"), ("NF", "N0"), ("N0", "B"), ("E", "NF")]
         res["rounds"] = rounds(wl, log, a.rounds, ag, native_db)
     finally:
         res["agent_final"] = ag.quit()

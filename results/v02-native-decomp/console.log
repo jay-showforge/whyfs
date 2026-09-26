@@ -1,0 +1,60 @@
+11:34:24 tree 1ef41b1 (dirty 16)
+11:34:28   agent pid 47120 store worker 47121 src /home/ftmon/whyfs/src batched_handoff=True
+11:34:31   agent pid 47131 store worker 47132 src /home/ftmon/whyfs/src batched_handoff=True
+11:34:34   agent pid 47142 store worker 47143 src /home/ftmon/whyfs/src batched_handoff=True
+11:34:38   agent pid 47152 store worker 47153 src /home/ftmon/whyfs/src batched_handoff=True
+11:34:38 rotated rounds A / B / E / K / NP / NF
+11:34:51   round 0: A=120.5 B=126.7 E=133.8 K=126.7 NP=127.5 NF=126.7
+11:35:54   round 5: A=129.3 B=132.1 E=134.9 K=128.7 NP=129.3 NF=128.1
+11:36:57   round 10: A=124.9 B=130.9 E=133.1 K=125.6 NP=131.5 NF=129.4
+11:38:00   round 15: A=125.7 B=129.9 E=135.1 K=128.7 NP=131.4 NF=133.1
+11:39:03   round 20: A=122.7 B=131.2 E=132.4 K=134.9 NP=129.7 NF=127.5
+11:40:07   round 25: A=125.9 B=136.1 E=131.8 K=130.7 NP=128.9 NF=135.1
+11:41:10   round 30: A=122.8 B=128.6 E=135.5 K=126.1 NP=133.7 NF=131.6
+11:42:13   round 35: A=125.1 B=129.1 E=132.1 K=129.8 NP=128.3 NF=130.4
+11:43:17   round 40: A=126.8 B=131.6 E=135.0 K=132.4 NP=142.2 NF=143.6
+11:43:17   B-A: +4.33 ms (CI90 +3.25..+5.03)
+11:43:17   E-A: +7.23 ms (CI90 +6.03..+8.61)
+11:43:17   NF-A: +5.91 ms (CI90 +5.14..+7.08)
+11:43:17   E-B: +2.78 ms (CI90 +1.98..+3.94)
+11:43:17   NF-B: +2.64 ms (CI90 +0.48..+3.12)
+11:43:17   E-NF: +1.03 ms (CI90 -0.08..+1.98)
+11:43:17   K-A: +4.65 ms (CI90 +3.13..+5.20)
+11:43:17   NP-K: +0.65 ms (CI90 -1.54..+2.47)
+11:43:17   NF-NP: +1.31 ms (CI90 +0.12..+1.97)
+11:43:17   NF-K: +3.07 ms (CI90 +1.41..+4.03)
+11:43:17   B-K: -0.54 ms (CI90 -1.02..+0.82)
+11:43:17   overhead B: +3.46% (CI90 +2.58..+4.03)
+11:43:17   overhead E: +5.75% (CI90 +4.79..+6.88)
+11:43:17   overhead K: +3.71% (CI90 +2.47..+4.14)
+11:43:17   overhead NP: +3.23% (CI90 +2.53..+4.99)
+11:43:17   overhead NF: +4.76% (CI90 +4.06..+5.63)
+11:43:17 
+| Metric | Python collector (E) | Native collector (NF) |
+|---|---|---|
+| workload wall time (ms, median) | 132.55 | 131.71 |
+| added overhead vs A (ms, CI90) | +7.23 (+6.03..+8.61) | +5.91 (+5.14..+7.08) |
+| added overhead vs A (%) | +5.75 | +4.76 |
+| collector CPU (ms/run, all collector processes) | 150.0 | 90.0 |
+| collector context switches/run | 494 | 136 |
+| events received/run | 3748 | 3748 |
+| events persisted/run | 3014 | 3014 |
+| kernel drops (sum over runs) | 0 | 0 |
+| userspace drops (sum over runs) | 0 | 0 |
+| store/ingest time (ms/run) | 37.26 (ingest calls) | 20.0 (writer CPU) |
+| query-visible records/run | 2714 | 2714 |
+
+Paired differences (median ms, CI90):
+- B-A: +4.33 (+3.25..+5.03)
+- E-A: +7.23 (+6.03..+8.61)
+- NF-A: +5.91 (+5.14..+7.08)
+- E-B: +2.78 (+1.98..+3.94)
+- NF-B: +2.64 (+0.48..+3.12)
+- E-NF: +1.03 (-0.08..+1.98)
+- K-A: +4.65 (+3.13..+5.20)
+- NP-K: +0.65 (-1.54..+2.47)
+- NF-NP: +1.31 (+0.12..+1.97)
+- NF-K: +3.07 (+1.41..+4.03)
+- B-K: -0.54 (-1.02..+0.82)
+
+11:43:17 wrote /tmp/v02-native-decomp

@@ -113,11 +113,14 @@ def delta(a: dict, b: dict) -> dict:
 
 # ---------------------------------------------------------------- agent (separate process)
 class Agent:
-    def __init__(self, ws: Path, run_id: str, log: Log, src: str | None = None, cflags: str = ""):
+    def __init__(self, ws: Path, run_id: str, log: Log, src: str | None = None, cflags: str = "", native: bool = False,
+                 native_diag: str = ""):
         src = src or str(REPO / "src")
         env = dict(os.environ, PYTHONPATH=src, PATH=LINUX_PATH)
         self.p = subprocess.Popen([sys.executable, "-W", "ignore", str(REPO / "scripts" / "v02_gap_agent.py"),
-                                   "--workspace", str(ws), "--run-id", run_id, "--src", src, f"--cflags={cflags}"],
+                                   "--workspace", str(ws), "--run-id", run_id, "--src", src, f"--cflags={cflags}",
+                                   *(["--native"] if native else []),
+                                   *([f"--native-diag={native_diag}"] if native_diag else [])],
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=open(ws.parent / f"{run_id}.agent.log", "w"),
                                   text=True, env=env)
         hello = self._read()

@@ -86,8 +86,19 @@ class Daemon:
         return self
 
     def cpu_ticks(self) -> int:
-        f = Path(f"/proc/{self.pid}/stat").read_text().rsplit(")", 1)[1].split()
-        return int(f[11]) + int(f[12])  # utime + stime
+        """utime + stime of the daemon and every live descendant (store worker, native
+        collector and its writer), so a native collector's CPU is not left out."""
+        total, todo = 0, [self.pid]
+        while todo:
+            pid = todo.pop()
+            try:
+                f = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+                total += int(f[11]) + int(f[12])
+                for t in Path(f"/proc/{pid}/task").iterdir():
+                    todo += [int(x) for x in (t / "children").read_text().split()]
+            except OSError:
+                continue
+        return total
 
     def __exit__(self, *exc):
         time.sleep(0.3)

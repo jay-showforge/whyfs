@@ -76,10 +76,12 @@ class Harness:
 
 
 class ResolverRegressionTests(unittest.TestCase):
+    harness_cls = Harness  # tests/test_native_collect.py re-runs these on the native collector
+
     def setUp(self):
         self.td = tempfile.TemporaryDirectory()
         self.root = Path(self.td.name).resolve()
-        self.h = Harness(self.root)
+        self.h = self.harness_cls(self.root)
 
     def tearDown(self):
         self.td.cleanup()
@@ -427,10 +429,12 @@ class HandoffBatchingTests(unittest.TestCase):
     ring-buffer drain, or per HANDOFF_BATCH records) instead of one queue handoff per
     record, which woke the writer ~3,000 times per 300-process build."""
 
+    harness_cls = Harness
+
     def setUp(self):
         self.td = tempfile.TemporaryDirectory()
         self.root = Path(self.td.name).resolve()
-        self.h = Harness(self.root)
+        self.h = self.harness_cls(self.root)
 
     def tearDown(self):
         self.td.cleanup()
@@ -544,10 +548,12 @@ class ProcessPrivacyTests(unittest.TestCase):
     must be persisted only for processes that produced stored evidence, plus a
     bounded ancestor chain for parentage."""
 
+    harness_cls = Harness
+
     def setUp(self):
         self.td = tempfile.TemporaryDirectory()
         self.root = Path(self.td.name).resolve()
-        self.h = Harness(self.root)
+        self.h = self.harness_cls(self.root)
 
     def tearDown(self):
         self.td.cleanup()
@@ -592,6 +598,50 @@ class ProcessPrivacyTests(unittest.TestCase):
         con.close()
         self.assertEqual(w["exe"], "/usr/bin/tr")
         self.assertEqual((w["parent"]["exe"], w["parent"]["pid"], w["parent"]["command"]), ("/usr/bin/make", make, "make -j8"))
+
+    # Bug: `bash -c 'tr ... > a; mv a b'` -- bash execs mv in place after forking tr,
+    # and why(a) named mv as tr's parent.  The parent is the image that forked the child.
+    def test_parent_is_the_image_that_forked_the_creator(self):
+        sh, tr = FAKE + 46, FAKE + 47
+        f = new_file()
+        self.h.feed(
+            ev(m.EV_FORK, sh, aux=FAKE),
+            ev(m.EV_EXEC, sh, aux=FAKE, path=b"/usr/bin/bash", path2=b"bash\0-c\0tr a b > a.txt; mv a.txt b.txt\0", fd=40),
+            ev(m.EV_FORK, tr, aux=sh),
+            ev(m.EV_EXEC, tr, aux=sh, path=b"/usr/bin/tr", path2=b"tr\0a\0b\0", fd=9),
+            ev(m.EV_OPEN, tr, file=f, fd=0, path=str(self.root / "a.txt").encode(), flags=os.O_WRONLY),
+            ev(m.EV_WRITE, tr, file=f),
+            ev(m.EV_EXIT, tr),
+            ev(m.EV_EXEC, sh, aux=FAKE, path=b"/usr/bin/mv", path2=b"mv\0a.txt\0b.txt\0", fd=15),
+            ev(m.EV_RENAME, sh, path=b"a.txt", path2=b"b.txt"),
+        )
+        con = connect(self.root)
+        con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES('run',1,?,?,?,?)",
+                    (str(self.root), "t", str(self.root), "ebpf-bcc"))
+        ingest_events(con, self.h.drained())
+        w = why(con, str(self.root / "b.txt"))
+        con.close()
+        self.assertEqual(w["exe"], "/usr/bin/tr")
+        self.assertEqual((w["parent"]["exe"], w["parent"]["pid"], w["parent"]["command"]), ("/usr/bin/bash", sh, None))
+
+    # KI-1: whyfs's own state directory (store, daemon.json) is not evidence; a
+    # directory elsewhere that happens to be named .whyfs is ordinary user data.
+    def test_state_directory_is_not_evidence_but_other_whyfs_dirs_are(self):
+        (self.root / ".whyfs").mkdir(exist_ok=True)
+        (self.root / "sub" / ".whyfs").mkdir(parents=True)
+        fs, fd, fu = new_file(), new_file(), new_file()
+        self.h.feed(
+            ev(m.EV_OPEN, FAKE, file=fs, fd=0, path=str(self.root / ".whyfs" / "whyfs.db").encode()),
+            ev(m.EV_WRITE, FAKE, file=fs),
+            ev(m.EV_RENAME, FAKE, path=b".whyfs/daemon.json.tmp", path2=b".whyfs/daemon.json"),
+            ev(m.EV_UNLINK, FAKE, path=b".whyfs/daemon.json"),
+            ev(m.EV_OPEN, FAKE, file=fu, fd=0, path=str(self.root / "sub" / ".whyfs" / "user.txt").encode()),
+            ev(m.EV_WRITE, FAKE, file=fu),
+            ev(m.EV_OPEN, FAKE, file=fd, fd=0, path=str(self.root / ".whyfsX").encode()),
+            ev(m.EV_WRITE, FAKE, file=fd),
+        )
+        paths = {x.get("path") for x in self.h.drained() if x["kind"] != "process"}
+        self.assertEqual(paths, {str(self.root / "sub" / ".whyfs" / "user.txt"), str(self.root / ".whyfsX")})
 
     def test_writer_and_its_ancestors_are_persisted_with_exec_boundaries(self):
         make, cc = FAKE + 41, FAKE + 42

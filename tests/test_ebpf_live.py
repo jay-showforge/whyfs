@@ -16,6 +16,9 @@ import time
 import unittest
 from pathlib import Path
 
+from types import SimpleNamespace
+
+from whyfs import native_collect
 from whyfs.daemon import capability_report, ensure_kernel_headers
 from whyfs.ebpf_bcc import BCCCollector
 from whyfs.query import history, impact, why
@@ -64,6 +67,36 @@ class Live:
         return self.stats
 
 
+class NativeLive:
+    """The daemon's native path: BPF loaded here, whyfs-collect consumes the ring and
+    writes the store.  ``poll=False`` starts the consumer only at stop(), so nothing is
+    consumed while the workload runs (drain and overflow tests)."""
+
+    def __init__(self, root: Path, *, poll: bool = True):
+        self.root = root.resolve()
+        con = connect(self.root)
+        con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES(?,?,?,?,?,?)",
+                    ("live", time.time_ns(), str(self.root), "live-test", str(self.root), "ebpf-native"))
+        con.commit()
+        con.close()
+        extra = os.environ.get("WF_TEST_EXTRA_CFLAGS", "").split()
+        self.c = BCCCollector(self.root, "live", extra_cflags=extra or None)
+        self.c.load_programs()
+        self.n = native_collect.NativeIngest(self.c, self.root, "live")
+        if poll:
+            self.n.start()
+
+    def stop(self):
+        if not self.n.p:
+            self.n.start()
+        final, status = self.n.stop()
+        self.c.bpf.cleanup()
+        if status != 0:
+            raise RuntimeError(f"native collector exited {status}: {final}")
+        self.stats = SimpleNamespace(**final)
+        return self.stats
+
+
 def sh(cmd: str, cwd: Path):
     return subprocess.run(["bash", "-c", cmd], cwd=cwd, check=True, capture_output=True, text=True)
 
@@ -78,6 +111,8 @@ def cc(root: Path, name: str, code: str, *flags: str) -> Path:
 
 @unittest.skipUnless(READY, "requires Linux + root/CAP_BPF + BCC + kernel headers")
 class LiveKernelTests(unittest.TestCase):
+    live_cls = Live
+
     def setUp(self):
         self.td = tempfile.TemporaryDirectory(prefix="whyfs-live-")
         self.root = Path(self.td.name).resolve()
@@ -96,7 +131,7 @@ class LiveKernelTests(unittest.TestCase):
               fclose(i); fclose(o); return 0; }""", "-static")
         self.assertNotIn(b"INTERP", subprocess.run(["readelf", "-l", str(prog)], capture_output=True).stdout)
         (self.root / "raw.txt").write_text("static\n")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("./static_copy raw.txt out.txt", self.root)
         s.stop()
         w = why(self.con(), str(self.root / "out.txt"))
@@ -106,7 +141,7 @@ class LiveKernelTests(unittest.TestCase):
 
     def test_shell_redirection_and_short_lived_child(self):
         (self.root / "in.txt").write_text("abc\n")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("tr a-z A-Z < in.txt > out.txt", self.root)
         s.stop()
         w = why(self.con(), str(self.root / "out.txt"))
@@ -121,7 +156,7 @@ class LiveKernelTests(unittest.TestCase):
               int p[2]; pipe(p); write(p[1], "x", 1); /* p[0]/p[1] re-use fd numbers */
               int o = open("out.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644); write(o, "y", 1); close(o); return 0; }""")
         (self.root / "in.txt").write_text("in\n")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("./fdreuse", self.root)
         s.stop()
         con = self.con()
@@ -144,7 +179,7 @@ class LiveKernelTests(unittest.TestCase):
               pthread_create(&w, 0, writer, 0); pthread_join(w, 0);
               write(fd, "o", 1); close(fd); return 0; }""", "-pthread")
         (self.root / "in.txt").write_text("in\n")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("./threads", self.root)
         s.stop()
         con = self.con()
@@ -189,7 +224,7 @@ class LiveKernelTests(unittest.TestCase):
         pid_max = int(Path("/proc/sys/kernel/pid_max").read_text())
         used = {int(p) for p in os.listdir("/proc") if p.isdigit()}
         want = next(p for p in range(min(pid_max - 1, 3_000_000), 1000, -7) if p not in used)
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         out = sh(f"./samepid {want}", self.root).stdout.split()
         s.stop()
         self.assertEqual(out, [str(want), str(want)], "both children must have received the same pid")
@@ -203,7 +238,7 @@ class LiveKernelTests(unittest.TestCase):
 
     def test_symlink_escape_is_not_captured(self):
         os.symlink("/etc", self.root / "etc-link")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("cat etc-link/hostname > leak.txt; cat /etc/hostname > leak2.txt; ../ 2>/dev/null; true", self.root)
         s.stop()
         con = self.con()
@@ -218,7 +253,7 @@ class LiveKernelTests(unittest.TestCase):
             int main(void) { open("does-not-exist.txt", O_RDONLY);
               int fd = open("out.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
               for (int i = 0; i < 1000; i++) write(fd, "x", 1); close(fd); return 0; }""")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("./manywrites", self.root)
         s.stop()
         con = self.con()
@@ -229,7 +264,7 @@ class LiveKernelTests(unittest.TestCase):
     def test_rename_and_unlink_lineage(self):
         (self.root / "in.txt").write_text("x\n")
         (self.root / "moved").mkdir()
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("cp in.txt a.txt && mv a.txt b.txt && mv b.txt moved/c.txt && cp in.txt gone.txt && rm gone.txt", self.root)
         s.stop()
         con = self.con()
@@ -245,14 +280,14 @@ class LiveKernelTests(unittest.TestCase):
 
     def test_exit_before_flush_is_drained(self):
         (self.root / "in.txt").write_text("x\n")
-        s = Live(self.root, poll=False)  # nothing consumed until stop()
+        s = self.live_cls(self.root, poll=False)  # nothing consumed until stop()
         sh("cp in.txt out.txt", self.root)
         st = s.stop()
         self.assertGreater(st.received, 0)
         self.assertEqual(Path(why(self.con(), str(self.root / "out.txt"))["exe"]).name, "cp")
 
     def test_ring_buffer_overflow_is_counted_not_silent(self):
-        s = Live(self.root, poll=False)
+        s = self.live_cls(self.root, poll=False)
         # ~3 events per iteration (open/read/close) far beyond the 16 MiB ring buffer.
         sh("python3 -c \"import os\n"
            "for i in range(40000):\n"
@@ -265,7 +300,7 @@ class LiveKernelTests(unittest.TestCase):
         """libuv >= 1.45 (Ubuntu 24.04's Node) performs async fs through io_uring,
         which syscall tracepoints never see.  A real Vite build lost every output."""
         (self.root / "in.txt").write_text("from node\n")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         sh("node -e \"const fs=require('fs').promises;"
            "fs.readFile('in.txt').then(d=>fs.writeFile('out.txt', d)).then(()=>fs.rename('out.txt','final.txt'))\"",
            self.root)
@@ -279,7 +314,7 @@ class LiveKernelTests(unittest.TestCase):
 
     def test_queries_during_concurrent_writes(self):
         (self.root / "in.txt").write_text("x\n")
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         errors = []
 
         def query_loop():
@@ -354,6 +389,8 @@ class IoSeenSemanticsTests(unittest.TestCase):
     open suppress a later open's events.  The kernel re-uses freed struct file
     memory, so a reopen in the same process often gets the same pointer."""
 
+    live_cls = Live
+
     def setUp(self):
         self.td = tempfile.TemporaryDirectory(prefix="whyfs-ioseen-")
         self.root = Path(self.td.name).resolve()
@@ -364,7 +401,7 @@ class IoSeenSemanticsTests(unittest.TestCase):
         self.td.cleanup()
 
     def run_helper(self, *args):
-        s = Live(self.root)
+        s = self.live_cls(self.root)
         p = subprocess.run([str(self.prog), *args], cwd=self.root, capture_output=True, text=True, check=True)
         s.stop()
         return [int(x) for x in p.stdout.split()], connect(self.root)
@@ -437,8 +474,8 @@ class IoSeenSemanticsTests(unittest.TestCase):
         self.assertEqual(w["inputs"], [str(f)], "the exec'd image's read of its input was suppressed")
 
 
-def whyfs_cli(root: Path, *args: str, user: str | None = None) -> subprocess.CompletedProcess:
-    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1] / "src"))
+def whyfs_cli(root: Path, *args: str, user: str | None = None, collector: str = "native") -> subprocess.CompletedProcess:
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1] / "src"), WHYFS_COLLECTOR=collector)
     argv = [shutil.which("python3") or "python3", "-W", "ignore", "-m", "whyfs", *args]
     if user:
         argv = ["runuser", "-u", user, "--", "env", f"PYTHONPATH={env['PYTHONPATH']}", *argv]
@@ -452,6 +489,8 @@ class LiveDaemonEndToEndTests(unittest.TestCase):
     SQLite connection was opened on one thread and used on the writer thread,
     so every event was lost ("SQLite objects created in a thread...")."""
 
+    collector = "native"  # the default daemon path; see PythonCollectorDaemonTests
+
     def run_static(self, root: Path, user: str | None = None) -> dict:
         prog = cc(root, "static_copy", r"""
             #include <stdio.h>
@@ -463,7 +502,7 @@ class LiveDaemonEndToEndTests(unittest.TestCase):
             subprocess.run(["chown", "-R", f"{user}:", str(root)], check=True)
         init = whyfs_cli(root, "init", ".", user=user)
         self.assertEqual(init.returncode, 0, init.stdout + init.stderr)
-        start = whyfs_cli(root, "daemon", "start", "--workspace", str(root))
+        start = whyfs_cli(root, "daemon", "start", "--workspace", str(root), collector=self.collector)
         self.assertEqual(start.returncode, 0, start.stderr)
         try:
             time.sleep(0.25)
@@ -475,6 +514,10 @@ class LiveDaemonEndToEndTests(unittest.TestCase):
         self.assertEqual(stop.returncode, 0, stop.stderr)
         log = (root / ".whyfs" / "daemon.log").read_text(errors="replace")
         self.assertNotIn("Traceback", log)
+        con = connect(root)
+        used = con.execute("SELECT collector FROM runs ORDER BY started_ns DESC LIMIT 1").fetchone()[0]
+        con.close()
+        self.assertEqual(used, "ebpf-native" if self.collector == "native" else "ebpf-bcc")
         q = whyfs_cli(root, "why", "static-out.txt", "--json", user=user)
         self.assertEqual(q.returncode, 0, q.stdout + q.stderr)
         return json.loads(q.stdout)
@@ -504,6 +547,105 @@ class LiveDaemonEndToEndTests(unittest.TestCase):
                 self.assertEqual(p.lstat().st_uid, uid, p)
         finally:
             shutil.rmtree(base, ignore_errors=True)
+
+
+
+# ---------------------------------------------------------------- native collector (daemon default)
+@unittest.skipUnless(READY and native_collect.available()[0], "requires the live eBPF host and the native collector")
+class NativeLiveKernelTests(LiveKernelTests):
+    live_cls = NativeLive
+
+
+@unittest.skipUnless(READY and native_collect.available()[0], "requires the live eBPF host and the native collector")
+class NativeIoSeenSemanticsTests(IoSeenSemanticsTests):
+    live_cls = NativeLive
+
+
+@unittest.skipUnless(READY, "requires Linux + root/CAP_BPF + BCC + kernel headers")
+class PythonCollectorDaemonTests(LiveDaemonEndToEndTests):
+    """The Python collector remains the daemon's fallback path."""
+
+    collector = "python"
+
+
+@unittest.skipUnless(READY and native_collect.available()[0], "requires the live eBPF host and the native collector")
+class NativeDaemonBehaviourTests(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory(prefix="whyfs-native-")
+        self.root = Path(self.td.name).resolve()
+        self.assertEqual(whyfs_cli(self.root, "init", ".").returncode, 0)
+
+    def tearDown(self):
+        whyfs_cli(self.root, "daemon", "stop", "--workspace", str(self.root))
+        self.td.cleanup()
+
+    def state(self):
+        return json.loads((self.root / ".whyfs" / "daemon.json").read_text())
+
+    def test_evidence_becomes_queryable_while_the_daemon_runs(self):
+        """Persistence is deferred while the workload is active, but bounded: once
+        activity stops, records are queryable within the quiet period (+ one drain)."""
+        (self.root / "in.txt").write_text("x\n")
+        self.assertEqual(whyfs_cli(self.root, "daemon", "start", "--workspace", str(self.root)).returncode, 0)
+        self.assertEqual(self.state()["collector"], "native")
+        time.sleep(0.25)
+        sh("cp in.txt out.txt", self.root)
+        t0 = time.monotonic()
+        seen = None
+        while time.monotonic() - t0 < 3:
+            c = connect(self.root)
+            w = why(c, str(self.root / "out.txt"))
+            c.close()
+            if w:
+                seen = time.monotonic() - t0
+                break
+            time.sleep(0.02)
+        self.assertIsNotNone(seen, "record never became visible while the daemon ran")
+        self.assertLess(seen, 1.0)
+        self.assertEqual(Path(w["exe"]).name, "cp")
+
+    def test_continuous_activity_is_persisted_within_the_max_delay(self):
+        """Under uninterrupted activity the quiet period never arrives; the oldest
+        queued batch must still reach SQLite within the 2 s bound."""
+        (self.root / "in.txt").write_text("x\n")
+        self.assertEqual(whyfs_cli(self.root, "daemon", "start", "--workspace", str(self.root)).returncode, 0)
+        time.sleep(0.25)
+        busy = subprocess.Popen(["bash", "-c", "end=$((SECONDS+6)); while [ $SECONDS -lt $end ]; do cat in.txt > busy.txt; done"],
+                                cwd=self.root)
+        try:
+            time.sleep(0.3)
+            sh("cp in.txt marker.txt", self.root)
+            t0 = time.monotonic()
+            seen = None
+            while time.monotonic() - t0 < 4.5:
+                c = connect(self.root)
+                w = why(c, str(self.root / "marker.txt"))
+                c.close()
+                if w:
+                    seen = time.monotonic() - t0
+                    break
+                time.sleep(0.05)
+            self.assertIsNone(busy.poll(), "the workload must still be running")
+        finally:
+            busy.wait()
+        self.assertIsNotNone(seen, "record not persisted under continuous activity")
+        self.assertLess(seen, 2.5)
+
+    def test_native_collector_does_not_outlive_a_killed_daemon(self):
+        self.assertEqual(whyfs_cli(self.root, "daemon", "start", "--workspace", str(self.root)).returncode, 0)
+        st = self.state()
+        os.kill(st["pid"], 9)
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and Path(f"/proc/{st['collector_pid']}").exists():
+            try:
+                if Path(f"/proc/{st['collector_pid']}/stat").read_text().split(") ")[1][0] == "Z":
+                    break
+            except OSError:
+                break
+            time.sleep(0.05)
+        alive = Path(f"/proc/{st['collector_pid']}").exists() and \
+            Path(f"/proc/{st['collector_pid']}/stat").read_text().split(") ")[1][0] != "Z"
+        self.assertFalse(alive, "native collector kept running after its daemon was killed")
 
 
 if __name__ == "__main__":
