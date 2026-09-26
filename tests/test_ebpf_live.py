@@ -58,6 +58,9 @@ class Live:
         self._stop.set()
         self.t.join(timeout=5)
         self.stats = self.c.stop()
+        # Detach and free this test's BPF programs now: a kernel function accepts at
+        # most 38 trampoline programs, and leaked ones made later tests fail to attach.
+        self.c.bpf.cleanup()
         return self.stats
 
 

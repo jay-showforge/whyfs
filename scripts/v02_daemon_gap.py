@@ -117,7 +117,7 @@ class Agent:
         src = src or str(REPO / "src")
         env = dict(os.environ, PYTHONPATH=src, PATH=LINUX_PATH)
         self.p = subprocess.Popen([sys.executable, "-W", "ignore", str(REPO / "scripts" / "v02_gap_agent.py"),
-                                   "--workspace", str(ws), "--run-id", run_id, "--src", src, "--cflags", cflags],
+                                   "--workspace", str(ws), "--run-id", run_id, "--src", src, f"--cflags={cflags}"],
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=open(ws.parent / f"{run_id}.agent.log", "w"),
                                   text=True, env=env)
         hello = self._read()
