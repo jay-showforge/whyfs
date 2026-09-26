@@ -86,6 +86,8 @@ def _clear_state(root: Path, pid: int) -> None:
 
 
 def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False) -> int:
+    if os.name == "nt":
+        raise SystemExit("on Windows the collector runs in the whyfs service: use `whyfs daemon start`")
     root = root.resolve()
     os.close(open_state_dirfd(root))
     existing = read_state(root)
@@ -187,6 +189,12 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
 
 
 def start_background(root: Path, *, capture_all: bool = False) -> dict:
+    if os.name == "nt":
+        from . import winsvc
+        try:
+            return winsvc.start(root, capture_all=capture_all)
+        except winsvc.ServiceUnavailable as exc:
+            raise SystemExit(f"whyfs daemon: {exc}")
     root = root.resolve()
     os.close(open_state_dirfd(root))
     existing = read_state(root)
@@ -226,6 +234,12 @@ def start_background(root: Path, *, capture_all: bool = False) -> dict:
 
 
 def stop_background(root: Path, timeout: float = 5.0) -> bool:
+    if os.name == "nt":
+        from . import winsvc
+        try:
+            return winsvc.stop(root)
+        except winsvc.ServiceUnavailable as exc:
+            raise SystemExit(f"whyfs daemon: {exc}")
     root = root.resolve()
     state = read_state(root)
     if not state:
@@ -242,6 +256,9 @@ def stop_background(root: Path, timeout: float = 5.0) -> bool:
 
 
 def status(root: Path) -> dict:
+    if os.name == "nt":
+        from . import winsvc
+        return winsvc.status(root)
     root = root.resolve()
     state = read_state(root)
     result = {"running": bool(state), "workspace": str(root)}
@@ -268,6 +285,11 @@ def ensure_kernel_headers() -> bool:
 
 
 def capability_report() -> dict:
+    if os.name == "nt":
+        from . import winsvc
+        st = winsvc.service_state()
+        return {"platform": "windows", "backend": "etw-native", **st,
+                "ready": st["service"] == "running" and st["binaries_installed"]}
     linux = sys.platform.startswith("linux")
     report = {
         "linux": linux,

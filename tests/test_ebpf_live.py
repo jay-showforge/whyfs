@@ -4,6 +4,11 @@ These load the real BPF program and drive real processes.  They are skipped
 unless the host can actually run the collector (Linux, root/CAP_BPF, BCC,
 kernel headers).  No fallback backend is substituted.
 """
+import sys as _sys
+import unittest as _unittest
+
+if not _sys.platform.startswith("linux"):
+    raise _unittest.SkipTest("live eBPF kernel tests (Linux only)")
 import json
 import os
 import shutil

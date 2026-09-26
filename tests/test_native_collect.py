@@ -8,6 +8,11 @@ event model of BCCCollector._process_event, which stays the executable specifica
   through both implementations; the handed-off records and counters must be identical.
 * The native writer's SQLite rows equal store.ingest_events() of the same records.
 """
+import sys as _sys
+import unittest as _unittest
+
+if not _sys.platform.startswith("linux"):
+    raise _unittest.SkipTest("native Linux collector (Linux only)")
 import ctypes as ct
 import os
 import random

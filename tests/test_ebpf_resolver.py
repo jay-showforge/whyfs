@@ -10,6 +10,11 @@ Kernel contract (see ebpf_bcc.BPF_SOURCE): EV_OPEN carries the kernel
 EV_MMAP_* carry only the file pointer; rename/unlink/chdir/exec carry raw names
 resolved against the cwd model or a directory file pointer.
 """
+import sys as _sys
+import unittest as _unittest
+
+if not _sys.platform.startswith("linux"):
+    raise _unittest.SkipTest("eBPF user-space resolver (Linux only)")
 import ctypes as ct
 import os
 import queue

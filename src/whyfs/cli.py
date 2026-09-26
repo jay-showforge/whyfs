@@ -53,7 +53,7 @@ def native_lib(root: Path) -> Path:
 def redact_argv(argv: list[str]) -> str:
     out = []
     secret_next = False
-    sensitive = ("password", "passwd", "token", "secret", "api-key", "apikey", "authorization")
+    sensitive = ("password", "passwd", "token", "secret", "api-key", "apikey", "api_key", "access-key", "access_key", "private-key", "private_key", "credential", "authorization")
     for a in argv:
         low = a.lower()
         if secret_next:
@@ -244,6 +244,12 @@ def cmd_doctor(a):
     report = capability_report()
     if a.json:
         print(json.dumps(report, indent=2))
+    elif report.get("platform") == "windows":
+        print("whyfs Windows capability check")
+        for key in ("architecture", "service", "binaries_installed", "install_dir", "ready"):
+            print(f"  {key:18} {report.get(key)}")
+        if not report["ready"]:
+            print("\nInstall the collector service once, as administrator:  whyfs service install")
     else:
         print("whyfs eBPF capability check")
         for key in ("linux", "bcc_importable", "bpf_fs", "btf_vmlinux", "kernel_headers", "cap_bpf", "cap_perfmon", "euid", "native_collector", "ready"):
@@ -281,6 +287,18 @@ def cmd_daemon(a):
             print(f"not running · workspace {s['workspace']}")
         return 0 if s["running"] else 1
     raise SystemExit("unknown daemon action")
+
+
+def cmd_service(a):
+    if os.name != "nt":
+        raise SystemExit("`whyfs service` manages the Windows collector service; on Linux use `sudo whyfs daemon start`")
+    from . import winsvc
+    if a.action == "install":
+        return winsvc.service_install(Path(a.source) if a.source else None)
+    if a.action == "uninstall":
+        return winsvc.service_uninstall()
+    print(json.dumps(winsvc.service_state(), indent=2))
+    return 0
 
 
 def cmd_daemon_worker(a):
@@ -328,16 +346,21 @@ def parser():
     q.add_argument("--json", action="store_true")
     q.set_defaults(func=cmd_stats)
 
-    q = sp.add_parser("doctor", help="check whether this Linux host can run the always-on eBPF backend")
+    q = sp.add_parser("doctor", help="check whether this host can run the always-on collector")
     q.add_argument("--json", action="store_true")
     q.set_defaults(func=cmd_doctor)
 
-    q = sp.add_parser("daemon", help="always-on Linux eBPF collector (v0.2 alpha)")
+    q = sp.add_parser("daemon", help="always-on collector for this workspace (Linux eBPF / Windows ETW)")
     q.add_argument("action", choices=("run", "start", "stop", "status"))
     q.add_argument("--workspace")
     q.add_argument("--all-files", action="store_true")
     q.add_argument("--json", action="store_true")
     q.set_defaults(func=cmd_daemon)
+
+    q = sp.add_parser("service", help="Windows: install/uninstall the collector service (once, as administrator)")
+    q.add_argument("action", choices=("install", "uninstall", "status"))
+    q.add_argument("--from", dest="source", help=argparse.SUPPRESS)
+    q.set_defaults(func=cmd_service)
 
     # Internal worker launched by `daemon start`.
     q = sp.add_parser("_daemon-worker", help=argparse.SUPPRESS)
@@ -348,6 +371,13 @@ def parser():
 
 
 def main():
+    if os.name == "nt":
+        # A pipe or a legacy-code-page console must never crash or mangle the output.
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.reconfigure(encoding=stream.encoding if stream.isatty() else "utf-8", errors="replace")
+            except (AttributeError, ValueError):
+                pass
     a = parser().parse_args()
     rc = a.func(a)
     raise SystemExit(rc or 0)

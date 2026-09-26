@@ -83,4 +83,13 @@ class WhyFSIntegration(unittest.TestCase):
         s=redact_argv(["curl","--token","abc123","--password=hunter2","ok"])
         self.assertNotIn("abc123",s); self.assertNotIn("hunter2",s); self.assertIn("<redacted>",s)
 
+    def test_redaction_covers_common_key_names(self):
+        """Regression: API_KEY=..., --access-key X, PRIVATE_KEY=..., *credential* were stored verbatim."""
+        sys.path.insert(0,str(ROOT/"src"))
+        from whyfs.cli import redact_argv
+        s=redact_argv(["deploy","API_KEY=k1","--access-key","k2","PRIVATE_KEY=k3","db_credential=k4","ok"])
+        for secret in ("k1","k2","k3","k4"):
+            self.assertNotIn(secret,s)
+        self.assertIn("ok",s)
+
 if __name__ == "__main__": unittest.main()

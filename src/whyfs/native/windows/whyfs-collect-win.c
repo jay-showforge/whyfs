@@ -195,56 +195,52 @@ static char *norm_path(const char *p) {
 }
 
 // ---------------------------------------------------------------- command lines (argv, redaction, quoting)
-static const char *SENSITIVE[] = {"password", "passwd", "token", "secret", "api-key", "apikey", "authorization"};
+static const char *SENSITIVE[] = {"password", "passwd", "token", "secret", "api-key", "apikey", "api_key", "access-key", "access_key", "private-key", "private_key", "credential", "authorization"};
 static char *lower_dup(const char *a) { char *l = xstrdup(a); for (char *p = l; *p; p++) *p = lower_ascii(*p); return l; }
-// Windows argument quoting (inverse of CommandLineToArgvW)
-static void win_quote(buf_t *o, const char *a) {
-    if (*a && !strpbrk(a, " \t\n\v\"")) { b_str(o, a); return; }
-    b_ch(o, '"');
-    for (const char *p = a;; p++) {
-        size_t bs = 0;
-        while (*p == '\\') { p++; bs++; }
-        if (!*p) { for (size_t i = 0; i < bs * 2; i++) b_ch(o, '\\'); break; }
-        if (*p == '"') { for (size_t i = 0; i < bs * 2 + 1; i++) b_ch(o, '\\'); b_ch(o, '"'); }
-        else { for (size_t i = 0; i < bs; i++) b_ch(o, '\\'); b_ch(o, *p); }
-    }
-    b_ch(o, '"');
+// Same rule as ebpf_bcc._redact_cmdline, plus Windows switches: /name value, /name:value,
+// /name=value.  Windows programs parse their own raw command line (cmd.exe does not use
+// argv rules), so the displayed command is the raw line with only the secret values
+// replaced -- never a re-quoted argv, which could change what the command appears to be.
+static void replace_all(buf_t *line, const char *secret) {
+    size_t sl = strlen(secret);
+    if (!sl) return;
+    buf_t o = {0};
+    const char *p = line->p, *hit;
+    while ((hit = strstr(p, secret))) { b_add(&o, p, (size_t)(hit - p)); b_str(&o, "<redacted>"); p = hit + sl; }
+    b_str(&o, p);
+    free(line->p); *line = o;
 }
-// Same rule as ebpf_bcc._redact_cmdline, plus Windows switches: /name value, /name:value, /name=value.
 static char *redact_cmdline_w(const wchar_t *cmd) {
     if (!cmd || !*cmd) return NULL;
+    buf_t line = {0};
+    { char *raw = utf8_from_w(cmd, -1); b_str(&line, raw); free(raw); }
     int argc = 0;
     LPWSTR *argvw = CommandLineToArgvW(cmd, &argc);
-    if (!argvw) return utf8_from_w(cmd, -1);
-    buf_t o = {0};
+    if (!argvw) return b_take(&line);
     int secret_next = 0;
     for (int i = 0; i < argc; i++) {
-        char *a = utf8_from_w(argvw[i], -1), *low = lower_dup(a), *item;
-        if (secret_next) { item = xstrdup("<redacted>"); secret_next = 0; }
+        char *a = utf8_from_w(argvw[i], -1), *low = lower_dup(a);
+        if (secret_next) { replace_all(&line, a); secret_next = 0; }
         else {
             const char *name = low;
             if (name[0] == '-' && name[1] == '-') name += 2;
             else if (name[0] == '/' || name[0] == '-') name += 1;
             int exact = 0;
-            for (size_t s = 0; s < sizeof SENSITIVE / sizeof *SENSITIVE; s++) if (!strcmp(name, SENSITIVE[s]) && (name != low + 1 || low[0] == '/' || low[0] == '-')) exact = 1;
-            if (!strcmp(low, "--password") || !strcmp(low, "password")) exact = 1;  // Linux rule, verbatim
+            for (size_t s = 0; s < sizeof SENSITIVE / sizeof *SENSITIVE; s++) if (!strcmp(name, SENSITIVE[s])) exact = 1;
             char *sep = strpbrk(a, "=:");
-            if (exact) { item = xstrdup(a); secret_next = 1; }
-            else if (sep && sep != a && !(sep == a + 1 && *sep == ':')) {  // "C:\..." is a path, not key:value
+            if (exact) secret_next = 1;
+            else if (sep && sep != a && sep[1] && !(sep == a + 1 && *sep == ':')) {  // "C:\..." is a path, not key:value
                 char *key = lower_dup(a); key[sep - a] = 0;
                 int hit = 0;
                 for (size_t s = 0; s < sizeof SENSITIVE / sizeof *SENSITIVE; s++) if (strstr(key, SENSITIVE[s])) hit = 1;
                 free(key);
-                if (hit) { buf_t r = {0}; b_add(&r, a, (size_t)(sep - a) + 1); b_str(&r, "<redacted>"); item = b_take(&r); }
-                else item = xstrdup(a);
-            } else item = xstrdup(a);
+                if (hit) replace_all(&line, sep + 1);
+            }
         }
-        if (i) b_ch(&o, ' ');
-        win_quote(&o, item);
-        free(item); free(low); free(a);
+        free(low); free(a);
     }
     LocalFree(argvw);
-    return b_take(&o);
+    return b_take(&line);
 }
 
 // ---------------------------------------------------------------- decoded kernel records (the Windows contract)
@@ -664,11 +660,13 @@ static int (*sq_close)(sqlite3 *);
 static int (*sq_busy_timeout)(sqlite3 *, int);
 static const char *(*sq_errmsg)(sqlite3 *);
 #define SQ_TRANSIENT ((void (*)(void *))-1)
+// Default: Windows' own SQLite (System32\winsqlite3.dll, present on x64 and ARM64 Windows 10+),
+// loaded from System32 only -- never through the DLL search path.
 static void load_sqlite(const char *dll) {
-    wchar_t *w = w_from_utf8(dll);
-    HMODULE h = LoadLibraryExW(w, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
-    free(w);
-    if (!h) die("cannot load sqlite3.dll");
+    HMODULE h;
+    if (dll) { wchar_t *w = w_from_utf8(dll); h = LoadLibraryExW(w, NULL, LOAD_WITH_ALTERED_SEARCH_PATH); free(w); }
+    else h = LoadLibraryExW(L"winsqlite3.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (!h) die("cannot load SQLite (winsqlite3.dll)");
 #define SYM(v, n) if (!(*(FARPROC *)&v = GetProcAddress(h, n))) die("sqlite3.dll lacks " n)
     SYM(sq_open_v2, "sqlite3_open_v2"); SYM(sq_exec, "sqlite3_exec"); SYM(sq_prepare_v2, "sqlite3_prepare_v2");
     SYM(sq_bind_int64, "sqlite3_bind_int64"); SYM(sq_bind_text, "sqlite3_bind_text"); SYM(sq_bind_null, "sqlite3_bind_null");
@@ -1132,6 +1130,13 @@ int main(int argc, char **argv) {
         else if (ARG("--session")) session = v;
         else if (!strcmp(a, "--capture-all")) capture_all = 1;
         else if (!strcmp(a, "--emit")) emit_json = 1;
+        else if (!strcmp(a, "--redact") && v) {  // test hook: the stored form of a command line
+            int wc = 0;
+            LPWSTR *wv = CommandLineToArgvW(GetCommandLineW(), &wc);
+            char *red = wv && i + 1 < wc ? redact_cmdline_w(wv[i + 1]) : NULL;
+            fwrite(red ? red : "", 1, red ? strlen(red) : 0, stdout);
+            return 0;
+        }
         else { fprintf(stderr, "unknown argument %s\n", a); return 2; }
 #undef ARG
     }
@@ -1148,8 +1153,7 @@ int main(int argc, char **argv) {
     emit_fp = stdout;
     HANDLE writer = NULL;
     if (!emit_json) {
-        if (!sqlite_dll) die("--sqlite PATH\\sqlite3.dll required (or --emit)");
-        load_sqlite(sqlite_dll);
+        load_sqlite(sqlite_dll);  // NULL: System32\winsqlite3.dll
         writer = CreateThread(NULL, 0, writer_main, NULL, 0, NULL);
     }
     QueryPerformanceFrequency(&qpc_freq); QueryPerformanceCounter(&qpc0); wall0 = wall_now_ns();

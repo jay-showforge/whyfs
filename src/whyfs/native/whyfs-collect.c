@@ -376,7 +376,7 @@ static void shlex_quote(buf_t *o, const char *s) {
     for (const char *p = s; *p; p++) { if (*p == '\'') b_str(o, "'\"'\"'"); else b_ch(o, *p); }
     b_ch(o, '\'');
 }
-static const char *SENSITIVE[] = {"password", "passwd", "token", "secret", "api-key", "apikey", "authorization"};
+static const char *SENSITIVE[] = {"password", "passwd", "token", "secret", "api-key", "apikey", "api_key", "access-key", "access_key", "private-key", "private_key", "credential", "authorization"};
 static char *redact_cmdline(char **argv, size_t argc) {  // ebpf_bcc._redact_cmdline
     buf_t o = {0};
     int secret_next = 0;

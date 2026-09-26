@@ -1,3 +1,8 @@
+import sys as _sys
+import unittest as _unittest
+
+if not _sys.platform.startswith("linux"):
+    raise _unittest.SkipTest("eBPF user-space collector (Linux only)")
 import ctypes as ct
 import json
 import os

@@ -679,7 +679,7 @@ def _redact_cmdline(argv: list[str]) -> str:
     # Duplicated lightly here to keep the collector independent of argparse/CLI.
     import shlex
 
-    sensitive = ("password", "passwd", "token", "secret", "api-key", "apikey", "authorization")
+    sensitive = ("password", "passwd", "token", "secret", "api-key", "apikey", "api_key", "access-key", "access_key", "private-key", "private_key", "credential", "authorization")
     out: list[str] = []
     secret_next = False
     for a in argv:
