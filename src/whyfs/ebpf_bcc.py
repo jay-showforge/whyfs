@@ -123,6 +123,14 @@ struct pend_rename_t { u64 f1; u64 f2; s32 d1; s32 d2; u32 trunc; u32 pad; char 
 struct pend_unlink_t { u64 f1; s32 d1; u32 trunc; char a[PATH_N]; };
 
 BPF_TABLE("lru_hash", struct io_key_t, u8, io_seen, 262144);
+/* Diagnostic io_seen reset variants (production: 0).
+ *   0  delete the key on every open (regular files and directories)
+ *   1  lockless lookup; delete only if a stale entry exists; skip directories
+ *   2  NO reset at all -- UNSAFE: stale state can suppress first-I/O events;
+ *      only an upper bound on what any stale-tolerant design could save. */
+#ifndef WF_IOSEEN_MODE
+#define WF_IOSEEN_MODE 0
+#endif
 BPF_HASH(pending_rename, u64, struct pend_rename_t, 4096);
 BPF_HASH(pending_unlink, u64, struct pend_unlink_t, 4096);
 BPF_HASH(pending_chdir, u64, u64, 4096);
@@ -148,7 +156,8 @@ static __always_inline u64 wf_wake(void) {
  *   9 namespace fast-path misses, 10 foreign tasks (not in our pid namespace).
  * WF_PROFILE_TIME (with WF_PROFILE): nanoseconds spent in sections,
  *   8 namespace translation, 11 bpf_d_path, 12 io_seen map operations,
- *   13 ring-buffer reserve/fill/submit, 14 exec filename + argv copies.
+ *   13 ring-buffer reserve/fill/submit, 14 exec filename + argv copies,
+ *   15 io_seen update (12 = io_seen lookup in I/O hooks, reset op at open).
  * WF_NULL_MASK: bit p set -> program p returns immediately (hook-dispatch
  *   ablation for measurement only). */
 #define P_OPEN 0
@@ -305,9 +314,18 @@ KFUNC_PROBE(security_file_open, struct file *file) {
     u32 root_tgid = bpf_get_current_pid_tgid() >> 32;
     struct io_key_t k = {.file = (u64)file, .ino = ino, .tgid = root_tgid};
     WF_T0(t_map);
+#if WF_IOSEEN_MODE == 1
+    if (!S_ISDIR(mode)) {
+        WF_P(P_OPEN, 2);
+        if (io_seen.lookup(&k)) { io_seen.delete(&k); WF_P(P_OPEN, 4); }
+    }
+#elif WF_IOSEEN_MODE == 2
+    /* diagnostic only: no reset */
+#else
     io_seen.delete(&k);
-    WF_T1(P_OPEN, 12, t_map);
     WF_P(P_OPEN, 4);
+#endif
+    WF_T1(P_OPEN, 12, t_map);
     WF_T0(t_rb);
     struct path_ev *e = events.ringbuf_reserve(sizeof(struct path_ev));
     if (!e) { wf_count_drop(); return 0; }
@@ -347,7 +365,7 @@ static __always_inline int wf_emit_io(struct file *file, u32 dir, u32 type, u32 
     mask |= dir;
     WF_T0(t_up);
     io_seen.update(&k, &mask);
-    WF_T1(prog, 12, t_up);
+    WF_T1(prog, 15, t_up);  /* update ns kept apart from lookup ns (12) */
     WF_P(prog, 3);
     WF_T0(t_rb);
     struct hdr_t *e = events.ringbuf_reserve(sizeof(struct hdr_t));

@@ -63,7 +63,7 @@ class GapWorkload(Workload):
     use_perf = False
 
     def run_measured(self) -> dict:
-        inner = (f"s=$(date +%s%N); {CMD}; e=$(date +%s%N); echo WFTIME=$((e-s)); "
+        inner = (f"s=$(date +%s%N); {self.cmd}; e=$(date +%s%N); echo WFTIME=$((e-s)); "
                  "echo WFMIG=$(awk -F: '/se.nr_migrations/{gsub(/ /,\"\",$2);print $2}' /proc/$$/sched)")
         cmd = f"/usr/bin/time -f 'WFRU %e %U %S %F %R %w %c' bash -c {shlex.quote(inner)}"
         perf = None
@@ -72,7 +72,7 @@ class GapWorkload(Workload):
                                      "task-clock,context-switches,cpu-migrations,page-faults"],
                                     stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
             time.sleep(0.05)
-        outer, p = self.ctx.run_user(cmd, self.ws)
+        outer, p = self.ctx.run_user(cmd, self.cwd)
         rec = {"outer_s": outer}
         if perf:
             perf.send_signal(signal.SIGINT)
@@ -113,11 +113,11 @@ def delta(a: dict, b: dict) -> dict:
 
 # ---------------------------------------------------------------- agent (separate process)
 class Agent:
-    def __init__(self, ws: Path, run_id: str, log: Log, src: str | None = None):
+    def __init__(self, ws: Path, run_id: str, log: Log, src: str | None = None, cflags: str = ""):
         src = src or str(REPO / "src")
         env = dict(os.environ, PYTHONPATH=src, PATH=LINUX_PATH)
         self.p = subprocess.Popen([sys.executable, "-W", "ignore", str(REPO / "scripts" / "v02_gap_agent.py"),
-                                   "--workspace", str(ws), "--run-id", run_id, "--src", src],
+                                   "--workspace", str(ws), "--run-id", run_id, "--src", src, "--cflags", cflags],
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=open(ws.parent / f"{run_id}.agent.log", "w"),
                                   text=True, env=env)
         hello = self._read()

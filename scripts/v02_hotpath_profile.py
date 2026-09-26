@@ -47,7 +47,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "scripts"))
 
-from v02_graduation import STATIC_C, Ctx, environment  # noqa: E402  (workload source of truth)
+from v02_graduation import STATIC_C, VITE, Ctx, environment, write_c_project, write_vite_project  # noqa: E402  (workload source of truth)
 from whyfs.daemon import ensure_kernel_headers  # noqa: E402
 from whyfs.ebpf_bcc import BCCCollector, BPF_SOURCE, pid_namespace_identity, pid_namespace_kdev  # noqa: E402
 from whyfs.privsep import Store  # noqa: E402
@@ -80,7 +80,7 @@ SHORT = {0: "security_file_open", 1: "security_file_permission", 2: "security_mm
          10: "sys_exit_fchdir", 11: "sched_process_exec", 12: "sched_process_fork", 13: "sched_process_exit"}
 METRICS = ["calls", "early_exits", "map_lookups", "map_updates", "map_deletes", "rb_records", "rb_bytes", "upid_walks",
            "ns_translate_ns", "ns_fastpath_misses", "foreign_tasks", "d_path_ns", "io_seen_map_ns", "ringbuf_ns",
-           "exec_copy_ns", "unused"]
+           "exec_copy_ns", "io_seen_update_ns"]
 STRIDE = 16
 P_NSWALK = 14
 # Which map each program's counted operations touch (from the BPF source).
@@ -205,21 +205,37 @@ def summary(xs: list[float]) -> dict:
 
 
 # ---------------------------------------------------------------- workload
+# The graduation harness's three performance workloads: (prep, command, subdirectory).
+WORKLOADS = {
+    "static": (PREP, CMD, ""),
+    "make": ("make -s clean >/dev/null; true", "make -s -j8", "cproj"),
+    "vite": ("true", VITE, "web"),
+}
+
+
 class Workload:
-    def __init__(self, ctx: Ctx, base: Path, log: Log):
-        self.ctx, self.log = ctx, log
+    def __init__(self, ctx: Ctx, base: Path, log: Log, kind: str = "static", vite_template: Path | None = None):
+        self.ctx, self.log, self.kind = ctx, log, kind
+        self.prep_cmd, self.cmd, sub = WORKLOADS[kind]
         src = (REPO / "scripts" / "v02_graduation.py").read_text()
-        assert f'"{PREP}"' in src and f'"{CMD}"' in src, "workload differs from the graduation harness"
+        assert f'"{self.prep_cmd}"' in src and (f'"{self.cmd}"' in src or self.cmd == VITE),             "workload differs from the graduation harness"
         self.ws = base / "perf"
         self.ws.mkdir(parents=True)
-        (self.ws / "static_copy.c").write_text(STATIC_C)
-        (self.ws / "raw.txt").write_text("x" * 4096)
+        self.cwd = self.ws / sub if sub else self.ws
+        if kind == "static":
+            (self.ws / "static_copy.c").write_text(STATIC_C)
+            (self.ws / "raw.txt").write_text("x" * 4096)
+        elif kind == "make":
+            write_c_project(self.cwd)
+        else:
+            write_vite_project(self.cwd, vite_template or Path(f"/home/{ctx.user}/vite-template"))
         ctx.chown(self.ws)
-        ctx.run_user("gcc -static -O2 static_copy.c -o static_copy", self.ws)
+        if kind == "static":
+            ctx.run_user("gcc -static -O2 static_copy.c -o static_copy", self.ws)
         ctx.whyfs("init", str(self.ws), cwd=self.ws)
 
     def prep(self) -> None:
-        self.ctx.run_user(PREP, self.ws, check=False)
+        self.ctx.run_user(self.prep_cmd, self.cwd, check=False)
 
     def run(self) -> float:
         """Seconds for the harness loop, timed inside the workload's own shell.
@@ -230,8 +246,8 @@ class Workload:
         wake-up).  That inflates a Python-side timing without slowing the
         workload, so the loop is timed by the shell around the unchanged
         harness command.  The Python-side time is kept as ``last_outer``."""
-        wrapped = f"s=$(date +%s%N); {CMD}; e=$(date +%s%N); echo WFTIME=$((e-s))"
-        outer, p = self.ctx.run_user(wrapped, self.ws)
+        wrapped = f"s=$(date +%s%N); {self.cmd}; e=$(date +%s%N); echo WFTIME=$((e-s))"
+        outer, p = self.ctx.run_user(wrapped, self.cwd)
         self.last_outer = outer
         for line in p.stdout.splitlines():
             if line.startswith("WFTIME="):
@@ -776,6 +792,8 @@ def main() -> int:
     ap.add_argument("--userspace-rounds", type=int, default=40)
     ap.add_argument("--cprofile-reps", type=int, default=5)
     ap.add_argument("--phases", default="P,T,A", help="comma list of P,T,A (Step 1) and Q,U,V,X (follow-up)")
+    ap.add_argument("--workload", default="static", choices=sorted(WORKLOADS))
+    ap.add_argument("--extra-cflags", default="", help="extra BPF cflags for phases P/Q (e.g. -DWF_IOSEEN_MODE=1)")
     a = ap.parse_args()
     if os.geteuid() != 0:
         print("run as root", file=sys.stderr)
@@ -792,7 +810,8 @@ def main() -> int:
         shutil.rmtree(base)
     (out / "harness-ctx").mkdir()
     ctx = Ctx(a.user, out / "harness-ctx")
-    params = {"workload_prep": PREP, "workload_cmd": CMD, "processes_per_run": PROCESSES_PER_RUN,
+    params = {"workload": a.workload, "workload_prep": WORKLOADS[a.workload][0], "workload_cmd": WORKLOADS[a.workload][1],
+              "extra_cflags": a.extra_cflags, "processes_per_run": PROCESSES_PER_RUN,
               "timing": "shell-timed loop (date +%s%N around the unchanged harness command); "
                         "Python-side subprocess time kept as *_outer",
               "static_c_source": "scripts/v02_graduation.py:STATIC_C", "user": a.user, "workspace_base": str(base),
@@ -805,7 +824,7 @@ def main() -> int:
            "environment": environment()}
     (out / "environment.json").write_text(json.dumps(res["environment"], indent=2))
     log(f"git HEAD {res['git']['head']} dirty={len(res['git']['dirty_files'])}")
-    wl = Workload(ctx, base, log)
+    wl = Workload(ctx, base, log, a.workload)
     phases = set(a.phases.split(","))
     params["phases"] = sorted(phases)
     params["userspace_rounds"] = a.userspace_rounds
@@ -813,8 +832,9 @@ def main() -> int:
     try:
         if "P" in phases:
             res["phase_P"] = phase_counts(wl, log, a.profile_reps)
+        extra = a.extra_cflags.split() if a.extra_cflags else []
         if "Q" in phases:
-            res["phase_Q"] = phase_counts(wl, log, a.profile_reps, ["-DWF_PROFILE", "-DWF_PROFILE_TIME"], "Q")
+            res["phase_Q"] = phase_counts(wl, log, a.profile_reps, ["-DWF_PROFILE", "-DWF_PROFILE_TIME", *extra], "Q")
         if "T" in phases:
             res["phase_T"] = phase_timing(wl, log, a.pairs, a.warmups, a.runtime_reps)
         if "A" in phases:

@@ -38,7 +38,9 @@ class Live:
                     ("live", time.time_ns(), str(self.root), "live-test", str(self.root), "ebpf-bcc"))
         con.commit()
         con.close()
-        self.c = BCCCollector(self.root, "live")
+        # WF_TEST_EXTRA_CFLAGS: diagnostic only (e.g. prove a test catches an unsafe BPF variant).
+        extra = os.environ.get("WF_TEST_EXTRA_CFLAGS", "").split()
+        self.c = BCCCollector(self.root, "live", extra_cflags=extra or None)
         self.c.start()
         self._stop = threading.Event()
         self.poll = poll
@@ -294,6 +296,142 @@ class LiveKernelTests(unittest.TestCase):
         s.stop()
         self.assertEqual(errors, [])
         self.assertEqual(Path(why(self.con(), str(self.root / "out300.txt"))["exe"]).name, "cp")
+
+
+IOSEEN_HELPER = r"""
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
+static void rd(int fd) { char b[4]; if (read(fd, b, 1) < 0) exit(10); }
+static void wr(int fd) { if (write(fd, "y", 1) != 1) exit(11); }
+int main(int argc, char **argv) {
+  const char *m = argv[1], *p = argv[2];
+  printf("%d\n", getpid()); fflush(stdout);
+  if (!strcmp(m, "reopen_read")) {            /* N x (open, read, close[, pause us]) */
+    int pause = argc > 4 ? atoi(argv[4]) : 0;
+    for (int i = 0; i < atoi(argv[3]); i++) { int fd = open(p, O_RDONLY); rd(fd); close(fd); if (pause) usleep(pause); }
+  } else if (!strcmp(m, "reopen_write_read")) { /* N x (open rw, write, read, close[, pause us]) */
+    int pause = argc > 4 ? atoi(argv[4]) : 0;
+    for (int i = 0; i < atoi(argv[3]); i++) { int fd = open(p, O_RDWR); wr(fd); lseek(fd, 0, SEEK_SET); rd(fd); close(fd); if (pause) usleep(pause); }
+  } else if (!strcmp(m, "read_then_write")) {  /* one open: 5 reads then 5 writes */
+    int fd = open(p, O_RDWR); for (int i = 0; i < 5; i++) rd(fd); for (int i = 0; i < 5; i++) wr(fd); close(fd);
+  } else if (!strcmp(m, "write_then_read")) {  /* one open: 5 writes then 5 reads */
+    int fd = open(p, O_RDWR); for (int i = 0; i < 5; i++) wr(fd); lseek(fd, 0, SEEK_SET); for (int i = 0; i < 5; i++) rd(fd); close(fd);
+  } else if (!strcmp(m, "dup")) {              /* same open description via dup: one read */
+    int fd = open(p, O_RDONLY); int d = dup(fd); rd(fd); rd(d); close(d); close(fd);
+  } else if (!strcmp(m, "two_opens")) {        /* two open descriptions of one inode at once */
+    int a = open(p, O_RDONLY), b = open(p, O_RDONLY); rd(a); rd(b); close(a); close(b);
+  } else if (!strcmp(m, "fork_inherit")) {     /* parent reads, child reads the inherited fd */
+    int fd = open(p, O_RDONLY); rd(fd);
+    pid_t c = fork(); if (c == 0) { printf("%d\n", getpid()); fflush(stdout); rd(fd); _exit(0); }
+    waitpid(c, 0, 0); close(fd);
+  } else if (!strcmp(m, "concurrent")) {       /* N children, each opens and reads */
+    int n = atoi(argv[3]);
+    for (int i = 0; i < n; i++) if (fork() == 0) { int fd = open(p, O_RDONLY); rd(fd); close(fd); _exit(0); }
+    for (int i = 0; i < n; i++) wait(0);
+  } else if (!strcmp(m, "exec_stage1")) {      /* same pid: read input, close, exec stage2 */
+    for (int i = 0; i < 50; i++) { int fd = open(p, O_RDONLY); rd(fd); close(fd); usleep(2000); }
+    usleep(20000);  /* let RCU free the last struct file so stage2 may get its address */
+    execl(argv[0], argv[0], "exec_stage2", p, argv[3], (char *)0); exit(12);
+  } else if (!strcmp(m, "exec_stage2")) {      /* new image, same pid: reopen input, write output */
+    int fd = open(p, O_RDONLY); rd(fd); close(fd);
+    int o = open(argv[3], O_WRONLY | O_CREAT | O_TRUNC, 0644); wr(o); close(o);
+  } else return 2;
+  return 0;
+}
+"""
+
+
+@unittest.skipUnless(READY, "requires Linux + root/CAP_BPF + BCC + kernel headers")
+class IoSeenSemanticsTests(unittest.TestCase):
+    """First-read/first-write dedup (io_seen) must never let state from an earlier
+    open suppress a later open's events.  The kernel re-uses freed struct file
+    memory, so a reopen in the same process often gets the same pointer."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory(prefix="whyfs-ioseen-")
+        self.root = Path(self.td.name).resolve()
+        self.prog = cc(self.root, "ioseen", IOSEEN_HELPER)
+        (self.root / "f.txt").write_text("0123456789")
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def run_helper(self, *args):
+        s = Live(self.root)
+        p = subprocess.run([str(self.prog), *args], cwd=self.root, capture_output=True, text=True, check=True)
+        s.stop()
+        return [int(x) for x in p.stdout.split()], connect(self.root)
+
+    def io(self, con, pid, path, read):
+        return con.execute("SELECT COUNT(*) FROM events WHERE os_pid=? AND path=? AND kind='io' AND is_read=? AND is_write=?",
+                           (pid, str(path), int(read), int(not read))).fetchone()[0]
+
+    def opens(self, con, pid, path):
+        return con.execute("SELECT COUNT(*) FROM events WHERE os_pid=? AND path=? AND kind='open'", (pid, str(path))).fetchone()[0]
+
+    def test_every_reopen_reports_its_first_read(self):
+        # Pauses let RCU free each closed struct file, so reopens re-use its address:
+        # exactly the case where stale dedup state would swallow the new open's read.
+        f = self.root / "f.txt"
+        (pid,), con = self.run_helper("reopen_read", str(f), "100", "5000")
+        self.assertEqual(self.opens(con, pid, f), 100)
+        self.assertEqual(self.io(con, pid, f, read=True), 100, "stale io_seen state suppressed a reopen's first read")
+
+    def test_back_to_back_reopens_report_every_read(self):
+        f = self.root / "f.txt"
+        (pid,), con = self.run_helper("reopen_read", str(f), "200")
+        self.assertEqual((self.opens(con, pid, f), self.io(con, pid, f, read=True)), (200, 200))
+
+    def test_every_reopen_reports_write_and_read(self):
+        f = self.root / "f.txt"
+        (pid,), con = self.run_helper("reopen_write_read", str(f), "100", "5000")
+        self.assertEqual(self.io(con, pid, f, read=False), 100)
+        self.assertEqual(self.io(con, pid, f, read=True), 100)
+
+    def test_read_then_write_on_one_open_reports_one_each(self):
+        f = self.root / "f.txt"
+        (pid,), con = self.run_helper("read_then_write", str(f))
+        self.assertEqual((self.io(con, pid, f, True), self.io(con, pid, f, False)), (1, 1))
+
+    def test_write_then_read_on_one_open_reports_one_each(self):
+        f = self.root / "f.txt"
+        (pid,), con = self.run_helper("write_then_read", str(f))
+        self.assertEqual((self.io(con, pid, f, True), self.io(con, pid, f, False)), (1, 1))
+
+    def test_dup_shares_the_open_description(self):
+        f = self.root / "f.txt"
+        (pid,), con = self.run_helper("dup", str(f))
+        self.assertEqual(self.io(con, pid, f, True), 1)
+
+    def test_two_opens_of_one_inode_are_independent(self):
+        f = self.root / "f.txt"
+        (pid,), con = self.run_helper("two_opens", str(f))
+        self.assertEqual((self.opens(con, pid, f), self.io(con, pid, f, True)), (2, 2))
+
+    def test_fork_child_reports_its_read_of_an_inherited_fd(self):
+        f = self.root / "f.txt"
+        (parent, child), con = self.run_helper("fork_inherit", str(f))
+        self.assertEqual((self.io(con, parent, f, True), self.io(con, child, f, True)), (1, 1))
+
+    def test_concurrent_processes_each_report_their_read(self):
+        f = self.root / "f.txt"
+        _pid, con = self.run_helper("concurrent", str(f), "8")
+        n = con.execute("SELECT COUNT(DISTINCT os_pid) FROM events WHERE path=? AND kind='io' AND is_read=1 AND os_pid != ?",
+                        (str(f), _pid[0])).fetchone()[0]
+        self.assertEqual(n, 8)
+
+    def test_new_image_reopening_its_input_keeps_lineage(self):
+        f, out = self.root / "f.txt", self.root / "out.txt"
+        pids, con = self.run_helper("exec_stage1", str(f), str(out))
+        pid = pids[0]
+        self.assertEqual(pids, [pid, pid], "both images must run in the same process")
+        self.assertEqual(self.io(con, pid, f, True), 51)
+        w = why(con, str(out))
+        self.assertEqual(w["inputs"], [str(f)], "the exec'd image's read of its input was suppressed")
 
 
 def whyfs_cli(root: Path, *args: str, user: str | None = None) -> subprocess.CompletedProcess:

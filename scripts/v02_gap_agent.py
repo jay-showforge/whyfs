@@ -94,6 +94,7 @@ def main() -> int:
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--run-id", required=True)
     ap.add_argument("--src", default=str(REPO / "src"))
+    ap.add_argument("--cflags", default="", help="extra BPF cflags (diagnostic variants), space separated")
     a = ap.parse_args()
     ws = Path(a.workspace).resolve()
     mode = {"discard": False, "nostore": False}
@@ -101,7 +102,7 @@ def main() -> int:
 
     store = Store(ws).start()
     store.call("begin_run", a.run_id, time.time_ns(), str(ws))
-    c = BCCCollector(ws, a.run_id, store=store)
+    c = BCCCollector(ws, a.run_id, store=store, extra_cflags=a.cflags.split() if a.cflags else None)
 
     orig_cb = c._process_event
     c._process_event = lambda ctx, data, size: None if mode["discard"] else orig_cb(ctx, data, size)
@@ -171,7 +172,7 @@ def main() -> int:
         sys.stdout.write(json.dumps(obj) + "\n")
         sys.stdout.flush()
 
-    reply({"ready": True, "pid": os.getpid(), "store_pid": store.pid, "src": _SRC,
+    reply({"ready": True, "pid": os.getpid(), "store_pid": store.pid, "src": _SRC, "cflags": a.cflags,
            "batched_handoff": hasattr(c, "flush_pending")})
     for line in sys.stdin:
         cmd = line.split()
