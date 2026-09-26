@@ -1,4 +1,4 @@
-﻿"""End-to-end Windows flow as an ordinary user (run via asuser.exe): no elevation anywhere.
+"""End-to-end Windows flow as an ordinary user (run via asuser.exe): no elevation anywhere.
 
 init -> daemon start (service) -> workload -> daemon stop -> why / impact / history (CLI)."""
 import ctypes

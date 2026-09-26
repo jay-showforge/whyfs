@@ -1,4 +1,4 @@
-﻿// ETW field probe (diagnostic): which Kernel-File / Kernel-Process events does this
+// ETW field probe (diagnostic): which Kernel-File / Kernel-Process events does this
 // Windows build emit for a workload, and with which fields?  Launches the workload
 // itself so it knows the root pid, follows its process tree, and dumps every event of
 // tracked processes with all TDH-decoded properties.

@@ -1,4 +1,4 @@
-﻿// whyfs-collect-win: native Windows collector for whyfs (ETW -> canonical whyfs records).
+// whyfs-collect-win: native Windows collector for whyfs (ETW -> canonical whyfs records).
 //
 // Kernel sources (verified on this Windows build: native/windows/probe/FINDINGS.md):
 //   session "<name>"      Microsoft-Windows-Kernel-File (Create, Cleanup, Close, Read, Write,
@@ -245,7 +245,7 @@ static char *redact_cmdline_w(const wchar_t *cmd) {
 
 // ---------------------------------------------------------------- decoded kernel records (the Windows contract)
 enum { R_PROC_START = 1, R_PROC_INFO, R_PROC_END, R_CREATE, R_CLEANUP, R_KEYINFO, R_READ, R_WRITE, R_DELETE_PATH,
-       R_RENAME_PATH, R_NAME_DELETE, R_MAP };
+       R_RENAME_PATH, R_NAME_DELETE, R_MAP, R_CLOSE };
 typedef struct {
     int64_t ts;       // wall-clock ns
     uint64_t order;   // arrival order (stable tie-break)
@@ -258,14 +258,15 @@ static void rec_free(rec_t *r) { free(r->s1); free(r->s2); free(r); }
 
 // ---------------------------------------------------------------- model state
 typedef struct { uint64_t submitted, filtered, unresolved_fo, other_user, received, kernel_lost, queue_drops, unmapped_paths,
-                 proc_fallbacks, user_unresolved; } stats_t;
+                 proc_fallbacks, user_unresolved, foreign_fo; } stats_t;
 static stats_t st;
 typedef struct { int64_t ts, pid, os_pid, ppid, parent_key; int has_ppid, has_parent_key; char *exe, *command; } prow_t;
 static void prow_free(void *p) { prow_t *r = p; if (r) { free(r->exe); free(r->command); free(r); } }
 typedef struct { int64_t ts, pid, os_pid; char *path; } pexec_t;
 typedef struct { pexec_t v[16]; int n; } pexecs_t;
 static void pexecs_free(void *p) { pexecs_t *x = p; if (x) { for (int i = 0; i < x->n; i++) free(x->v[i].path); free(x); } }
-typedef struct { char *path; uint32_t opts; uint64_t seen[4]; uint8_t bits[4]; int nseen; } fobj_t;  // seen: process keys
+// creator: process key that opened it.  seen: process keys that already reported first read/write.
+typedef struct { char *path; uint32_t opts; uint64_t creator; uint64_t seen[4]; uint8_t bits[4]; int nseen; } fobj_t;
 static void fobj_free(void *p) { fobj_t *f = p; if (f) { free(f->path); free(f); } }
 typedef struct { char *exe, *cmd; } image_t;
 static void image_free(void *p) { image_t *i = p; if (i) { free(i->exe); free(i->cmd); free(i); } }
@@ -464,6 +465,15 @@ static void sweep_held(int64_t now_ts) {  // user never resolved: count, never g
 
 #define FILE_DIRECTORY_FILE 0x1
 #define FILE_DELETE_ON_CLOSE 0x1000
+static int descends_from(uint64_t k, uint64_t ancestor) {
+    for (int hop = 0; hop < 32; hop++) {
+        prow_t *row = map_get(&proc_rows, k, NULL);
+        if (!row || !row->has_parent_key) return 0;
+        k = (uint64_t)row->parent_key;
+        if (k == ancestor) return 1;
+    }
+    return 0;
+}
 static void process_rec(rec_t *r) {
     st.received++;
     uint32_t pid = r->pid;
@@ -525,17 +535,19 @@ static void process_rec(rec_t *r) {
         int is_dir = (r->flags & FILE_DIRECTORY_FILE) != 0;
         if (!path) { map_pop(&fobjs, r->fo, NULL); st.unmapped_paths++; return; }
         if (is_dir || in_ws(path, capture_all) || is_temp(path)) {
-            fobj_t *f = calloc(1, sizeof *f); f->path = xstrdup(path); f->opts = r->flags;
+            fobj_t *f = calloc(1, sizeof *f); f->path = xstrdup(path); f->opts = r->flags; f->creator = key_of(pid, ts);
             map_put(&fobjs, r->fo, NULL, f);
         } else map_pop(&fobjs, r->fo, NULL);
-        if (is_dir || !in_ws(path, capture_all)) { st.filtered++; return; }
-        GATE_FILE(uok, pid, ts, K_OPEN, path, 0, NULL, "etw:open", 1, (int64_t)(r->flags >> 24), 1, 0, 0);
+        // No "open" record on Windows: Kernel-File logs a Create when it is issued, so it
+        // cannot tell a successful open from a failed probe (e.g. debuggers and runtimes
+        // probing for *.pdb files).  Evidence is read/write/map/rename/delete/exec only.
         return;
     }
     fobj_t *f = r->fo ? map_get(&fobjs, r->fo, NULL) : NULL;
     if (f && r->key) map_put(&fkeys, r->key, NULL, xstrdup(f->path));  // learn FileKey -> path
     switch (r->type) {
     case R_KEYINFO: return;
+    case R_CLOSE: map_pop(&fobjs, r->fo, NULL); return;  // IRP_MJ_CLOSE: the file object is freed
     case R_NAME_DELETE: map_pop(&fkeys, r->key, NULL); return;
     case R_CLEANUP:
         if (f && (f->opts & FILE_DELETE_ON_CLOSE) && uok != 0) {
@@ -549,8 +561,14 @@ static void process_rec(rec_t *r) {
         if (!f) { st.filtered++; return; }
         if (uok == 0) { st.other_user++; return; }
         if (f->opts & FILE_DIRECTORY_FILE) return;
+        uint64_t k = key_of(pid, ts);
+        // A file object is used by the process that opened it or by a descendant that
+        // inherited the handle.  In an unrelated process the pointer is a reused object
+        // whose own creation Kernel-File does not log (a pipe, a socket) or whose create
+        // failed: never attribute it.
+        if (k != f->creator && !descends_from(k, f->creator)) { st.foreign_fo++; return; }
         int is_write = r->type == R_WRITE;
-        if (!first_io(f, key_of(pid, ts), is_write)) return;
+        if (!first_io(f, k, is_write)) return;
         char *p = xstrdup(f->path);
         GATE_IO(uok, pid, ts, p, is_write, "etw:rw", "etw:rw:derived-temp");
         free(p);
@@ -951,7 +969,8 @@ static void WINAPI on_file_event(PEVENT_RECORD ev) {
     switch (id) {
     case 12: case 30: r->type = R_CREATE; r->flags = rd_u32(ev, L->off_opts); r->s1 = rd_path(ev, L->off_str); break;
     case 13: r->type = R_CLEANUP; break;
-    case 14: case 22: r->type = R_KEYINFO; break;
+    case 14: r->type = R_CLOSE; break;
+    case 22: r->type = R_KEYINFO; break;
     case 15: r->type = R_READ; break;
     case 16: r->type = R_WRITE; break;
     case 26: r->type = R_DELETE_PATH; r->s1 = rd_path(ev, L->off_str); break;
@@ -1079,10 +1098,10 @@ static DWORD WINAPI stdin_watch(LPVOID arg) {
 static void print_stats(void) {
     printf("{\"received\":%llu,\"submitted\":%llu,\"filtered\":%llu,\"other_user\":%llu,\"unmapped_paths\":%llu,"
            "\"kernel_drops\":%llu,\"queue_drops\":%llu,\"proc_fallbacks\":%llu,\"writer_rows\":%llu,\"writer_batches\":%llu,"
-           "\"writer_max_batch\":%llu,\"writer_failed\":%d,\"pending_exec\":%zu,\"user_unresolved\":%llu,\"cb_file\":%lld,\"cb_sys\":%lld,"
+           "\"writer_max_batch\":%llu,\"writer_failed\":%d,\"pending_exec\":%zu,\"user_unresolved\":%llu,\"foreign_file_object\":%llu,\"cb_file\":%lld,\"cb_sys\":%lld,"
            "\"lost_file\":%lu,\"lost_sys\":%lu,\"buffers_lost_file\":%lu,\"buffers_lost_sys\":%lu,\"max_lag_file_ms\":%.1f,\"max_lag_sys_ms\":%.1f,\"late_records\":%llu}\n",
            st.received, st.submitted, st.filtered, st.other_user, st.unmapped_paths, st.kernel_lost, st.queue_drops, st.proc_fallbacks,
-           w_rows, w_batches, w_max, writer_failed, pending_exec.count, st.user_unresolved, (long long)n_cb_file, (long long)n_cb_sys,
+           w_rows, w_batches, w_max, writer_failed, pending_exec.count, st.user_unresolved, st.foreign_fo, (long long)n_cb_file, (long long)n_cb_sys,
            lost_a, lost_b, bufs_lost_a, bufs_lost_b, max_lag_file / 1e6, max_lag_sys / 1e6, late_records);
     fflush(stdout);
 }

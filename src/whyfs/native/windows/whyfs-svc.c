@@ -1,4 +1,4 @@
-﻿// whyfs-svc: the Windows service that runs whyfs collectors on behalf of ordinary users.
+// whyfs-svc: the Windows service that runs whyfs collectors on behalf of ordinary users.
 //
 // Kernel tracing (ETW) needs administrator rights; asking a question about a file should
 // not.  The service (LocalSystem, installed once) serves a named pipe to local

@@ -1,4 +1,4 @@
-﻿import re, struct, sys
+import re, struct, sys
 fo, key, procs, hits = {}, {}, {}, []
 for line in open(sys.argv[1], encoding="utf-8-sig"):
     m = re.match(r"^SYSP .*opc=1 .*?\| .*ProcessId=(0x[0-9A-F]+) .*ImageFileName=(\S+)", line)

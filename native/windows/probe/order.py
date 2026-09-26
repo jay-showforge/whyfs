@@ -1,4 +1,4 @@
-﻿import re, sys
+import re, sys
 created = {}; seen_ts = {}; inversions = 0; late_create = 0; total = 0; prev_ts = {}; back = {"FILE": 0, "SYSP": 0, "PROC": 0}
 first_use = {}
 for n, line in enumerate(open(sys.argv[1], encoding="utf-8-sig")):

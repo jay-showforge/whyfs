@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import json
@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .daemon import capability_report, run_foreground, start_background, status as daemon_status, stop_background
 from .query import history as qhistory
-from .query import impact as qimpact
+from .query import impact_details
 from .query import raw_process_events
 from .query import why as qwhy
 from .store import connect, import_log, normalize
@@ -122,7 +122,7 @@ def cmd_trace(a):
             log.unlink()
         except OSError:
             pass
-    print(f"whyfs: captured {n} events Â· run {run_id[:8]} Â· exit {proc.returncode}", file=sys.stderr)
+    print(f"whyfs: captured {n} events · run {run_id[:8]} · exit {proc.returncode}", file=sys.stderr)
     return proc.returncode
 
 
@@ -146,17 +146,17 @@ def cmd_why(a):
         return 1
     print(result["path"])
     for mv in result.get("renamed_from") or []:
-        print(f"â”œâ”€â”€ moved from {mv['from']}  (by {mv['exe'] or '?'}, pid {mv['pid']})")
+        print(f"├── moved from {mv['from']}  (by {mv['exe'] or '?'}, pid {mv['pid']})")
     if result.get("run_id") is None:
-        print("â””â”€â”€ original writer not observed")
+        print("└── original writer not observed")
         return 0
-    print(f"â””â”€â”€ created by {result['exe']}  (pid {result['pid']})")
+    print(f"└── created by {result['exe']}  (pid {result['pid']})")
     print(f"    run: {result['command']}")
     par = result.get("parent")
     if par and par.get("exe"):
         cmd = par.get("command") or ""
         cmd = cmd if len(cmd) <= 100 else cmd[:97] + "..."
-        print(f"    parent: {par['exe'] or '(image unknown)'}  (pid {par['pid']})" + (f"  Â· {cmd}" if cmd else ""))
+        print(f"    parent: {par['exe'] or '(image unknown)'}  (pid {par['pid']})" + (f"  · {cmd}" if cmd else ""))
     print(f"    evidence: {result['collector']}")
     if result["inputs"]:
         if result.get("shared_by_outputs"):
@@ -165,9 +165,9 @@ def cmd_why(a):
         else:
             print("    inputs:")
         for p in result["inputs"][: a.limit]:
-            print(f"      â”œâ”€â”€ {p}")
+            print(f"      ├── {p}")
         if len(result["inputs"]) > a.limit:
-            print(f"      â””â”€â”€ +{len(result['inputs']) - a.limit} more")
+            print(f"      └── +{len(result['inputs']) - a.limit} more")
     else:
         print("    inputs: none recorded")
     for t in result.get("temporaries") or []:
@@ -175,7 +175,7 @@ def cmd_why(a):
     if result.get("inputs_via_temporaries"):
         print("    inputs through temporaries:")
         for p in result["inputs_via_temporaries"][: a.limit]:
-            print(f"      â”œâ”€â”€ {p}")
+            print(f"      ├── {p}")
     if result.get("hidden_input_count") and not show_all:
         print(f"    ({result['hidden_input_count']} system/runtime/dependency reads hidden; use --raw)")
     if a.raw:
@@ -200,24 +200,26 @@ def cmd_history(a):
     print(normalize(a.file))
     for r in rows:
         stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(r["ts_ns"] / 1e9))
-        print(f"{stamp}  {r['kind']:<7}  {(r['exe'] or '?')}  Â· {r['command']}")
+        print(f"{stamp}  {r['kind']:<7}  {(r['exe'] or '?')}  · {r['command']}")
     return 0
 
 
 def cmd_impact(a):
     _root, con = _root_and_con(a.file)
-    edges = qimpact(con, a.file, a.depth, a.all)
+    edges = impact_details(con, a.file, a.depth, a.all)
     con.close()
     if a.json:
-        print(json.dumps([{"from": x, "to": y, "exe": e, "run_id": r} for x, y, e, r in edges], indent=2))
+        print(json.dumps(edges, indent=2))
         return 0
     start = normalize(a.file)
     print(start)
     if not edges:
-        print("â””â”€â”€ no recorded downstream outputs")
+        print("└── no recorded downstream outputs")
         return 0
-    for _src, dst, exe, run in edges:
-        print(f"â”œâ”€â”€ {dst}\nâ”‚   via {exe}  [{run[:8]}]")
+    for e in edges:
+        note = (f"  (one of {e['shared']} outputs this process wrote after reading it; which of them used it is not "
+                "observable)") if e["shared"] else ""
+        print(f"├── {e['to']}\n│   via {e['exe']}  [{e['run_id'][:8]}]{note}")
     return 0
 
 
@@ -238,9 +240,9 @@ def cmd_stats(a):
         print(json.dumps(counts, indent=2))
     else:
         print(
-            f"runs {counts['runs']} Â· processes {counts['processes']} Â· events {counts['events']} "
-            f"Â· kernel drops {counts['kernel_drops']} Â· queue drops {counts['queue_drops']} "
-            f"Â· db {counts['bytes']/1024:.1f} KiB"
+            f"runs {counts['runs']} · processes {counts['processes']} · events {counts['events']} "
+            f"· kernel drops {counts['kernel_drops']} · queue drops {counts['queue_drops']} "
+            f"· db {counts['bytes']/1024:.1f} KiB"
         )
 
 
@@ -275,7 +277,7 @@ def cmd_daemon(a):
         return run_foreground(root, capture_all=a.all_files)
     if a.action == "start":
         s = start_background(root, capture_all=a.all_files)
-        print(f"whyfs daemon running Â· pid {s['pid']} Â· workspace {s['workspace']}")
+        print(f"whyfs daemon running · pid {s['pid']} · workspace {s['workspace']}")
         return 0
     if a.action == "stop":
         stopped = stop_background(root)
@@ -286,9 +288,9 @@ def cmd_daemon(a):
         if a.json:
             print(json.dumps(s, indent=2))
         elif s["running"]:
-            print(f"running Â· pid {s['pid']} Â· {s['backend']} Â· workspace {s['workspace']}")
+            print(f"running · pid {s['pid']} · {s['backend']} · workspace {s['workspace']}")
         else:
-            print(f"not running Â· workspace {s['workspace']}")
+            print(f"not running · workspace {s['workspace']}")
         return 0 if s["running"] else 1
     raise SystemExit("unknown daemon action")
 

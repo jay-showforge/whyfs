@@ -1,4 +1,4 @@
-﻿"""Summarize etw_probe output: per process, which probe-dir files were created/read/written/renamed/deleted."""
+"""Summarize etw_probe output: per process, which probe-dir files were created/read/written/renamed/deleted."""
 import re
 import sys
 from collections import defaultdict

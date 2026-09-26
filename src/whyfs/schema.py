@@ -29,7 +29,6 @@ EVIDENCE = {
     "etw:mmap:derived-temp": ("mapped-io", "mapping of such a temporary"),
     # access intent without observed bytes
     "ebpf:open": ("open", "file opened (flags recorded); not evidence of data flow by itself"),
-    "etw:open": ("open", "file opened (create disposition recorded); not evidence of data flow by itself"),
     # namespace operations
     "ebpf:rename": ("rename", "rename/move observed at do_renameat2 (success checked)"),
     "etw:rename": ("rename", "rename/move (RenamePath: new name; old name from the file object)"),

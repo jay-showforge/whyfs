@@ -34,7 +34,7 @@ def collector() -> Path | None:
 
 EXE = collector()
 R_PROC_START, R_PROC_INFO, R_PROC_END, R_CREATE, R_CLEANUP, R_KEYINFO, R_READ, R_WRITE, R_DELETE_PATH, R_RENAME_PATH, \
-    R_NAME_DELETE, R_MAP = range(1, 13)
+    R_NAME_DELETE, R_MAP, R_CLOSE = range(1, 14)
 OPEN, CREATE_NEW, OVERWRITE_IF = 0x01000000, 0x02000000, 0x05000000
 DIRECTORY, DELETE_ON_CLOSE = 0x1, 0x1000
 
@@ -281,6 +281,32 @@ class WindowsModelTests(unittest.TestCase):
         shared = {n: why(con, str(self.root / n))["shared_by_outputs"] for n in ("a.obj", "b.obj", "x.obj", "y.obj", "u.obj")}
         con.close()
         self.assertEqual(shared, {"a.obj": 1, "b.obj": 1, "x.obj": 0, "y.obj": 1, "u.obj": 0})
+
+    def test_reused_file_object_in_an_unrelated_process_is_not_attributed(self):
+        """Regression: node probed for a missing symbols\\x.pdb (the Create failed), the kernel
+        reused the file object for Chrome's pipe, and Chrome's pipe write was stored as a
+        write of the workspace path."""
+        s, f = self.s, self.s.new_fo()
+        s.proc(1800, SHELL, r"C:\node\node.exe", "node build.js").open(1800, f, r"symbols\x.pdb")   # failed probe
+        s.proc(1801, 4, r"C:\Chrome\chrome.exe", "chrome --no-startup-window").write(1801, f)       # unrelated process
+        items, st = s.replay()
+        self.assertEqual([x for x in items if x.get("os_pid") == 1801], [])
+        self.assertEqual(self.io(items, True), [])
+        self.assertEqual(st["foreign_file_object"], 1)
+
+    def test_close_retires_the_file_object(self):
+        s, f = self.s, self.s.new_fo()
+        s.proc(1900, SHELL, PY, "x").open(1900, f, "a.txt").read(1900, f).add(R_CLOSE, 1900, fo=f).write(1900, f)
+        items, _ = s.replay()
+        self.assertEqual((self.io(items, False), self.io(items, True)), ([(1900, "a.txt")], []))
+
+    def test_no_open_records_on_windows(self):
+        """Kernel-File logs Create when it is issued: success is unknown, so no open evidence."""
+        s, f = self.s, self.s.new_fo()
+        s.proc(2000, SHELL, PY, "probe").open(2000, f, "maybe-missing.cfg")
+        items, _ = s.replay()
+        self.assertEqual([x for x in items if x["kind"] == "open"], [])
+        self.assertEqual([x for x in items if x.get("os_pid") == 2000], [], "a probe alone does not make a process relevant")
 
     def test_impact_and_history(self):
         s, a, b, c = self.s, self.s.new_fo(), self.s.new_fo(), self.s.new_fo()

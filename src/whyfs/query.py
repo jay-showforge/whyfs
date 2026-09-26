@@ -125,7 +125,8 @@ def process_outputs(con: sqlite3.Connection, run_id: str, pid: int, workspace: s
     rows = con.execute(
         """
       SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns
-      FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename') AND ts_ns>=?
+      FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename')
+        AND (ts_ns>=? OR (is_write=1 AND api LIKE '%:mmap%'))  -- a writable view can take data read later
       GROUP BY out_path ORDER BY MIN(id)
     """,
         (run_id, pid, since_ns),
@@ -137,6 +138,10 @@ def process_outputs(con: sqlite3.Connection, run_id: str, pid: int, workspace: s
             continue
         out.append(p)
     return out
+
+
+def _mapped_write(api: str | None) -> bool:
+    return bool(api) and ":mmap" in api
 
 
 def _self_deleted_after(con: sqlite3.Connection, run_id: str, pid: int, path: str, ts_ns: int) -> bool:
@@ -227,10 +232,12 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
     if not w:
         return None
     before = w["ts_ns"]
-    if w["kind"] == "open":
+    if w["kind"] == "open" or _mapped_write(w["api"]):
         # Open-only evidence (the v0.1 preload backend records opens, not writes): the
         # data may be written after later reads -- in `cmd in > out` the shell opens
         # `out` before `cmd` opens `in` -- so bound inputs by the end of the process.
+        # A writable mapping likewise: bytes reach the file through memory for as long as
+        # the view exists (MSVC link maps its output before mapping its inputs).
         last = con.execute("SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=?", (w["run_id"], w["pid"])).fetchone()[0]
         before = max(before, last or before)
     inputs, hidden = process_inputs(con, w["run_id"], w["pid"], before, w["workspace"], include_noise)
@@ -345,6 +352,13 @@ def history(con: sqlite3.Connection, path: str, limit=20):
 
 
 def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False):
+    """Downstream edges (from, to, exe, run_id).  impact_details() adds, per edge, how many
+    outputs the reading process wrote after reading `from` (`shared` > 1: per-output
+    attribution is not observable, e.g. one MSVC `cl` compiling several files)."""
+    return [(e["from"], e["to"], e["exe"], e["run_id"]) for e in impact_details(con, path, max_depth, include_noise)]
+
+
+def impact_details(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False) -> list[dict]:
     start = normalize(path)
     seen_files = {pkey(start)}
     frontier = [start]
@@ -371,19 +385,26 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
             ).fetchall():
                 o = mv["path2"]
                 if o and pkey(o) != pkey(f):
-                    edges.append((f, o, (mv["exe"] or "?") + " (rename)", mv["run_id"]))
+                    edges.append({"from": f, "to": o, "exe": (mv["exe"] or "?") + " (rename)", "run_id": mv["run_id"],
+                                  "shared": 0})
                     if pkey(o) not in seen_files:
                         seen_files.add(pkey(o))
                         nxt.append(o)
             for rr in readers:
+                # A process reading back a file it wrote itself is not consuming an input
+                # (MSVC `cl` re-reads each object it writes); raw view keeps it.
+                if not include_noise and _self_written_before(con, rr["run_id"], rr["pid"], f, rr["first_read_ns"] + 1):
+                    continue
                 # Read-before-write ordering needs observed reads; open-only evidence
                 # (v0.1 preload) links the process's outputs as a whole.
                 outs = process_outputs(con, rr["run_id"], rr["pid"], rr["workspace"], include_noise,
                                        since_ns=rr["first_read_ns"] if rr["observed_io"] else 0)
+                shared = len([o for o in outs if pkey(o) != pkey(f)])
                 for o in outs:
                     if pkey(o) == pkey(f):
                         continue
-                    edges.append((f, o, rr["exe"] or "?", rr["run_id"]))
+                    edges.append({"from": f, "to": o, "exe": rr["exe"] or "?", "run_id": rr["run_id"],
+                                  "shared": shared if shared > 1 else 0})
                     if pkey(o) not in seen_files:
                         seen_files.add(pkey(o))
                         nxt.append(o)

@@ -1,4 +1,4 @@
-﻿"""Live smoke test of the Windows collector (run elevated): workload -> collector -> why/impact."""
+"""Live smoke test of the Windows collector (run elevated): workload -> collector -> why/impact."""
 import json
 import os
 import shutil
