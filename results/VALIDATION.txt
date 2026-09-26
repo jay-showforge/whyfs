@@ -1,0 +1,50 @@
+# whyfs v0.2 alpha validation
+2026-09-26T04:55:02Z
+
+## tests
+test_batched_ingest_preserves_raw_evidence (test_ebpf_userspace.EbpfUserspaceTests.test_batched_ingest_preserves_raw_evidence) ... ok
+test_doctor_is_machine_readable (test_ebpf_userspace.EbpfUserspaceTests.test_doctor_is_machine_readable) ... ok
+test_fd_resolution_and_workspace_filtering (test_ebpf_userspace.EbpfUserspaceTests.test_fd_resolution_and_workspace_filtering) ... ok
+test_outside_workspace_filtered (test_ebpf_userspace.EbpfUserspaceTests.test_outside_workspace_filtered) ... ok
+test_preload_fallback_does_not_claim_static_binary_lineage (test_integration.WhyFSIntegration.test_preload_fallback_does_not_claim_static_binary_lineage)
+v0.1 must fail honestly where v0.2 eBPF is supposed to win. ... ok
+test_redaction_helper (test_integration.WhyFSIntegration.test_redaction_helper) ... ok
+test_why_impact_history (test_integration.WhyFSIntegration.test_why_impact_history) ... ok
+test_workspace_filter_is_default (test_integration.WhyFSIntegration.test_workspace_filter_is_default) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 8.645s
+
+OK
+
+## doctor
+{
+  "linux": true,
+  "euid": 0,
+  "bcc_importable": false,
+  "bpf_fs": true,
+  "btf_vmlinux": false,
+  "cap_bpf": false,
+  "cap_perfmon": false,
+  "ready": false
+}
+
+## authoritative gate on this host
+{
+  "doctor": {
+    "linux": true,
+    "euid": 0,
+    "bcc_importable": false,
+    "bpf_fs": true,
+    "btf_vmlinux": false,
+    "cap_bpf": false,
+    "cap_perfmon": false,
+    "ready": false
+  },
+  "checks": {},
+  "verdict": "BLOCKED_ENVIRONMENT",
+  "reason": "eBPF/BCC capability check failed"
+}
+
+## strict preload native compile
+PASS

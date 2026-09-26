@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "whyfs"
+version = "0.2.0a0"
+description = "Local file provenance: ask why a file exists, what created it, and what depends on it."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Jonathan Tyler Montgomery"}]
+keywords = ["provenance", "lineage", "filesystem", "debugging", "reproducibility", "agents"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+]
+
+[project.scripts]
+whyfs = "whyfs.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.package-data]
+whyfs = ["libwhyfs.c"]
