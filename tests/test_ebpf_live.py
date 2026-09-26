@@ -254,6 +254,23 @@ class LiveKernelTests(unittest.TestCase):
         st = s.stop()
         self.assertGreater(st.kernel_drops, 0, "overflow must be counted")
 
+    @unittest.skipUnless(shutil.which("node"), "node not installed")
+    def test_node_async_fs_io_uring_is_captured(self):
+        """libuv >= 1.45 (Ubuntu 24.04's Node) performs async fs through io_uring,
+        which syscall tracepoints never see.  A real Vite build lost every output."""
+        (self.root / "in.txt").write_text("from node\n")
+        s = Live(self.root)
+        sh("node -e \"const fs=require('fs').promises;"
+           "fs.readFile('in.txt').then(d=>fs.writeFile('out.txt', d)).then(()=>fs.rename('out.txt','final.txt'))\"",
+           self.root)
+        s.stop()
+        con = self.con()
+        w = why(con, str(self.root / "final.txt"))
+        self.assertIsNotNone(w, "io_uring file I/O was not observed")
+        self.assertEqual(Path(w["exe"]).name, "node")
+        self.assertIn(str(self.root / "in.txt"), w["inputs"])
+        self.assertEqual(w["renamed_from"][0]["from"], str(self.root / "out.txt"))
+
     def test_queries_during_concurrent_writes(self):
         (self.root / "in.txt").write_text("x\n")
         s = Live(self.root)

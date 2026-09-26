@@ -7,8 +7,9 @@ from .store import normalize
 # Human-view noise only. Raw evidence remains in SQLite and is available with
 # --all/JSON. We never delete an observed edge because a heuristic dislikes it.
 NOISE_PREFIXES = (
-    "/usr/lib/", "/usr/lib64/", "/lib/", "/lib64/", "/usr/share/",
-    "/etc/ld.so", "/proc/", "/sys/", "/dev/", "/run/ld-so-cache/",
+    "/usr/lib/", "/usr/lib64/", "/lib/", "/lib64/", "/usr/share/", "/usr/libexec/",
+    "/usr/bin/", "/usr/sbin/", "/bin/", "/sbin/", "/usr/local/lib/",
+    "/etc/", "/proc/", "/sys/", "/dev/", "/run/",
 )
 NOISE_BASENAMES = {
     ".DS_Store", "ld.so.cache",
@@ -38,15 +39,40 @@ def last_writer(con: sqlite3.Connection, path: str):
     ).fetchone()
 
 
+def _image_start(con: sqlite3.Connection, run_id: str, pid: int, at_ns: int) -> int:
+    """Timestamp of the exec that started the program image active at ``at_ns``.
+
+    One process can exec several images (runuser -> env -> bash -> python).  A
+    file written by the last image was produced by *that* program; reads made
+    by earlier images (e.g. runuser reading /etc/passwd) are not its inputs.
+    Collectors without exec events (v0.1 preload) yield 0 = whole process."""
+    row = con.execute(
+        "SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=?",
+        (run_id, pid, at_ns),
+    ).fetchone()
+    return int(row[0]) if row and row[0] is not None else 0
+
+
 def _input_rows(con: sqlite3.Connection, run_id: str, pid: int, before_ns: int):
+    since = _image_start(con, run_id, pid, before_ns)
     return con.execute(
         """
       SELECT path, MIN(ts_ns) AS first_ns FROM events
-      WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL AND ts_ns<=?
+      WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL AND ts_ns<=? AND ts_ns>=?
       GROUP BY path ORDER BY first_ns
     """,
-        (run_id, pid, before_ns),
+        (run_id, pid, before_ns, since),
     ).fetchall()
+
+
+DEPENDENCY_DIRS = ("node_modules", "site-packages", "dist-packages", "__pycache__")
+
+
+def _is_dependency(path: str) -> bool:
+    """Package-manager trees (e.g. a bundler's own code under node_modules/).
+    Collapsed in the default human view only; always kept as raw evidence."""
+    parts = path.split(os.sep)
+    return any(d in parts for d in DEPENDENCY_DIRS)
 
 
 def process_inputs(con: sqlite3.Connection, run_id: str, pid: int, before_ns: int, workspace: str, include_noise=False):
@@ -55,20 +81,23 @@ def process_inputs(con: sqlite3.Connection, run_id: str, pid: int, before_ns: in
     hidden = 0
     for r in rows:
         p = r["path"]
-        if include_noise or not _is_noise(p, workspace):
+        if include_noise or not (_is_noise(p, workspace) or _is_dependency(p)):
             visible.append(p)
         else:
             hidden += 1
     return visible, hidden
 
 
-def process_outputs(con: sqlite3.Connection, run_id: str, pid: int, workspace: str, include_noise=False):
+def process_outputs(con: sqlite3.Connection, run_id: str, pid: int, workspace: str, include_noise=False,
+                    since_ns: int = 0):
+    """Files a process wrote or moved; with ``since_ns``, only those written at
+    or after that time (an output cannot depend on an input it read later)."""
     rows = con.execute(
         """
       SELECT DISTINCT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path
-      FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename')
+      FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename') AND ts_ns>=?
     """,
-        (run_id, pid),
+        (run_id, pid, since_ns),
     ).fetchall()
     out = []
     for r in rows:
@@ -162,6 +191,11 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
     # own upstream cause (under its current or any earlier name), so suppress
     # the self-edge from the human view while preserving the raw event.
     self_names = {target} | {r["from"] for r in renames}
+    # execve() itself opens/reads/maps the program image.  That is real
+    # evidence (kept, and shown with --raw), but in the human view the program
+    # is already reported as the creator, not as a data input.
+    if not include_noise and w["exe"]:
+        self_names.add(w["exe"])
     inputs = [p for p in inputs if p not in self_names]
     via_inputs, via_temps = _through_temporaries(con, inputs, w["workspace"], w["ts_ns"])
     return {
@@ -208,9 +242,10 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
         for f in frontier:
             readers = con.execute(
                 """
-              SELECT DISTINCT e.run_id,e.pid,r.workspace,pr.exe FROM events e
+              SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns FROM events e
               JOIN runs r ON r.id=e.run_id LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
               WHERE e.path=? AND e.is_read=1
+              GROUP BY e.run_id, e.pid
             """,
                 (f,),
             ).fetchall()
@@ -228,7 +263,8 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
                         seen_files.add(o)
                         nxt.append(o)
             for rr in readers:
-                outs = process_outputs(con, rr["run_id"], rr["pid"], rr["workspace"], include_noise)
+                outs = process_outputs(con, rr["run_id"], rr["pid"], rr["workspace"], include_noise,
+                                       since_ns=rr["first_read_ns"])
                 for o in outs:
                     if o == f:
                         continue

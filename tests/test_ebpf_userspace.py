@@ -19,6 +19,9 @@ class EbpfUserspaceTests(unittest.TestCase):
             p = root / "data.txt"
             p.write_text("hello")
             collector = BCCCollector(root, "test-run")
+            # v0.2 kernel contract: an open carries the kernel's struct file
+            # pointer and the absolute path resolved in-kernel (bpf_d_path);
+            # later I/O on that open file carries only the pointer.
             fd = os.open(p, os.O_RDONLY)
             try:
                 e = KernelEvent()
@@ -26,10 +29,10 @@ class EbpfUserspaceTests(unittest.TestCase):
                 e.tgid = os.getpid()
                 e.tid = os.getpid()
                 e.type = EV_OPEN
-                e.fd = fd
-                e.dirfd = -100
+                e.file = 0xFFFF888000001000
+                e.fd = 0  # regular file, not a directory
                 e.flags = os.O_RDONLY
-                e.path = b"data.txt"
+                e.path = str(p).encode()
                 collector._process_event(None, ct.addressof(e), ct.sizeof(e))
 
                 r = KernelEvent()
@@ -37,7 +40,7 @@ class EbpfUserspaceTests(unittest.TestCase):
                 r.tgid = os.getpid()
                 r.tid = os.getpid()
                 r.type = EV_READ
-                r.fd = fd
+                r.file = 0xFFFF888000001000
                 collector._process_event(None, ct.addressof(r), ct.sizeof(r))
             finally:
                 os.close(fd)
@@ -67,9 +70,10 @@ class EbpfUserspaceTests(unittest.TestCase):
             e.tgid = os.getpid()
             e.tid = os.getpid()
             e.type = EV_OPEN
-            e.fd = outside.file.fileno()
-            e.dirfd = -100
+            e.file = 0xFFFF888000002000
+            e.fd = 0
             e.flags = os.O_RDONLY
+            e.path = os.path.realpath(outside.name).encode()
             collector._process_event(None, ct.addressof(e), ct.sizeof(e))
             self.assertTrue(collector.q.empty())
             self.assertEqual(collector.stats.filtered, 1)

@@ -168,7 +168,7 @@ def cmd_why(a):
         for p in result["inputs_via_temporaries"][: a.limit]:
             print(f"      ├── {p}")
     if result.get("hidden_input_count") and not show_all:
-        print(f"    ({result['hidden_input_count']} system/runtime reads hidden; use --raw)")
+        print(f"    ({result['hidden_input_count']} system/runtime/dependency reads hidden; use --raw)")
     if a.raw:
         print("    raw evidence (creator process, unfiltered):")
         for r in result.get("raw_events", []):
