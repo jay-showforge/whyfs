@@ -552,7 +552,7 @@ class BpfSourceStaticChecks(unittest.TestCase):
         body = src[src.index("wf_cur_tgid(u32 prog)"):]
         body = body[:body.index("\n}")]
         self.assertIn("bpf_get_ns_current_pid_tgid(NS_DEV, NS_INUM", body)
-        self.assertIn("return wf_task_ns_tgid(", body)
+        self.assertIn("wf_task_ns_tgid((struct task_struct *)bpf_get_current_task()", body)  # upid-walk fallback
 
     def test_io_dedup_is_reset_by_one_delete_per_open(self):
         src = m.BPF_SOURCE

@@ -139,9 +139,13 @@ static __always_inline u64 wf_wake(void) {
 }
 
 /* ---- diagnostics (compiled out of the production program) ----
- * WF_PROFILE: per-program counters in wf_prof[prog * 8 + metric]
+ * WF_PROFILE: per-program counters in wf_prof[prog * 16 + metric]
  *   metric 0 calls, 1 early exits (no work), 2 map lookups, 3 map updates,
- *   4 map deletes, 5 ring-buffer records, 6 ring-buffer bytes, 7 upid walks.
+ *   4 map deletes, 5 ring-buffer records, 6 ring-buffer bytes, 7 upid walks,
+ *   9 namespace fast-path misses, 10 foreign tasks (not in our pid namespace).
+ * WF_PROFILE_TIME (with WF_PROFILE): nanoseconds spent in sections,
+ *   8 namespace translation, 11 bpf_d_path, 12 io_seen map operations,
+ *   13 ring-buffer reserve/fill/submit, 14 exec filename + argv copies.
  * WF_NULL_MASK: bit p set -> program p returns immediately (hook-dispatch
  *   ablation for measurement only). */
 #define P_OPEN 0
@@ -160,13 +164,13 @@ static __always_inline u64 wf_wake(void) {
 #define P_EXIT 13
 #define P_NSWALK 14
 #ifdef WF_PROFILE
-BPF_PERCPU_ARRAY(wf_prof, u64, 128);
+BPF_PERCPU_ARRAY(wf_prof, u64, 256);
 static __always_inline void wf_p_add(u32 k, u64 n) {
     u64 *v = wf_prof.lookup(&k);
     if (v) *v += n;
 }
-#define WF_P(prog, m) wf_p_add((prog) * 8 + (m), 1)
-#define WF_PB(prog, n) wf_p_add((prog) * 8 + 6, (n))
+#define WF_P(prog, m) wf_p_add((prog) * 16 + (m), 1)
+#define WF_PB(prog, n) wf_p_add((prog) * 16 + 6, (n))
 #else
 #define WF_P(prog, m) do {} while (0)
 #define WF_PB(prog, n) do {} while (0)
@@ -177,6 +181,13 @@ static __always_inline void wf_p_add(u32 k, u64 n) {
 #define WF_ENTER(prog) WF_P(prog, 0)
 #endif
 #define WF_EMIT(prog, sz) do { WF_P(prog, 5); WF_PB(prog, (sz)); } while (0)
+#if defined(WF_PROFILE) && defined(WF_PROFILE_TIME)
+#define WF_T0(v) u64 v = bpf_ktime_get_ns()
+#define WF_T1(prog, m, v) wf_p_add((prog) * 16 + (m), bpf_ktime_get_ns() - (v))
+#else
+#define WF_T0(v) do {} while (0)
+#define WF_T1(prog, m, v) do {} while (0)
+#endif
 
 static __always_inline void wf_count_drop(void) {
     u32 k = 0;
@@ -220,10 +231,18 @@ static __always_inline u32 wf_cur_tgid(u32 prog) {
     /* Fast path: one helper when the current task lives directly in the
      * collector's namespace (the common case).  Tasks in nested namespaces
      * (containers) fall back to the upid walk. */
+    WF_T0(t_ns);
     struct bpf_pidns_info ns = {};
-    if (bpf_get_ns_current_pid_tgid(NS_DEV, NS_INUM, &ns, sizeof(ns)) == 0 && ns.tgid)
-        return ns.tgid;
-    return wf_task_ns_tgid((struct task_struct *)bpf_get_current_task(), prog);
+    u32 r = 0;
+    if (bpf_get_ns_current_pid_tgid(NS_DEV, NS_INUM, &ns, sizeof(ns)) == 0 && ns.tgid) {
+        r = ns.tgid;
+    } else {
+        WF_P(prog, 9);
+        r = wf_task_ns_tgid((struct task_struct *)bpf_get_current_task(), prog);
+        if (!r) WF_P(prog, 10);
+    }
+    WF_T1(prog, 8, t_ns);
+    return r;
 }
 
 static __always_inline void wf_hdr(struct hdr_t *h, u32 tgid, u32 type) {
@@ -282,8 +301,11 @@ KFUNC_PROBE(security_file_open, struct file *file) {
     /* A (re)used struct file starts a new open description: forget old dedup. */
     u32 root_tgid = bpf_get_current_pid_tgid() >> 32;
     struct io_key_t k = {.file = (u64)file, .ino = ino, .tgid = root_tgid};
+    WF_T0(t_map);
     io_seen.delete(&k);
+    WF_T1(P_OPEN, 12, t_map);
     WF_P(P_OPEN, 4);
+    WF_T0(t_rb);
     struct path_ev *e = events.ringbuf_reserve(sizeof(struct path_ev));
     if (!e) { wf_count_drop(); return 0; }
     WF_EMIT(P_OPEN, sizeof(struct path_ev));
@@ -292,9 +314,14 @@ KFUNC_PROBE(security_file_open, struct file *file) {
     e->h.ino = (u32)ino;
     e->h.flags = file->f_flags;
     e->h.fd = S_ISDIR(mode) ? 1 : 0;
+    WF_T1(P_OPEN, 13, t_rb);
+    WF_T0(t_dp);
     long n = bpf_d_path(&file->f_path, e->path, PATH_N);
+    WF_T1(P_OPEN, 11, t_dp);
     if (n < 0) { e->path[0] = 0; e->h.truncated = (n == -WF_ENAMETOOLONG) ? 1 : 2; }
+    WF_T0(t_sub);
     events.ringbuf_submit(e, wf_wake());
+    WF_T1(P_OPEN, 13, t_sub);
     return 0;
 }
 
@@ -306,15 +333,20 @@ static __always_inline int wf_emit_io(struct file *file, u32 dir, u32 type, u32 
     if (!S_ISREG(inode->i_mode)) { WF_P(prog, 1); return 0; }
     u64 ino = inode->i_ino;
     struct io_key_t k = {.file = (u64)file, .ino = ino, .tgid = bpf_get_current_pid_tgid() >> 32};
+    WF_T0(t_lk);
     u8 *seen = io_seen.lookup(&k);
+    WF_T1(prog, 12, t_lk);
     WF_P(prog, 2);
     u8 mask = seen ? *seen : 0;
     if (mask & dir) { WF_P(prog, 1); return 0; }
     u32 tgid = wf_cur_tgid(prog);
     if (!tgid) return 0;
     mask |= dir;
+    WF_T0(t_up);
     io_seen.update(&k, &mask);
+    WF_T1(prog, 12, t_up);
     WF_P(prog, 3);
+    WF_T0(t_rb);
     struct hdr_t *e = events.ringbuf_reserve(sizeof(struct hdr_t));
     if (!e) { wf_count_drop(); return 0; }
     WF_EMIT(prog, sizeof(struct hdr_t));
@@ -322,6 +354,7 @@ static __always_inline int wf_emit_io(struct file *file, u32 dir, u32 type, u32 
     e->file = (u64)file;
     e->ino = (u32)ino;
     events.ringbuf_submit(e, wf_wake());
+    WF_T1(prog, 13, t_rb);
     return 0;
 }
 
@@ -497,14 +530,19 @@ TRACEPOINT_PROBE(sched, sched_process_exec) {
     WF_ENTER(P_EXEC);
     u32 tgid = wf_cur_tgid(P_EXEC);
     if (!tgid) { WF_P(P_EXEC, 1); return 0; }
+    WF_T0(t_rb);
     struct path2_ev *e = events.ringbuf_reserve(sizeof(struct path2_ev));
     if (!e) { wf_count_drop(); return 0; }
     WF_EMIT(P_EXEC, sizeof(struct path2_ev));
     wf_hdr(&e->h, tgid, EV_EXEC);
+    WF_T1(P_EXEC, 13, t_rb);
     struct task_struct *t = (struct task_struct *)bpf_get_current_task();
     struct task_struct *rp = 0;
+    WF_T0(t_ns);
     bpf_probe_read_kernel(&rp, sizeof(rp), &t->real_parent);
     e->h.aux_pid = wf_task_ns_tgid(rp, P_EXEC);
+    WF_T1(P_EXEC, 8, t_ns);
+    WF_T0(t_cp);
     /* Executed file name as passed to execve (resolved against cwd in user space). */
     TP_DATA_LOC_READ_STR(e->path, filename, PATH_N);
     /* argv, NUL separated, captured while the new image is alive. */
@@ -518,7 +556,10 @@ TRACEPOINT_PROBE(sched, sched_process_exec) {
     } else {
         e->h.fd = 0;
     }
+    WF_T1(P_EXEC, 14, t_cp);
+    WF_T0(t_sub);
     events.ringbuf_submit(e, wf_wake());
+    WF_T1(P_EXEC, 13, t_sub);
     return 0;
 }
 
@@ -531,18 +572,24 @@ RAW_TRACEPOINT_PROBE(sched_process_fork) {
     u32 cpid = child->pid;
     u32 ctgid = child->tgid;
     if (cpid != ctgid) { WF_P(P_FORK, 1); return 0; }
+    WF_T0(t_ns);
     u32 ns_child = wf_task_ns_tgid(child, P_FORK);
+    WF_T1(P_FORK, 8, t_ns);
     if (!ns_child) { WF_P(P_FORK, 1); return 0; }
+    WF_T0(t_rb);
     struct hdr_t *e = events.ringbuf_reserve(sizeof(struct hdr_t));
     if (!e) { wf_count_drop(); return 0; }
     WF_EMIT(P_FORK, sizeof(struct hdr_t));
     wf_hdr(e, ns_child, EV_FORK);
     e->tid = cpid;
+    WF_T1(P_FORK, 13, t_rb);
     /* sched_process_fork always fires in the forking task: parent == current. */
     e->aux_pid = (parent == (struct task_struct *)bpf_get_current_task()) ? wf_cur_tgid(P_FORK)
                                                                           : wf_task_ns_tgid(parent, P_FORK);
+    WF_T0(t_sub);
     bpf_probe_read_kernel_str(&e->comm, sizeof(e->comm), child->comm);
     events.ringbuf_submit(e, wf_wake());
+    WF_T1(P_FORK, 13, t_sub);
     return 0;
 }
 
@@ -552,11 +599,13 @@ TRACEPOINT_PROBE(sched, sched_process_exit) {
     if ((u32)id != (u32)(id >> 32)) { WF_P(P_EXIT, 1); return 0; }  /* only the thread-group leader */
     u32 tgid = wf_cur_tgid(P_EXIT);
     if (!tgid) { WF_P(P_EXIT, 1); return 0; }
+    WF_T0(t_rb);
     struct hdr_t *e = events.ringbuf_reserve(sizeof(struct hdr_t));
     if (!e) { wf_count_drop(); return 0; }
     WF_EMIT(P_EXIT, sizeof(struct hdr_t));
     wf_hdr(e, tgid, EV_EXIT);
     events.ringbuf_submit(e, wf_wake());
+    WF_T1(P_EXIT, 13, t_rb);
     return 0;
 }
 """

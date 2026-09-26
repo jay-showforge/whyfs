@@ -78,7 +78,10 @@ SHORT = {0: "security_file_open", 1: "security_file_permission", 2: "security_mm
          3: "do_renameat2 (entry)", 4: "do_renameat2 (return)", 5: "do_unlinkat (entry)",
          6: "do_unlinkat (return)", 7: "sys_enter_chdir", 8: "sys_exit_chdir", 9: "sys_enter_fchdir",
          10: "sys_exit_fchdir", 11: "sched_process_exec", 12: "sched_process_fork", 13: "sched_process_exit"}
-METRICS = ["calls", "early_exits", "map_lookups", "map_updates", "map_deletes", "rb_records", "rb_bytes", "upid_walks"]
+METRICS = ["calls", "early_exits", "map_lookups", "map_updates", "map_deletes", "rb_records", "rb_bytes", "upid_walks",
+           "ns_translate_ns", "ns_fastpath_misses", "foreign_tasks", "d_path_ns", "io_seen_map_ns", "ringbuf_ns",
+           "exec_copy_ns", "unused"]
+STRIDE = 16
 P_NSWALK = 14
 # Which map each program's counted operations touch (from the BPF source).
 MAP_OPS = {
@@ -150,7 +153,7 @@ def prof_counters(b) -> dict:
     t = b["wf_prof"]
     vals = {}
     for pid in list(SHORT) + [P_NSWALK]:
-        vals[pid] = {m: int(t.sum(t.Key(pid * 8 + i)).value) for i, m in enumerate(METRICS)}
+        vals[pid] = {m: int(t.sum(t.Key(pid * STRIDE + i)).value) for i, m in enumerate(METRICS)}
     return vals
 
 
@@ -242,16 +245,17 @@ def stop_collector(c, store, poller, run_id: str) -> dict:
     return final
 
 
-def phase_counts(wl: Workload, log: Log, reps: int) -> dict:
-    log("phase P: WF_PROFILE build, per-program counters + bpf_stats run time")
-    c, store, poller = start_collector(wl, "hotpath-profile", ["-DWF_PROFILE"])
+def phase_counts(wl: Workload, log: Log, reps: int, flags: list[str] | None = None, tag: str = "P") -> dict:
+    flags = flags or ["-DWF_PROFILE"]
+    log(f"phase {tag}: {' '.join(flags)} build, per-program counters + bpf_stats run time")
+    c, store, poller = start_collector(wl, f"hotpath-{tag}", flags)
     child = store.pid
     b = c.bpf
     bpf_stats(True)
     try:
         for _ in range(2):  # warm-up, recorded
             wl.prep()
-            log(f"  P warm-up: {wl.run():.3f}s")
+            log(f"  {tag} warm-up: {wl.run():.3f}s")
         rows, idle = [], []
         for i in range(reps):
             wl.prep()
@@ -266,7 +270,7 @@ def phase_counts(wl: Workload, log: Log, reps: int) -> dict:
                          "collector": {k: s1[2][k] - s0[2][k] for k in s1[2]},
                          "collector_cpu_s": s1[3] - s0[3], "store_worker_cpu_s": s1[4] - s0[4],
                          "kernel_drops_total": c.kernel_drop_count()})
-            log(f"  P rep {i}: {dt:.3f}s  opens={rows[-1]['prof'][0]['calls']} perms={rows[-1]['prof'][1]['calls']}")
+            log(f"  {tag} rep {i}: {dt:.3f}s  opens={rows[-1]['prof'][0]['calls']} perms={rows[-1]['prof'][1]['calls']}")
             # idle window of the same length: background activity
             a0 = (prof_counters(b), prog_stats(b))
             time.sleep(dt)
@@ -274,8 +278,85 @@ def phase_counts(wl: Workload, log: Log, reps: int) -> dict:
             idle.append({"seconds": dt, "prof": diff_nested(a0[0], a1[0]), "prog": diff_nested(a0[1], a1[1])})
     finally:
         bpf_stats(False)
-        final = stop_collector(c, store, poller, "hotpath-profile")
-    return {"flags": ["-DWF_PROFILE"], "reps": rows, "idle": idle, "collector_final": final}
+        final = stop_collector(c, store, poller, f"hotpath-{tag}")
+    return {"flags": flags, "reps": rows, "idle": idle, "collector_final": final}
+
+
+def phase_userspace(wl: Workload, log: Log, rounds: int) -> dict:
+    """Controlled split of the monitored cost: one production program, one real
+    collector; per round, rotated: detached baseline / kernel only (ring callback
+    discards) / no store (full Python processing, SQLite ingest discarded) /
+    full collector + privilege-separated store."""
+    log("phase U: userspace split (base / kernel_only / no_store / full), rotated rounds")
+    mode = {"discard": False, "nostore": False}
+    store = Store(wl.ws).start()
+    store.call("begin_run", "hotpath-U", time.time_ns(), str(wl.ws))
+    c = BCCCollector(wl.ws, "hotpath-U", store=store)
+    orig_cb = c._process_event
+    c._process_event = lambda ctx, data, size: None if mode["discard"] else orig_cb(ctx, data, size)
+    orig_ingest = store.ingest
+    store.ingest = lambda events: len(events) if mode["nostore"] else orig_ingest(events)
+    c.start()
+    poller = Poller(lambda: c.poll(50))
+    b = c.bpf
+    child = store.pid
+    modes = ["base", "kernel_only", "no_store", "full"]
+    orders = [modes[i:] + modes[:i] for i in range(4)]
+    orders += [list(reversed(o)) for o in orders]
+    rows = []
+    first = None
+    stats = None
+    try:
+        wl.prep()
+        first = wl.run()
+        log(f"  U first build after load: {first:.3f}s")
+        set_attached(b, False)
+        time.sleep(0.3)
+        for r in range(rounds + 1):  # round 0 is warm-up
+            rec = {"warmup": r == 0, "order": orders[r % len(orders)]}
+            for m in orders[r % len(orders)]:
+                mode["discard"], mode["nostore"] = (m == "kernel_only"), (m == "no_store")
+                if m != "base":
+                    set_attached(b, True)
+                wl.prep()
+                st0, cpu0, ch0 = dict(vars(c.stats)), time.process_time(), child_cpu_s(child)
+                rec[m] = wl.run()
+                if m != "base":
+                    set_attached(b, False)
+                time.sleep(0.3)  # let userspace finish this run's events before the next run
+                rec[m + "_collector_cpu_s"] = time.process_time() - cpu0
+                rec[m + "_store_cpu_s"] = child_cpu_s(child) - ch0
+                rec[m + "_received"] = vars(c.stats)["received"] - st0["received"]
+            mode["discard"] = mode["nostore"] = False
+            rows.append(rec)
+            if r % 5 == 0:
+                log(f"  U round {r}: " + " ".join(f"{m}={rec[m]:.4f}" for m in modes))
+    finally:
+        mode["discard"] = mode["nostore"] = False
+        poller.close()
+        stats = c.stop()
+        store.call("end_run", "hotpath-U", time.time_ns(), 0, {k: int(v) for k, v in vars(stats).items()})
+        store.close()
+        b.cleanup()
+    m = [x for x in rows if not x["warmup"]]
+
+    def d(a, z):
+        return summary([(x[a] - x[z]) * 1000 for x in m])
+
+    out = {"first_build_after_load_s": first, "rounds": rows, "kernel_drops_total": c.kernel_drop_count(),
+           "queue_drops_total": stats.queue_drops, "collector_final": {k: int(v) for k, v in vars(stats).items()},
+           "kernel_minus_base_ms": d("kernel_only", "base"), "nostore_minus_base_ms": d("no_store", "base"),
+           "full_minus_base_ms": d("full", "base"), "nostore_minus_kernel_ms": d("no_store", "kernel_only"),
+           "full_minus_nostore_ms": d("full", "no_store"), "full_minus_kernel_ms": d("full", "kernel_only"),
+           "per_mode_s": {k: summary([x[k] for x in m]) for k in modes},
+           "per_mode_collector_cpu_s": {k: summary([x[k + "_collector_cpu_s"] for x in m]) for k in modes},
+           "per_mode_store_cpu_s": {k: summary([x[k + "_store_cpu_s"] for x in m]) for k in modes},
+           "full_overhead_pct": summary([(x["full"] / x["base"] - 1) * 100 for x in m]),
+           "kernel_only_overhead_pct": summary([(x["kernel_only"] / x["base"] - 1) * 100 for x in m]),
+           "no_store_overhead_pct": summary([(x["no_store"] / x["base"] - 1) * 100 for x in m])}
+    for k in ("kernel_minus_base_ms", "nostore_minus_kernel_ms", "full_minus_nostore_ms", "full_minus_base_ms"):
+        log(f"  U {k}: median {out[k]['median']:+.2f} ms (CI90 {out[k]['median_ci90'][0]:+.2f}..{out[k]['median_ci90'][1]:+.2f})")
+    return out
 
 
 def phase_timing(wl: Workload, log: Log, pairs: int, warmups: int, runtime_reps: int) -> dict:
@@ -439,6 +520,8 @@ def main() -> int:
     ap.add_argument("--warmups", type=int, default=2)
     ap.add_argument("--runtime-reps", type=int, default=10)
     ap.add_argument("--ablation-rounds", type=int, default=20)
+    ap.add_argument("--userspace-rounds", type=int, default=40)
+    ap.add_argument("--phases", default="P,T,A", help="comma list of P,T,A (Step 1) and Q,U (follow-up)")
     a = ap.parse_args()
     if os.geteuid() != 0:
         print("run as root", file=sys.stderr)
@@ -467,14 +550,26 @@ def main() -> int:
     (out / "environment.json").write_text(json.dumps(res["environment"], indent=2))
     log(f"git HEAD {res['git']['head']} dirty={len(res['git']['dirty_files'])}")
     wl = Workload(ctx, base, log)
+    phases = set(a.phases.split(","))
+    params["phases"] = sorted(phases)
+    params["userspace_rounds"] = a.userspace_rounds
+    (out / "params.json").write_text(json.dumps(params, indent=2))
     try:
-        res["phase_P"] = phase_counts(wl, log, a.profile_reps)
-        res["phase_T"] = phase_timing(wl, log, a.pairs, a.warmups, a.runtime_reps)
-        res["phase_A"] = phase_ablation(wl, log, a.ablation_rounds) if a.ablation_rounds > 0 else {}
+        if "P" in phases:
+            res["phase_P"] = phase_counts(wl, log, a.profile_reps)
+        if "Q" in phases:
+            res["phase_Q"] = phase_counts(wl, log, a.profile_reps, ["-DWF_PROFILE", "-DWF_PROFILE_TIME"], "Q")
+        if "T" in phases:
+            res["phase_T"] = phase_timing(wl, log, a.pairs, a.warmups, a.runtime_reps)
+        if "A" in phases:
+            res["phase_A"] = phase_ablation(wl, log, a.ablation_rounds) if a.ablation_rounds > 0 else {}
+        if "U" in phases:
+            res["phase_U"] = phase_userspace(wl, log, a.userspace_rounds)
     finally:
         res["finished"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         (out / "hotpath.json").write_text(json.dumps(res, indent=1, default=str))
-    write_tables(out, res)
+    if "phase_P" in res and "phase_T" in res and "phase_A" in res:
+        write_tables(out, res)
     log(f"wrote {out}")
     return 0
 
