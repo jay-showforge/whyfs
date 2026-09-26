@@ -629,6 +629,101 @@ def phase_mechanism(wl: Workload, log: Log, rounds: int, cprofile_reps: int) -> 
     return out
 
 
+def phase_canon(wl: Workload, log: Log, rounds: int) -> dict:
+    """X: is the userspace interference the realpath() lstat traffic?
+    Rotated rounds of base / kernel_only / no_store / canon_only / no_store_nocanon.
+      canon_only        callback discards, but performs the realpath() calls that
+                        processing makes for exec and unlink names
+      no_store_nocanon  full processing with realpath replaced by normpath
+                        (diagnostic only: realpath is needed for symlinked paths)"""
+    import whyfs.ebpf_bcc as eb
+    log("phase X: realpath/lstat mechanism, rotated rounds")
+    mode = {"discard": False, "nostore": False, "nocanon": False, "canon_only": False}
+    orig_canon = eb._canon
+    eb._canon = lambda p: os.path.normpath(p) if mode["nocanon"] else orig_canon(p)
+    store = Store(wl.ws).start()
+    store.call("begin_run", "hotpath-X", time.time_ns(), str(wl.ws))
+    c = BCCCollector(wl.ws, "hotpath-X", store=store)
+    orig_cb = c._process_event
+    ws = str(wl.ws)
+
+    def cb(ctx, data, size):
+        if mode["canon_only"]:
+            typ = ct.c_uint32.from_address(data + TYPE_OFFSET).value
+            if typ in (5, 6):  # unlink, exec: the events whose names go through realpath
+                raw = ct.string_at(data + eb.OFF_PATH).decode("utf-8", "replace")
+                if raw:
+                    orig_canon(raw if raw.startswith("/") else os.path.join(ws, raw))
+            return None
+        if mode["discard"]:
+            return None
+        return orig_cb(ctx, data, size)
+
+    c._process_event = cb
+    orig_ingest = store.ingest
+    store.ingest = lambda events: len(events) if mode["nostore"] else orig_ingest(events)
+    c.start()
+    poller = Poller(lambda: c.poll(50))
+    b = c.bpf
+    modes = ["base", "kernel_only", "no_store", "canon_only", "no_store_nocanon"]
+    orders = [modes[i:] + modes[:i] for i in range(5)]
+    orders += [list(reversed(o)) for o in orders]
+    rows = []
+    stats = None
+    try:
+        wl.prep()
+        wl.run()
+        set_attached(b, False)
+        time.sleep(0.3)
+        for r in range(rounds + 1):
+            rec = {"warmup": r == 0, "order": orders[r % len(orders)]}
+            for m in orders[r % len(orders)]:
+                mode["discard"] = m == "kernel_only"
+                mode["canon_only"] = m == "canon_only"
+                mode["nostore"] = m in ("no_store", "no_store_nocanon")
+                mode["nocanon"] = m == "no_store_nocanon"
+                if m != "base":
+                    set_attached(b, True)
+                wl.prep()
+                cpu0 = time.process_time()
+                rec[m] = wl.run()
+                rec[m + "_outer"] = wl.last_outer
+                if m != "base":
+                    set_attached(b, False)
+                time.sleep(0.3)
+                rec[m + "_process_cpu_s"] = time.process_time() - cpu0
+            for k in mode:
+                mode[k] = False
+            rows.append(rec)
+            if r % 5 == 0:
+                log(f"  X round {r}: " + " ".join(f"{m}={rec[m]:.4f}" for m in modes))
+    finally:
+        for k in mode:
+            mode[k] = False
+        eb._canon = orig_canon
+        poller.close()
+        stats = c.stop()
+        store.call("end_run", "hotpath-X", time.time_ns(), 0, {k: int(v) for k, v in vars(stats).items()})
+        store.close()
+        b.cleanup()
+    m = [x for x in rows if not x["warmup"]]
+
+    def d(a, z):
+        return summary([(x[a] - x[z]) * 1000 for x in m])
+
+    out = {"rounds": rows, "per_mode_s": {k: summary([x[k] for x in m]) for k in modes},
+           "per_mode_process_cpu_s": {k: summary([x[k + "_process_cpu_s"] for x in m]) for k in modes},
+           "kernel_minus_base_ms": d("kernel_only", "base"), "nostore_minus_kernel_ms": d("no_store", "kernel_only"),
+           "canon_only_minus_kernel_ms": d("canon_only", "kernel_only"),
+           "nostore_nocanon_minus_kernel_ms": d("no_store_nocanon", "kernel_only"),
+           "nostore_minus_nostore_nocanon_ms": d("no_store", "no_store_nocanon"),
+           "kernel_drops_total": c.kernel_drop_count(), "queue_drops_total": stats.queue_drops}
+    for k in ("kernel_minus_base_ms", "nostore_minus_kernel_ms", "canon_only_minus_kernel_ms",
+              "nostore_nocanon_minus_kernel_ms", "nostore_minus_nostore_nocanon_ms"):
+        log(f"  X {k}: median {out[k]['median']:+.2f} ms (CI90 {out[k]['median_ci90'][0]:+.2f}..{out[k]['median_ci90'][1]:+.2f})")
+    return out
+
+
 # ---------------------------------------------------------------- tables
 def write_tables(out: Path, res: dict) -> None:
     P = res["phase_P"]
@@ -680,7 +775,7 @@ def main() -> int:
     ap.add_argument("--ablation-rounds", type=int, default=20)
     ap.add_argument("--userspace-rounds", type=int, default=40)
     ap.add_argument("--cprofile-reps", type=int, default=5)
-    ap.add_argument("--phases", default="P,T,A", help="comma list of P,T,A (Step 1) and Q,U,V (follow-up)")
+    ap.add_argument("--phases", default="P,T,A", help="comma list of P,T,A (Step 1) and Q,U,V,X (follow-up)")
     a = ap.parse_args()
     if os.geteuid() != 0:
         print("run as root", file=sys.stderr)
@@ -728,6 +823,8 @@ def main() -> int:
             res["phase_U"] = phase_userspace(wl, log, a.userspace_rounds)
         if "V" in phases:
             res["phase_V"] = phase_mechanism(wl, log, a.userspace_rounds, a.cprofile_reps)
+        if "X" in phases:
+            res["phase_X"] = phase_canon(wl, log, a.userspace_rounds)
     finally:
         res["finished"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         (out / "hotpath.json").write_text(json.dumps(res, indent=1, default=str))
