@@ -222,7 +222,21 @@ class Workload:
         self.ctx.run_user(PREP, self.ws, check=False)
 
     def run(self) -> float:
-        return self.ctx.run_user(CMD, self.ws)[0]
+        """Seconds for the harness loop, timed inside the workload's own shell.
+
+        The collector runs in this Python process in most phases; a busy
+        collector thread holds the GIL, which delays this process noticing the
+        child's exit and draining its pipes (up to the 5 ms switch interval per
+        wake-up).  That inflates a Python-side timing without slowing the
+        workload, so the loop is timed by the shell around the unchanged
+        harness command.  The Python-side time is kept as ``last_outer``."""
+        wrapped = f"s=$(date +%s%N); {CMD}; e=$(date +%s%N); echo WFTIME=$((e-s))"
+        outer, p = self.ctx.run_user(wrapped, self.ws)
+        self.last_outer = outer
+        for line in p.stdout.splitlines():
+            if line.startswith("WFTIME="):
+                return int(line.split("=", 1)[1]) / 1e9
+        raise RuntimeError("workload did not report WFTIME")
 
 
 # ---------------------------------------------------------------- phases
@@ -321,6 +335,7 @@ def phase_userspace(wl: Workload, log: Log, rounds: int) -> dict:
                 wl.prep()
                 st0, cpu0, ch0 = dict(vars(c.stats)), time.process_time(), child_cpu_s(child)
                 rec[m] = wl.run()
+                rec[m + "_outer"] = wl.last_outer
                 if m != "base":
                     set_attached(b, False)
                 time.sleep(0.3)  # let userspace finish this run's events before the next run
@@ -388,6 +403,7 @@ def phase_timing(wl: Workload, log: Log, pairs: int, warmups: int, runtime_reps:
                     rec["store_worker_cpu_s"] = child_cpu_s(child) - ch0
                     set_attached(b, False)
                 rec[mode] = dt
+                rec[mode + "_outer"] = wl.last_outer
             rec["overhead_pct"] = (rec["on"] / rec["off"] - 1) * 100
             out["pairs"].append(rec)
             log(f"  T pair {i}{' (warm-up)' if rec['warmup'] else ''}: off {rec['off']:.4f}s on {rec['on']:.4f}s "
@@ -448,6 +464,7 @@ def phase_ablation(wl: Workload, log: Log, rounds: int) -> dict:
                         set_attached(objs[mode], True)
                     wl.prep()
                     rec[mode] = wl.run()
+                    rec[mode + "_outer"] = wl.last_outer
                     if mode != "base":
                         set_attached(objs[mode], False)
                 rows.append(rec)
@@ -469,6 +486,147 @@ def phase_ablation(wl: Workload, log: Log, rounds: int) -> dict:
             f"normal-null {s['normal_minus_null_ms']['median']:+.2f} ms "
             f"(CI90 {s['normal_minus_null_ms']['median_ci90'][0]:+.2f}..{s['normal_minus_null_ms']['median_ci90'][1]:+.2f})")
     return result
+
+
+EVENT_NAMES = {1: "open", 2: "read", 3: "write", 4: "rename", 5: "unlink", 6: "exec", 7: "fork", 8: "exit",
+               9: "mmap_read", 13: "chdir", 14: "fchdir", 15: "mmap_write"}
+TYPE_OFFSET = 36  # struct hdr_t: ts_ns, file, file2 (8 each), tgid, tid, aux_pid (4 each), type
+
+
+def phase_mechanism(wl: Workload, log: Log, rounds: int, cprofile_reps: int) -> dict:
+    """V: is the userspace cost generic CPU interference or specific to event
+    processing?  Rotated rounds of base / kernel_only / no_store / burn, where
+    burn discards events at once but spins a Python thread for the whole run.
+    W: per-event-type callback time (no_store runs) and a cProfile of the
+    callback."""
+    import cProfile
+    import io
+    import pstats
+    log("phase V: mechanism (base / kernel_only / no_store / burn), rotated rounds")
+    mode = {"discard": False, "nostore": False, "time": False, "prof": None}
+    per_type_ns: dict[int, int] = {}
+    per_type_n: dict[int, int] = {}
+    store = Store(wl.ws).start()
+    store.call("begin_run", "hotpath-V", time.time_ns(), str(wl.ws))
+    c = BCCCollector(wl.ws, "hotpath-V", store=store)
+    orig_cb = c._process_event
+
+    def cb(ctx, data, size):
+        if mode["discard"]:
+            return None
+        if mode["prof"] is not None:
+            mode["prof"].enable()
+            try:
+                return orig_cb(ctx, data, size)
+            finally:
+                mode["prof"].disable()
+        if mode["time"]:
+            typ = ct.c_uint32.from_address(data + TYPE_OFFSET).value
+            t0 = time.perf_counter_ns()
+            try:
+                return orig_cb(ctx, data, size)
+            finally:
+                per_type_ns[typ] = per_type_ns.get(typ, 0) + time.perf_counter_ns() - t0
+                per_type_n[typ] = per_type_n.get(typ, 0) + 1
+        return orig_cb(ctx, data, size)
+
+    c._process_event = cb
+    orig_ingest = store.ingest
+    store.ingest = lambda events: len(events) if mode["nostore"] else orig_ingest(events)
+    c.start()
+    poller = Poller(lambda: c.poll(50))
+    b = c.bpf
+    burn_stop = threading.Event()
+
+    def burner():
+        x = 0
+        while not burn_stop.is_set():
+            x += 1
+
+    modes = ["base", "kernel_only", "no_store", "burn"]
+    orders = [modes[i:] + modes[:i] for i in range(4)]
+    orders += [list(reversed(o)) for o in orders]
+    rows = []
+    stats = None
+    try:
+        wl.prep()
+        wl.run()
+        set_attached(b, False)
+        time.sleep(0.3)
+        for r in range(rounds + 1):
+            rec = {"warmup": r == 0, "order": orders[r % len(orders)]}
+            for m in orders[r % len(orders)]:
+                mode["discard"] = m in ("kernel_only", "burn")
+                mode["nostore"] = m == "no_store"
+                if m != "base":
+                    set_attached(b, True)
+                wl.prep()
+                cpu0 = time.process_time()
+                th = None
+                if m == "burn":
+                    burn_stop.clear()
+                    th = threading.Thread(target=burner, daemon=True)
+                    th.start()
+                rec[m] = wl.run()
+                rec[m + "_outer"] = wl.last_outer
+                if th:
+                    burn_stop.set()
+                    th.join()
+                if m != "base":
+                    set_attached(b, False)
+                time.sleep(0.3)
+                rec[m + "_process_cpu_s"] = time.process_time() - cpu0
+            mode["discard"] = mode["nostore"] = False
+            rows.append(rec)
+            if r % 5 == 0:
+                log(f"  V round {r}: " + " ".join(f"{m}={rec[m]:.4f}" for m in modes))
+        log("phase W: per-event-type callback time and cProfile (no_store mode)")
+        mode["nostore"] = True
+        set_attached(b, True)
+        mode["time"] = True
+        for _ in range(cprofile_reps):
+            wl.prep()
+            wl.run()
+            time.sleep(0.3)
+        mode["time"] = False
+        prof = cProfile.Profile()
+        mode["prof"] = prof
+        for _ in range(cprofile_reps):
+            wl.prep()
+            wl.run()
+            time.sleep(0.3)
+        mode["prof"] = None
+        set_attached(b, False)
+        time.sleep(0.3)
+    finally:
+        mode["discard"] = mode["nostore"] = mode["time"] = False
+        mode["prof"] = None
+        poller.close()
+        stats = c.stop()
+        store.call("end_run", "hotpath-V", time.time_ns(), 0, {k: int(v) for k, v in vars(stats).items()})
+        store.close()
+        b.cleanup()
+    m = [x for x in rows if not x["warmup"]]
+
+    def d(a, z):
+        return summary([(x[a] - x[z]) * 1000 for x in m])
+
+    buf = io.StringIO()
+    pstats.Stats(prof, stream=buf).sort_stats("tottime").print_stats(25)
+    per_type = {EVENT_NAMES.get(t, str(t)): {"events_per_run": per_type_n[t] / cprofile_reps,
+                                             "us_per_event": per_type_ns[t] / per_type_n[t] / 1000,
+                                             "ms_per_run": per_type_ns[t] / cprofile_reps / 1e6}
+                for t in per_type_n}
+    out = {"rounds": rows, "per_mode_s": {k: summary([x[k] for x in m]) for k in modes},
+           "per_mode_process_cpu_s": {k: summary([x[k + "_process_cpu_s"] for x in m]) for k in modes},
+           "kernel_minus_base_ms": d("kernel_only", "base"), "nostore_minus_kernel_ms": d("no_store", "kernel_only"),
+           "burn_minus_kernel_ms": d("burn", "kernel_only"), "nostore_minus_burn_ms": d("no_store", "burn"),
+           "callback_time_per_event_type": per_type, "callback_cprofile_top": buf.getvalue(),
+           "kernel_drops_total": c.kernel_drop_count(), "queue_drops_total": stats.queue_drops}
+    for k in ("kernel_minus_base_ms", "nostore_minus_kernel_ms", "burn_minus_kernel_ms", "nostore_minus_burn_ms"):
+        log(f"  V {k}: median {out[k]['median']:+.2f} ms (CI90 {out[k]['median_ci90'][0]:+.2f}..{out[k]['median_ci90'][1]:+.2f})")
+    log("  W callback time per event type: " + json.dumps({k: round(v["us_per_event"], 1) for k, v in per_type.items()}))
+    return out
 
 
 # ---------------------------------------------------------------- tables
@@ -521,7 +679,8 @@ def main() -> int:
     ap.add_argument("--runtime-reps", type=int, default=10)
     ap.add_argument("--ablation-rounds", type=int, default=20)
     ap.add_argument("--userspace-rounds", type=int, default=40)
-    ap.add_argument("--phases", default="P,T,A", help="comma list of P,T,A (Step 1) and Q,U (follow-up)")
+    ap.add_argument("--cprofile-reps", type=int, default=5)
+    ap.add_argument("--phases", default="P,T,A", help="comma list of P,T,A (Step 1) and Q,U,V (follow-up)")
     a = ap.parse_args()
     if os.geteuid() != 0:
         print("run as root", file=sys.stderr)
@@ -539,6 +698,8 @@ def main() -> int:
     (out / "harness-ctx").mkdir()
     ctx = Ctx(a.user, out / "harness-ctx")
     params = {"workload_prep": PREP, "workload_cmd": CMD, "processes_per_run": PROCESSES_PER_RUN,
+              "timing": "shell-timed loop (date +%s%N around the unchanged harness command); "
+                        "Python-side subprocess time kept as *_outer",
               "static_c_source": "scripts/v02_graduation.py:STATIC_C", "user": a.user, "workspace_base": str(base),
               "profile_reps": a.profile_reps, "pairs": a.pairs, "warmups": a.warmups,
               "runtime_reps": a.runtime_reps, "ablation_rounds": a.ablation_rounds,
@@ -565,6 +726,8 @@ def main() -> int:
             res["phase_A"] = phase_ablation(wl, log, a.ablation_rounds) if a.ablation_rounds > 0 else {}
         if "U" in phases:
             res["phase_U"] = phase_userspace(wl, log, a.userspace_rounds)
+        if "V" in phases:
+            res["phase_V"] = phase_mechanism(wl, log, a.userspace_rounds, a.cprofile_reps)
     finally:
         res["finished"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         (out / "hotpath.json").write_text(json.dumps(res, indent=1, default=str))
