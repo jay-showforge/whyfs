@@ -12,6 +12,9 @@ without restarting it:
   mode full                  full processing + SQLite (production behaviour)
   bpfstats on|off            kernel.bpf_stats_enabled
   snap                       JSON: collector stats, counters, /proc of self and store worker
+  native start MODE DB       pause the Python ring consumer; hand the ring map fd to the native
+                             spike (native/spike/spike_ingest, MODE discard|min) writing DB
+  native stop                SIGTERM the spike (it drains and commits); reply with its stats
   progstats                  JSON: run_cnt/run_time_ns per BPF program
   quit                       stop collector (drain), end run, exit
 
@@ -165,6 +168,20 @@ def main() -> int:
         while not stop.is_set():
             c.poll(50)  # as whyfs.daemon.run_foreground
 
+    paused = threading.Event()
+    idle = threading.Event()
+
+    def loop():  # noqa: F811 (pausable variant: only one consumer may drain the ring)
+        while not stop.is_set():
+            if paused.is_set():
+                idle.set()
+                time.sleep(0.01)
+                continue
+            idle.clear()
+            c.poll(50)
+
+    native = {"p": None}
+    spike = REPO / "native" / "spike" / "spike_ingest"
     th = threading.Thread(target=loop, daemon=True)
     th.start()
 
@@ -200,6 +217,24 @@ def main() -> int:
                        "threads": {"ring_consumer": thread_metrics(th.native_id),
                                    "writer": thread_metrics(c.writer.native_id),
                                    "main": thread_metrics(threading.main_thread().native_id)}})
+            elif cmd[0] == "native" and cmd[1] == "start":
+                paused.set()
+                idle.wait(5)
+                c.poll(0)  # anything already in the ring belongs to the previous run
+                fd = c.bpf["events"].map_fd
+                import subprocess
+                native["p"] = subprocess.Popen([str(spike), "--fd", str(fd), "--mode", cmd[2], "--workspace", str(ws),
+                                                "--db", cmd[3], "--run-id", a.run_id + "-native"],
+                                               pass_fds=(fd,), stdout=subprocess.PIPE, text=True)
+                reply({"ok": True, "native_pid": native["p"].pid, "hello": json.loads(native["p"].stdout.readline())})
+            elif cmd[0] == "native" and cmd[1] == "stop":
+                import signal as _signal
+                p = native["p"]
+                p.send_signal(_signal.SIGTERM)
+                out = p.communicate(timeout=30)[0]
+                native["p"] = None
+                paused.clear()
+                reply({"native": json.loads(out.strip().splitlines()[-1]), "kernel_drops": c.kernel_drop_count()})
             elif cmd[0] == "progstats":
                 reply({str(k): v for k, v in prog_stats(c.bpf).items()})
             elif cmd[0] == "quit":
