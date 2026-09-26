@@ -86,11 +86,11 @@ def _check_state_paths(root: Path) -> Path:
     return d
 
 
-def connect(root: Path) -> sqlite3.Connection:
+def connect(root: Path, *, check_same_thread: bool = True) -> sqlite3.Connection:
     d = _check_state_paths(root)
     db = d / DB_NAME
     fresh = not db.exists()
-    con = sqlite3.connect(db, timeout=30)
+    con = sqlite3.connect(db, timeout=30, check_same_thread=check_same_thread)
     if fresh:
         try:
             os.chmod(db, 0o600)  # -wal/-shm inherit the database file's mode

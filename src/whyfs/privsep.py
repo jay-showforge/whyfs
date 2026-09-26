@@ -182,7 +182,8 @@ class Store:
 
     def start(self) -> "Store":
         if not self.privsep:
-            self._con = connect(self.root)
+            # Used from the writer thread and the main thread; self.lock serializes.
+            self._con = connect(self.root, check_same_thread=False)
             return self
         uid, gid = workspace_owner(self.root)
         _adopt_state_dir(self.root, uid, gid)

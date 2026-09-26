@@ -4,6 +4,7 @@ These load the real BPF program and drive real processes.  They are skipped
 unless the host can actually run the collector (Linux, root/CAP_BPF, BCC,
 kernel headers).  No fallback backend is substituted.
 """
+import json
 import os
 import shutil
 import sqlite3
@@ -293,6 +294,75 @@ class LiveKernelTests(unittest.TestCase):
         s.stop()
         self.assertEqual(errors, [])
         self.assertEqual(Path(why(self.con(), str(self.root / "out300.txt"))["exe"]).name, "cp")
+
+
+def whyfs_cli(root: Path, *args: str, user: str | None = None) -> subprocess.CompletedProcess:
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1] / "src"))
+    argv = [shutil.which("python3") or "python3", "-W", "ignore", "-m", "whyfs", *args]
+    if user:
+        argv = ["runuser", "-u", user, "--", "env", f"PYTHONPATH={env['PYTHONPATH']}", *argv]
+    return subprocess.run(argv, cwd=root, env=env, capture_output=True, text=True)
+
+
+@unittest.skipUnless(READY, "requires Linux + root/CAP_BPF + BCC + kernel headers")
+class LiveDaemonEndToEndTests(unittest.TestCase):
+    """The real `whyfs daemon start/stop` path, store included.  Found by the
+    unmodified shipped gate: in a root-owned workspace the in-process store's
+    SQLite connection was opened on one thread and used on the writer thread,
+    so every event was lost ("SQLite objects created in a thread...")."""
+
+    def run_static(self, root: Path, user: str | None = None) -> dict:
+        prog = cc(root, "static_copy", r"""
+            #include <stdio.h>
+            int main(int c, char **v) { FILE *i = fopen(v[1], "rb"), *o = fopen(v[2], "wb");
+              char b[4096]; size_t n; while ((n = fread(b, 1, sizeof b, i)) > 0) fwrite(b, 1, n, o);
+              fclose(i); fclose(o); return 0; }""", "-static")
+        (root / "raw.txt").write_text("static lineage\n")
+        if user:
+            subprocess.run(["chown", "-R", f"{user}:", str(root)], check=True)
+        init = whyfs_cli(root, "init", ".", user=user)
+        self.assertEqual(init.returncode, 0, init.stdout + init.stderr)
+        start = whyfs_cli(root, "daemon", "start", "--workspace", str(root))
+        self.assertEqual(start.returncode, 0, start.stderr)
+        try:
+            time.sleep(0.25)
+            run = ["./static_copy", "raw.txt", "static-out.txt"]
+            subprocess.run((["runuser", "-u", user, "--"] if user else []) + run, cwd=root, check=True)
+            time.sleep(0.25)
+        finally:
+            stop = whyfs_cli(root, "daemon", "stop", "--workspace", str(root))
+        self.assertEqual(stop.returncode, 0, stop.stderr)
+        log = (root / ".whyfs" / "daemon.log").read_text(errors="replace")
+        self.assertNotIn("Traceback", log)
+        q = whyfs_cli(root, "why", "static-out.txt", "--json", user=user)
+        self.assertEqual(q.returncode, 0, q.stdout + q.stderr)
+        return json.loads(q.stdout)
+
+    def test_daemon_in_root_owned_workspace(self):
+        with tempfile.TemporaryDirectory(prefix="whyfs-v02-gate-") as td:
+            root = Path(td).resolve()
+            w = self.run_static(root)
+            self.assertEqual(Path(w["exe"]).name, "static_copy")
+            self.assertEqual(w["inputs"], [str(root / "raw.txt")])
+
+    def test_daemon_in_user_owned_workspace_is_queryable_by_the_user(self):
+        import pwd  # the account that owns the source tree can import whyfs
+        user = pwd.getpwuid(Path(__file__).stat().st_uid).pw_name
+        if user == "root":
+            self.skipTest("needs a non-root owner of the source tree")
+        base = Path(tempfile.mkdtemp(prefix="whyfs-e2e-"))
+        os.chmod(base, 0o755)
+        try:
+            root = base / "ws"
+            root.mkdir()
+            w = self.run_static(root, user=user)
+            self.assertEqual(Path(w["exe"]).name, "static_copy")
+            self.assertEqual(w["inputs"], [str(root / "raw.txt")])
+            uid = int(subprocess.run(["id", "-u", user], capture_output=True, text=True).stdout)
+            for p in [root / ".whyfs", *(root / ".whyfs").iterdir()]:
+                self.assertEqual(p.lstat().st_uid, uid, p)
+        finally:
+            shutil.rmtree(base, ignore_errors=True)
 
 
 if __name__ == "__main__":
