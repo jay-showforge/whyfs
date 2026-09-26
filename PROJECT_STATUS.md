@@ -10,6 +10,23 @@ Across four authoritative 10-pair runs, that workload's median paired overhead
 was 7.60%, 4.29%, 7.92% and 5.56%. Sub-5% is not reliable there, so v0.2 is not
 called graduated. Build workloads were 0.4–3.1% in every run.
 
+### Update 2026-09-26: hot-path profiling, optimization 1, second graduation attempt
+
+**V0.2 PERFORMANCE GATE REMAINS FAILED.**
+
+- Step 1 profiling (`results/v02-hotpath/HOTPATH_REPORT.md`) found that about half of the static-loop
+  overhead was collector event processing interfering with the workload. The largest avoidable part
+  was a per-event `realpath()` on names.
+- Optimization 1 (commit a30fd65) resolves names against the already-canonical base. It cut `lstat`
+  calls from 3,038 to 338 per run, and fixed two resolution bugs: symlinks followed on rename/unlink,
+  and `link/..` collapsed lexically.
+- Two authoritative 20-pair campaigns on frozen commit a5f4746, through the real daemon, measured the
+  static ×300 median at **5.80% and 7.19%**. Both fail.
+- Make (0.40%, 1.06%), Vite (−1.44%, 0.41%), the functional and accuracy suite (44/44, 118/118, zero
+  drops), all 62 tests and the unmodified `v02_gate.py` passed.
+- See `results/v02-graduation-final/VERDICT.md`. The in-process profiler's improvement (5.52% → 3.86%)
+  did not carry over to the real-daemon harness; that gap is the next thing to characterize.
+
 Do not describe v0.2 as proven always-on host-level provenance yet.
 The capture is proven correct; the overhead on fork/exec-heavy work is not yet within target.
 
