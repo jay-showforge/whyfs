@@ -573,6 +573,26 @@ class ProcessPrivacyTests(unittest.TestCase):
         self.assertNotIn("secretdb", repr(items))
         self.assertEqual(self.h.c.pending_exec, {})
 
+    def test_why_reports_the_creators_parent(self):
+        make, cc = FAKE + 44, FAKE + 45
+        f = new_file()
+        self.h.feed(
+            ev(m.EV_FORK, make, aux=FAKE),
+            ev(m.EV_EXEC, make, aux=FAKE, path=b"/usr/bin/make", path2=b"make\0-j8\0", fd=9),
+            ev(m.EV_FORK, cc, aux=make),
+            ev(m.EV_EXEC, cc, aux=make, path=b"/usr/bin/tr", path2=b"tr\0a\0b\0", fd=9),
+            ev(m.EV_OPEN, cc, file=f, fd=0, path=str(self.root / "a.o").encode(), flags=os.O_WRONLY),
+            ev(m.EV_WRITE, cc, file=f),
+        )
+        con = connect(self.root)
+        con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES('run',1,?,?,?,?)",
+                    (str(self.root), "t", str(self.root), "ebpf-bcc"))
+        ingest_events(con, self.h.drained())
+        w = why(con, str(self.root / "a.o"))
+        con.close()
+        self.assertEqual(w["exe"], "/usr/bin/tr")
+        self.assertEqual((w["parent"]["exe"], w["parent"]["pid"], w["parent"]["command"]), ("/usr/bin/make", make, "make -j8"))
+
     def test_writer_and_its_ancestors_are_persisted_with_exec_boundaries(self):
         make, cc = FAKE + 41, FAKE + 42
         f = new_file()

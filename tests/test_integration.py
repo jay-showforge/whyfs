@@ -31,6 +31,23 @@ class WhyFSIntegration(unittest.TestCase):
             self.assertGreaterEqual(len(hist),1)
 
     @unittest.skipUnless(sys.platform.startswith("linux"), "Linux capture backend")
+    def test_input_opened_after_output_redirection_is_an_input(self):
+        """`cmd input > output`: the shell opens the output before the command opens its
+        input. The preload backend records opens, not writes, so an open-for-write must not
+        bound which reads count as inputs (why) or which outputs follow a read (impact)."""
+        with tempfile.TemporaryDirectory() as td:
+            d=Path(td); self.run_cli(d,"init",".")
+            (d/"in.txt").write_text("a\nb\n")
+            self.run_cli(d,"trace","--workspace",".","--","bash","-c","head -n 1 in.txt > mid.txt")
+            self.run_cli(d,"trace","--workspace",".","--","bash","-c","sort mid.txt > out.txt")
+            data=json.loads(self.run_cli(d,"why","mid.txt","--json").stdout)
+            self.assertEqual([Path(p).name for p in data["inputs"]],["in.txt"])
+            self.assertEqual(Path(data["exe"]).name,"head")
+            self.assertEqual(Path(data["parent"]["exe"]).name,"bash")  # the traced shell
+            tos={Path(e["to"]).name for e in json.loads(self.run_cli(d,"impact","in.txt","--json").stdout)}
+            self.assertEqual(tos,{"mid.txt","out.txt"})
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux capture backend")
     def test_workspace_filter_is_default(self):
         with tempfile.TemporaryDirectory() as td:
             d=Path(td); self.run_cli(d,"init",".")

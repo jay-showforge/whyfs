@@ -152,6 +152,11 @@ def cmd_why(a):
         return 0
     print(f"└── created by {result['exe']}  (pid {result['pid']})")
     print(f"    run: {result['command']}")
+    par = result.get("parent")
+    if par and par.get("exe"):
+        cmd = par.get("command") or ""
+        cmd = cmd if len(cmd) <= 100 else cmd[:97] + "..."
+        print(f"    parent: {par['exe']}  (pid {par['pid']})" + (f"  · {cmd}" if cmd else ""))
     print(f"    evidence: {result['collector']}")
     if result["inputs"]:
         print("    inputs:")

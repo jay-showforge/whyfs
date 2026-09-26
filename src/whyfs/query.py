@@ -185,7 +185,14 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
         }
     if not w:
         return None
-    inputs, hidden = process_inputs(con, w["run_id"], w["pid"], w["ts_ns"], w["workspace"], include_noise)
+    before = w["ts_ns"]
+    if w["kind"] == "open":
+        # Open-only evidence (the v0.1 preload backend records opens, not writes): the
+        # data may be written after later reads -- in `cmd in > out` the shell opens
+        # `out` before `cmd` opens `in` -- so bound inputs by the end of the process.
+        last = con.execute("SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=?", (w["run_id"], w["pid"])).fetchone()[0]
+        before = max(before, last or before)
+    inputs, hidden = process_inputs(con, w["run_id"], w["pid"], before, w["workspace"], include_noise)
     target = normalize(path)
     # O_RDWR output files can appear as both read and write.  A file is not its
     # own upstream cause (under its current or any earlier name), so suppress
@@ -214,7 +221,22 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
         "renamed_from": renames,
         "hidden_input_count": hidden,
         "outputs": process_outputs(con, w["run_id"], w["pid"], w["workspace"], include_noise),
+        "parent": _parent(con, w["run_id"], w["pid"]),
     }
+
+
+def _parent(con: sqlite3.Connection, run_id: str, key: int):
+    """The creator's parent process (eBPF: per-run parent key; preload: ppid)."""
+    row = con.execute("SELECT ppid, parent_key FROM processes WHERE run_id=? AND pid=?", (run_id, key)).fetchone()
+    if not row:
+        return None
+    pkey = row["parent_key"] if row["parent_key"] is not None else row["ppid"]
+    if pkey is None:
+        return None
+    p = con.execute("SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?", (run_id, pkey)).fetchone()
+    if not p:
+        return None
+    return {"pid": p["os_pid"] if p["os_pid"] is not None else p["pid"], "exe": p["exe"], "command": p["command"]}
 
 
 def history(con: sqlite3.Connection, path: str, limit=20):
@@ -242,7 +264,8 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
         for f in frontier:
             readers = con.execute(
                 """
-              SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns FROM events e
+              SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns,
+                     MAX(e.kind='io') AS observed_io FROM events e
               JOIN runs r ON r.id=e.run_id LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
               WHERE e.path=? AND e.is_read=1
               GROUP BY e.run_id, e.pid
@@ -263,8 +286,10 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
                         seen_files.add(o)
                         nxt.append(o)
             for rr in readers:
+                # Read-before-write ordering needs observed reads; open-only evidence
+                # (v0.1 preload) links the process's outputs as a whole.
                 outs = process_outputs(con, rr["run_id"], rr["pid"], rr["workspace"], include_noise,
-                                       since_ns=rr["first_read_ns"])
+                                       since_ns=rr["first_read_ns"] if rr["observed_io"] else 0)
                 for o in outs:
                     if o == f:
                         continue
