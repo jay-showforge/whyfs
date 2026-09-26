@@ -18,6 +18,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 from whyfs.query import history, impact, why  # noqa: E402
+from whyfs.schema import validate_record  # noqa: E402
 from whyfs.store import connect, ingest_events  # noqa: E402
 
 
@@ -99,6 +100,7 @@ class Stream:
             for k in ("path", "path2", "exe", "cwd", "command"):
                 if isinstance(d.get(k), str):
                     d[k] = bytes.fromhex(d[k]).decode("utf-8", "surrogateescape")
+            validate_record(d)  # every record the Windows collector emits is canonical
             out.append(d)
         return out, stats
 
@@ -257,6 +259,28 @@ class WindowsModelTests(unittest.TestCase):
         items, st = s.replay()
         self.assertNotIn("secretdb", json.dumps(items))
         self.assertEqual(st["pending_exec"], 0)
+
+    def test_batch_and_interleaved_outputs_are_marked_shared_not_guessed(self):
+        """One MSVC `cl` compiling several files reads every source before writing any
+        object: which source produced which object is not observable, and why() says so."""
+        s = self.s
+        f = [s.new_fo() for _ in range(8)]
+        # batch: read a.c, b.c; write b.obj, a.obj
+        s.proc(1700, SHELL, CL, "cl /c a.c b.c")
+        s.open(1700, f[0], "a.c").read(1700, f[0]).open(1700, f[1], "b.c").read(1700, f[1])
+        s.open(1700, f[2], "b.obj", OVERWRITE_IF).write(1700, f[2]).open(1700, f[3], "a.obj", OVERWRITE_IF).write(1700, f[3])
+        # interleaved: read x.c, write x.obj, read y.c, write y.obj
+        s.proc(1701, SHELL, CL, "tool x y")
+        s.open(1701, f[4], "x.c").read(1701, f[4]).open(1701, f[5], "x.obj", OVERWRITE_IF).write(1701, f[5])
+        s.open(1701, f[6], "y.c").read(1701, f[6]).open(1701, f[7], "y.obj", OVERWRITE_IF).write(1701, f[7])
+        # single output: never marked
+        fa, fb = s.new_fo(), s.new_fo()
+        s.proc(1702, SHELL, CL, "cl /c u.c").open(1702, fa, "u.c").read(1702, fa).open(1702, fb, "u.obj", OVERWRITE_IF).write(1702, fb)
+        items, _ = s.replay()
+        con = self.db(items)
+        shared = {n: why(con, str(self.root / n))["shared_by_outputs"] for n in ("a.obj", "b.obj", "x.obj", "y.obj", "u.obj")}
+        con.close()
+        self.assertEqual(shared, {"a.obj": 1, "b.obj": 1, "x.obj": 0, "y.obj": 1, "u.obj": 0})
 
     def test_impact_and_history(self):
         s, a, b, c = self.s, self.s.new_fo(), self.s.new_fo(), self.s.new_fo()

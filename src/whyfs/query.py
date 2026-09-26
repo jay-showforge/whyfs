@@ -245,6 +245,7 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
     if not include_noise and w["exe"]:
         self_names.add(pkey(w["exe"]))
     inputs = [p for p in inputs if pkey(p) not in self_names]
+    shared = _shared_inputs(con, w["run_id"], w["pid"], target, self_names, inputs, before)
     via_inputs, via_temps = _through_temporaries(con, inputs, w["workspace"], w["ts_ns"])
     return {
         "path": target,
@@ -263,7 +264,43 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
         "hidden_input_count": hidden,
         "outputs": process_outputs(con, w["run_id"], w["pid"], w["workspace"], include_noise),
         "parent": _parent(con, w["run_id"], w["pid"]),
+        # >0: this process wrote other outputs too and read every one of these inputs before
+        # its first output, so which input produced which output is not observable (one
+        # MSVC `cl` compiling several files; `cl /MP` children are exact).  Never guessed.
+        "shared_by_outputs": shared,
     }
+
+
+def _shared_inputs(con, run_id: str, pid: int, target: str, self_names: set, inputs: list[str], before_ns: int) -> int:
+    if not inputs:
+        return 0
+    outs = {pkey(r[0]) for r in con.execute(
+        "SELECT DISTINCT CASE WHEN kind='rename' THEN path2 ELSE path END FROM events "
+        "WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename')", (run_id, pid)) if r[0]}
+    others = outs - self_names - {pkey(target)}
+    if not others:
+        return 0
+    marks = ",".join("?" * len(inputs))
+    first_in, last_in = con.execute(
+        f"SELECT MIN(ts_ns), MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND path IN ({marks})",
+        (run_id, pid, before_ns, *inputs)).fetchone()
+    if first_in is None:
+        return 0
+    first_out = con.execute("SELECT MIN(ts_ns) FROM events WHERE run_id=? AND pid=? AND is_write=1", (run_id, pid)).fetchone()[0]
+    # (A) batch: the process read everything it read (other than its own outputs) before it
+    #     wrote any output (one `cl` compiling several files; a bundler) -- the outputs share
+    #     the inputs.
+    last_read = max((r[1] for r in con.execute(
+        "SELECT path, MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND is_read=1 GROUP BY path", (run_id, pid))
+        if r[0] and pkey(r[0]) not in outs), default=None)
+    if first_out is not None and last_read is not None and last_read <= first_out:
+        return len(others)
+    # (B) interleaved: another output was written after one of these inputs was read and before
+    #     this output -- that input may belong to the other output.
+    between = {pkey(r[0]) for r in con.execute(
+        "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_write=1 AND ts_ns>? AND ts_ns<?",
+        (run_id, pid, first_in, before_ns)) if r[0]} & others
+    return len(others) if between else 0
 
 
 def _parent(con: sqlite3.Connection, run_id: str, key: int):

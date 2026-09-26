@@ -25,6 +25,7 @@ from types import SimpleNamespace
 
 import whyfs.ebpf_bcc as m
 from whyfs import native_collect
+from whyfs.schema import validate_record
 from whyfs.store import connect, ingest_events
 
 import test_ebpf_resolver as base
@@ -61,6 +62,8 @@ class NativeHarness:
                                             seeds=[(base.FAKE, self.root)])
         self.c.stats = SimpleNamespace(**stats)
         self.c.pending_exec = {} if stats["pending_exec"] == 0 else {"pending": stats["pending_exec"]}
+        for r in recs:
+            validate_record(r)  # every record the Linux collector emits is canonical
         out, self.returned = recs[self.returned:], len(recs)
         return out
 
