@@ -38,6 +38,7 @@ import ctypes as ct
 import os
 import queue
 import signal
+import stat
 import threading
 import time
 from collections import OrderedDict
@@ -702,7 +703,9 @@ def _clean_link(p: str | None) -> str | None:
 
 
 def _canon(p: str) -> str:
-    return os.path.realpath(os.path.normpath(p))
+    # realpath() alone: it resolves '..' after expanding the symlinks before it,
+    # as the kernel does.  normpath() first would collapse 'link/..' lexically.
+    return os.path.realpath(p)
 
 
 def _within(path: str | None, root: Path, capture_all: bool) -> bool:
@@ -923,15 +926,43 @@ class BCCCollector:
                 self.cwd[pid] = c
         return c
 
-    def _resolve(self, pid: int, dirfd: int, dir_file: int, raw: str) -> str | None:
+    def _resolve(self, pid: int, dirfd: int, dir_file: int, raw: str, *, follow_final: bool) -> str | None:
+        """Absolute path for a name passed to a syscall.
+
+        ``follow_final`` mirrors the syscall: exec and chdir follow a final
+        symlink; rename and unlink act on the link itself.  The base (cwd model
+        or directory file object) is already canonical: it comes from kernel
+        d_path or from an earlier canonicalization.  So a single-component name
+        is joined to it with no filesystem access; only names with '/' or '..'
+        canonicalize their parent (physically, via realpath).  Per-event
+        realpath() walks measurably slowed exec-heavy workloads
+        (results/v02-hotpath/HOTPATH_REPORT.md) and wrongly followed a final
+        symlink for rename/unlink."""
         if not raw:
             return None
         if raw.startswith("/"):
-            return _canon(raw)
-        base = self._cwd(pid) if dirfd == AT_FDCWD else self.files.get(dir_file)
-        if not base:
-            return None
-        return _canon(os.path.join(base, raw))
+            base, rel = None, raw
+        else:
+            base = self._cwd(pid) if dirfd == AT_FDCWD else self.files.get(dir_file)
+            if not base:
+                return None
+            rel = raw
+        parts = [p for p in rel.split("/") if p not in ("", ".")]
+        if base and len(parts) == 1 and parts[0] != "..":
+            path = os.path.join(base, parts[0])
+        else:
+            full = os.path.join(base, rel) if base else rel
+            parent, name = os.path.split(full.rstrip("/") or "/")
+            if name in ("", ".", ".."):
+                return _canon(full)  # names a directory reference: resolve it physically
+            path = os.path.join(_canon(parent), name)
+        if follow_final:
+            try:
+                if stat.S_ISLNK(os.lstat(path).st_mode):
+                    return _canon(path)
+            except OSError:
+                pass
+        return path
 
     def _keep_path(self, path: str, is_dir: bool) -> bool:
         return is_dir or _within(path, self.root, self.capture_all) or self._is_temp(path)
@@ -1038,7 +1069,7 @@ class BCCCollector:
         if typ == EV_EXEC:
             k = self.key(pid)
             filename = _cstr(_field_bytes(data, size, OFF_PATH))
-            exe = self._resolve(pid, AT_FDCWD, 0, filename) if filename else None
+            exe = self._resolve(pid, AT_FDCWD, 0, filename, follow_final=True) if filename else None
             if not exe:
                 exe = _clean_link(_safe_proc_link(pid, "exe"))
             n = max(0, min(int(e.fd), PATH_N - 1))
@@ -1072,7 +1103,7 @@ class BCCCollector:
             return
 
         if typ == EV_CHDIR:
-            c = self._resolve(pid, AT_FDCWD, 0, _cstr(_field_bytes(data, size, OFF_PATH)))
+            c = self._resolve(pid, AT_FDCWD, 0, _cstr(_field_bytes(data, size, OFF_PATH)), follow_final=True)
             if c:
                 self.cwd[pid] = c
             return
@@ -1086,8 +1117,8 @@ class BCCCollector:
             return
 
         if typ == EV_RENAME:
-            a = self._resolve(pid, int(e.dirfd), int(e.file), _cstr(_field_bytes(data, size, OFF_PATH)))
-            b = self._resolve(pid, int(e.dirfd2), int(e.file2), _cstr(_field_bytes(data, size, OFF_PATH2)))
+            a = self._resolve(pid, int(e.dirfd), int(e.file), _cstr(_field_bytes(data, size, OFF_PATH)), follow_final=False)
+            b = self._resolve(pid, int(e.dirfd2), int(e.file2), _cstr(_field_bytes(data, size, OFF_PATH2)), follow_final=False)
             if not (self.capture_all or _within(a, self.root, False) or _within(b, self.root, False)
                     or (a in self._derived)):
                 self.stats.filtered += 1
@@ -1105,7 +1136,7 @@ class BCCCollector:
             return
 
         if typ == EV_UNLINK:
-            a = self._resolve(pid, int(e.dirfd), int(e.file), _cstr(_field_bytes(data, size, OFF_PATH)))
+            a = self._resolve(pid, int(e.dirfd), int(e.file), _cstr(_field_bytes(data, size, OFF_PATH)), follow_final=False)
             if a in self._derived:
                 self._derived.pop(a, None)
                 self._file_event(pid, ts, "unlink", a, api="ebpf:unlink:derived-temp")

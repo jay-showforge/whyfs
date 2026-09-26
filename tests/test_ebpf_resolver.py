@@ -226,6 +226,83 @@ class ResolverRegressionTests(unittest.TestCase):
         self.assertEqual(self.h.c.stats.truncated_paths, 1)
 
     # renameat(dirfd, ...) names are resolved against the directory's file object.
+    # Bug: rename/unlink names went through realpath(), which follows a final
+    # symlink.  rename(2)/unlink(2) act on the link itself: after `mv x y` where
+    # x is a symlink, the destination is y, not whatever y points to.
+    def test_rename_destination_symlink_is_not_followed(self):
+        (self.root / "target.txt").write_text("t")
+        os.symlink(self.root / "target.txt", self.root / "y")  # state after the rename
+        self.h.feed(ev(m.EV_RENAME, FAKE, path=b"x", path2=b"y"))
+        r = [x for x in self.h.drained() if x["kind"] == "rename"][0]
+        self.assertEqual((r["path"], r["path2"]), (str(self.root / "x"), str(self.root / "y")))
+
+    def test_unlink_of_symlink_records_the_link(self):
+        (self.root / "target.txt").write_text("t")
+        os.symlink(self.root / "target.txt", self.root / "link")  # name re-created before processing
+        self.h.feed(ev(m.EV_UNLINK, FAKE, path=b"link"))
+        u = [x for x in self.h.drained() if x["kind"] == "unlink"][0]
+        self.assertEqual(u["path"], str(self.root / "link"))
+
+    def test_rename_through_symlinked_directory_is_canonical(self):
+        (self.root / "real").mkdir()
+        os.symlink(self.root / "real", self.root / "alias")
+        self.h.feed(ev(m.EV_RENAME, FAKE, path=b"alias/a.txt", path2=b"alias/b.txt"))
+        r = [x for x in self.h.drained() if x["kind"] == "rename"][0]
+        self.assertEqual((r["path"], r["path2"]), (str(self.root / "real" / "a.txt"), str(self.root / "real" / "b.txt")))
+
+    def test_exec_through_symlink_records_the_target(self):
+        child = FAKE + 13
+        (self.root / "bin").mkdir()
+        (self.root / "bin" / "tool").write_text("#!/bin/sh\n")
+        os.symlink(self.root / "bin" / "tool", self.root / "tool-link")
+        self.h.feed(
+            ev(m.EV_FORK, child, aux=FAKE),
+            ev(m.EV_EXEC, child, aux=FAKE, path=b"./tool-link", path2=b"./tool-link\0", fd=12),
+            *self.touch(child, "tool-out.txt"),
+        )
+        procs = [x for x in self.h.drained() if x["kind"] == "process" and x["os_pid"] == child]
+        self.assertEqual(procs[-1]["exe"], str(self.root / "bin" / "tool"))
+
+    # Names resolved without realpath() must keep physical semantics: '..'
+    # after a symlinked component is the target's parent, not a lexical pop.
+    def test_dotdot_after_symlink_is_resolved_physically(self):
+        (self.root / "other" / "deeper").mkdir(parents=True)
+        os.symlink(self.root / "other" / "deeper", self.root / "link")
+        self.h.feed(ev(m.EV_RENAME, FAKE, path=b"link/../x", path2=b"link/../y"))
+        r = [x for x in self.h.drained() if x["kind"] == "rename"][0]
+        self.assertEqual((r["path"], r["path2"]), (str(self.root / "other" / "x"), str(self.root / "other" / "y")))
+
+    def test_absolute_name_through_symlinked_directory_is_canonical(self):
+        (self.root / "real").mkdir()
+        os.symlink(self.root / "real", self.root / "alias")
+        self.h.feed(ev(m.EV_UNLINK, FAKE, path=str(self.root / "alias" / "gone.txt").encode()))
+        u = [x for x in self.h.drained() if x["kind"] == "unlink"][0]
+        self.assertEqual(u["path"], str(self.root / "real" / "gone.txt"))
+
+    def test_chdir_into_symlinked_directory_makes_later_names_canonical(self):
+        child = FAKE + 14
+        (self.root / "real").mkdir()
+        os.symlink(self.root / "real", self.root / "alias")
+        self.h.feed(
+            ev(m.EV_FORK, child, aux=FAKE),
+            ev(m.EV_CHDIR, child, path=b"alias"),
+            ev(m.EV_RENAME, child, path=b"a.txt", path2=b"b.txt"),
+        )
+        r = [x for x in self.h.drained() if x["kind"] == "rename"][0]
+        self.assertEqual((r["path"], r["path2"]), (str(self.root / "real" / "a.txt"), str(self.root / "real" / "b.txt")))
+
+    def test_multi_component_relative_exec_name(self):
+        child = FAKE + 15
+        (self.root / "bin").mkdir()
+        (self.root / "bin" / "tool").write_text("#!/bin/sh\n")
+        self.h.feed(
+            ev(m.EV_FORK, child, aux=FAKE),
+            ev(m.EV_EXEC, child, aux=FAKE, path=b"./bin/tool", path2=b"./bin/tool\0", fd=11),
+            *self.touch(child, "tool2-out.txt"),
+        )
+        procs = [x for x in self.h.drained() if x["kind"] == "process" and x["os_pid"] == child]
+        self.assertEqual(procs[-1]["exe"], str(self.root / "bin" / "tool"))
+
     def test_dirfd_relative_rename_uses_directory_file(self):
         d = new_file()
         (self.root / "out").mkdir()

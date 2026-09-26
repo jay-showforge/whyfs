@@ -1,0 +1,39 @@
+{
+  "workload_prep": "rm -f out-*.txt",
+  "workload_cmd": "for i in $(seq 1 300); do ./static_copy raw.txt out-$i.txt; done",
+  "processes_per_run": 300,
+  "timing": "shell-timed loop (date +%s%N around the unchanged harness command); Python-side subprocess time kept as *_outer",
+  "static_c_source": "scripts/v02_graduation.py:STATIC_C",
+  "user": "ftmon",
+  "workspace_base": "/home/ftmon/whyfs-hotpath-ws",
+  "profile_reps": 10,
+  "pairs": 20,
+  "warmups": 2,
+  "runtime_reps": 10,
+  "ablation_rounds": 40,
+  "profiling_build_flags": [
+    "-DWF_PROFILE"
+  ],
+  "production_build_flags": [
+    "-DNS_INUM=4026532219U",
+    "-DNS_DEV=4ULL"
+  ],
+  "ablation_masks": {
+    "null_all": 16383,
+    "security_file_open": 1,
+    "security_file_permission": 2,
+    "security_mmap_file": 4,
+    "sched_process_exec": 2048,
+    "sched_process_fork": 4096,
+    "sched_process_exit": 8192
+  },
+  "phases": [
+    "A",
+    "P",
+    "Q",
+    "T",
+    "U",
+    "V"
+  ],
+  "userspace_rounds": 40
+}

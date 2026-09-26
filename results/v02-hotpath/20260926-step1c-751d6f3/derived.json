@@ -1,0 +1,1537 @@
+{
+  "source": "/home/ftmon/whyfs-hotpath/20260926-step1c-751d6f3",
+  "git": {
+    "head": "751d6f3c2b8620721339b67c3ec5d61c80efefa3",
+    "dirty_files": [],
+    "diff_bytes": 0
+  },
+  "processes_per_run": 300,
+  "checks": {
+    "open: records == deletes": true,
+    "open: calls == early_exits + records": true,
+    "perm: updates == records": true,
+    "mmap: updates == records": true,
+    "fork/exec/exit ~ processes": true,
+    "production timing built without WF_PROFILE": true,
+    "idle windows subtracted": true,
+    "ablation rounds per variant": {
+      "null_all": 40,
+      "security_file_open": 40,
+      "security_file_permission": 40,
+      "security_mmap_file": 40,
+      "sched_process_exec": 40,
+      "sched_process_fork": 40,
+      "sched_process_exit": 40
+    },
+    "timing pairs (excluding warm-up)": 20,
+    "kernel drops": 0,
+    "queue drops": 0
+  },
+  "counts_per_run_idle_adjusted": {
+    "0": {
+      "calls": 1383.5,
+      "early_exits": 306.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 1077.0,
+      "rb_records": 1077.0,
+      "rb_bytes": 637584.0,
+      "upid_walks": 305.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 305.0,
+      "foreign_tasks": 305.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "1": {
+      "calls": 3963.0,
+      "early_exits": 2676.5,
+      "map_lookups": 3913.5,
+      "map_updates": 980.0,
+      "map_deletes": 0.0,
+      "rb_records": 980.0,
+      "rb_bytes": 78400.0,
+      "upid_walks": 305.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 305.0,
+      "foreign_tasks": 305.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "2": {
+      "calls": 1466.0,
+      "early_exits": 1377.0,
+      "map_lookups": 1441.0,
+      "map_updates": 89.0,
+      "map_deletes": 0.0,
+      "rb_records": 89.0,
+      "rb_bytes": 7120.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "3": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "4": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "5": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "6": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "7": {
+      "calls": 2.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "8": {
+      "calls": 2.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "9": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "10": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "11": {
+      "calls": 306.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 306.0,
+      "rb_bytes": 337824.0,
+      "upid_walks": 306.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "12": {
+      "calls": 305.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 305.0,
+      "rb_bytes": 24400.0,
+      "upid_walks": 305.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "13": {
+      "calls": 305.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 305.0,
+      "rb_bytes": 24400.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "14": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 1221.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    }
+  },
+  "counts_per_run_workload_window": {
+    "0": {
+      "calls": 1398.0,
+      "early_exits": 306.5,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 1091.0,
+      "rb_records": 1091.0,
+      "rb_bytes": 645872.0,
+      "upid_walks": 305.5,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 305.5,
+      "foreign_tasks": 305.5,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "1": {
+      "calls": 3992.0,
+      "early_exits": 2691.5,
+      "map_lookups": 3941.5,
+      "map_updates": 994.0,
+      "map_deletes": 0.0,
+      "rb_records": 994.0,
+      "rb_bytes": 79520.0,
+      "upid_walks": 305.5,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 305.5,
+      "foreign_tasks": 305.5,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "2": {
+      "calls": 1466.0,
+      "early_exits": 1377.0,
+      "map_lookups": 1441.0,
+      "map_updates": 89.0,
+      "map_deletes": 0.0,
+      "rb_records": 89.0,
+      "rb_bytes": 7120.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "3": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "4": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "5": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "6": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "7": {
+      "calls": 2.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "8": {
+      "calls": 2.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "9": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "10": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "11": {
+      "calls": 306.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 306.0,
+      "rb_bytes": 337824.0,
+      "upid_walks": 306.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "12": {
+      "calls": 305.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 305.0,
+      "rb_bytes": 24400.0,
+      "upid_walks": 305.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "13": {
+      "calls": 305.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 305.0,
+      "rb_bytes": 24400.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "14": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 1222.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    }
+  },
+  "runtime_per_run": {
+    "0": {
+      "run_cnt": 1383.0,
+      "run_time_ns": 1257878.0,
+      "ns_per_call": 909.52856109906
+    },
+    "1": {
+      "run_cnt": 3215.0,
+      "run_time_ns": 889669.5,
+      "ns_per_call": 276.7245723172628
+    },
+    "2": {
+      "run_cnt": 1466.0,
+      "run_time_ns": 198132.0,
+      "ns_per_call": 135.15143246930424
+    },
+    "3": {
+      "run_cnt": 0.0,
+      "run_time_ns": 0.0,
+      "ns_per_call": 0.0
+    },
+    "4": {
+      "run_cnt": 0.0,
+      "run_time_ns": 0.0,
+      "ns_per_call": 0.0
+    },
+    "5": {
+      "run_cnt": 0.0,
+      "run_time_ns": 0.0,
+      "ns_per_call": 0.0
+    },
+    "6": {
+      "run_cnt": 0.0,
+      "run_time_ns": 0.0,
+      "ns_per_call": 0.0
+    },
+    "7": {
+      "run_cnt": 2.0,
+      "run_time_ns": 6526.5,
+      "ns_per_call": 3263.25
+    },
+    "8": {
+      "run_cnt": 2.0,
+      "run_time_ns": 9436.5,
+      "ns_per_call": 4718.25
+    },
+    "9": {
+      "run_cnt": 0.0,
+      "run_time_ns": 0.0,
+      "ns_per_call": 0.0
+    },
+    "10": {
+      "run_cnt": 0.0,
+      "run_time_ns": 0.0,
+      "ns_per_call": 0.0
+    },
+    "11": {
+      "run_cnt": 306.0,
+      "run_time_ns": 248496.5,
+      "ns_per_call": 812.0800653594771
+    },
+    "12": {
+      "run_cnt": 305.0,
+      "run_time_ns": 287417.0,
+      "ns_per_call": 942.3508196721311
+    },
+    "13": {
+      "run_cnt": 305.0,
+      "run_time_ns": 91852.5,
+      "ns_per_call": 301.155737704918
+    }
+  },
+  "bpf_runtime_ns_per_run": 2989408.5,
+  "section_counts_per_run": {
+    "0": {
+      "calls": 1384.0,
+      "early_exits": 307.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 1077.0,
+      "rb_records": 1077.0,
+      "rb_bytes": 637584.0,
+      "upid_walks": 306.0,
+      "ns_translate_ns": 213720.5,
+      "ns_fastpath_misses": 306.0,
+      "foreign_tasks": 306.0,
+      "d_path_ns": 259729.5,
+      "io_seen_map_ns": 453018.0,
+      "ringbuf_ns": 299277.5,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "1": {
+      "calls": 4627.5,
+      "early_exits": 3342.0,
+      "map_lookups": 4575.0,
+      "map_updates": 980.0,
+      "map_deletes": 0.0,
+      "rb_records": 980.0,
+      "rb_bytes": 78400.0,
+      "upid_walks": 306.0,
+      "ns_translate_ns": 108096.0,
+      "ns_fastpath_misses": 306.0,
+      "foreign_tasks": 306.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 642904.0,
+      "ringbuf_ns": 127703.5,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "2": {
+      "calls": 1466.0,
+      "early_exits": 1377.0,
+      "map_lookups": 1441.0,
+      "map_updates": 89.0,
+      "map_deletes": 0.0,
+      "rb_records": 89.0,
+      "rb_bytes": 7120.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 3820.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 106315.5,
+      "ringbuf_ns": 10910.5,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "3": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "4": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "5": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "6": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "7": {
+      "calls": 2.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "8": {
+      "calls": 2.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 1405.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "9": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "10": {
+      "calls": 0.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 0.0,
+      "rb_bytes": 0.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 0.0,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 0.0,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "11": {
+      "calls": 306.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 306.0,
+      "rb_bytes": 337824.0,
+      "upid_walks": 306.0,
+      "ns_translate_ns": 91124.5,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 75662.0,
+      "exec_copy_ns": 84366.0,
+      "unused": 0.0
+    },
+    "12": {
+      "calls": 305.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 305.0,
+      "rb_bytes": 24400.0,
+      "upid_walks": 305.0,
+      "ns_translate_ns": 92117.5,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 144982.5,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    },
+    "13": {
+      "calls": 305.0,
+      "early_exits": 0.0,
+      "map_lookups": 0.0,
+      "map_updates": 0.0,
+      "map_deletes": 0.0,
+      "rb_records": 305.0,
+      "rb_bytes": 24400.0,
+      "upid_walks": 0.0,
+      "ns_translate_ns": 22769.5,
+      "ns_fastpath_misses": 0.0,
+      "foreign_tasks": 0.0,
+      "d_path_ns": 0.0,
+      "io_seen_map_ns": 0.0,
+      "ringbuf_ns": 40041.5,
+      "exec_copy_ns": 0.0,
+      "unused": 0.0
+    }
+  },
+  "ns_fast_translation_estimate": 74.65409836065574,
+  "timing": {
+    "pairs": 20,
+    "off_median_ms": 127.89554250000002,
+    "on_median_ms": 134.9595825,
+    "overhead_pct": {
+      "n": 20,
+      "median": 5.523286580816245,
+      "mean": 6.952206955429496,
+      "stdev": 6.800206701539306,
+      "q1": 1.9324080890505912,
+      "q3": 9.810029109821922,
+      "min": -0.6733230389836309,
+      "max": 24.508200336186192,
+      "median_ci90": [
+        3.3682476925455784,
+        7.253848857854628
+      ]
+    },
+    "delta_ms_median": 7.064039999999993,
+    "delta_us_per_process": 23.54679999999998,
+    "first_build_after_load_ms": 131.87246299999998,
+    "outer_overhead_pct_median": 5.269023284871722,
+    "kernel_drops_total": 0,
+    "queue_drops": 0,
+    "events_received_per_run": 3064.0,
+    "events_filtered_per_run": 346.0,
+    "collector_cpu_s_per_run": 0.09621461000000053,
+    "store_worker_cpu_s_per_run": 0.020000000000000018
+  },
+  "foreign_tasks": {
+    "per_hook": {
+      "security_file_open": {
+        "foreign_invocations_per_run": 306.0,
+        "upid_walks_per_run": 306.0,
+        "translation_ns_per_foreign_call": 435.6798564234437,
+        "io_seen_lookup_ns_before_translation": 0.0,
+        "est_ns_per_foreign_call": 435.6798564234437,
+        "est_total_us_per_run": 133.31803606557378,
+        "events_emitted": 0
+      },
+      "security_file_permission": {
+        "foreign_invocations_per_run": 306.0,
+        "upid_walks_per_run": 306.0,
+        "translation_ns_per_foreign_call": 114.16661309332476,
+        "io_seen_lookup_ns_before_translation": 115.73429342934294,
+        "est_ns_per_foreign_call": 229.9009065226677,
+        "est_total_us_per_run": 70.34967739593631,
+        "events_emitted": 0
+      }
+    },
+    "est_total_us_per_run": 203.6677134615101,
+    "pct_of_bpf_runtime": 6.812976997339443,
+    "pct_of_wall_overhead": 2.883161950689836
+  },
+  "ablation": {
+    "null_all": {
+      "normal_minus_base_ms": {
+        "n": 40,
+        "median": 2.1770624999999932,
+        "mean": 2.6617409499999978,
+        "stdev": 3.7634751287132997,
+        "q1": 0.5554212500000002,
+        "q3": 4.658686249999995,
+        "min": -8.958988000000002,
+        "max": 10.981925999999989,
+        "median_ci90": [
+          1.413286999999999,
+          3.6170219999999977
+        ]
+      },
+      "normal_minus_null_ms": {
+        "n": 40,
+        "median": 2.8311935000000163,
+        "mean": 2.927607274999998,
+        "stdev": 3.7929688124740926,
+        "q1": 0.8717989999999857,
+        "q3": 6.035622749999991,
+        "min": -6.720052000000004,
+        "max": 10.911190999999986,
+        "median_ci90": [
+          1.5328134999999938,
+          3.9274994999999935
+        ]
+      },
+      "null_minus_base_ms": {
+        "n": 40,
+        "median": -0.22507150000000004,
+        "mean": -0.2658663250000001,
+        "stdev": 4.1844027523396905,
+        "q1": -2.3347849999999957,
+        "q3": 2.0848425000000064,
+        "min": -11.773331000000011,
+        "max": 12.235219000000006,
+        "median_ci90": [
+          -1.713335500000003,
+          0.973581499999987
+        ]
+      },
+      "calls_per_run": null,
+      "body_ns_per_call": null,
+      "body_ns_per_call_ci90": null,
+      "conclusive": true
+    },
+    "security_file_open": {
+      "normal_minus_base_ms": {
+        "n": 40,
+        "median": 2.998839500000003,
+        "mean": 3.7093141499999986,
+        "stdev": 6.4019501448259595,
+        "q1": 1.1887084999999962,
+        "q3": 5.510658499999998,
+        "min": -10.710352999999978,
+        "max": 32.585362999999994,
+        "median_ci90": [
+          2.101211999999991,
+          4.361233999999992
+        ]
+      },
+      "normal_minus_null_ms": {
+        "n": 40,
+        "median": -0.08290099999999634,
+        "mean": 1.4591627499999982,
+        "stdev": 6.232934367050137,
+        "q1": -1.4580285000000066,
+        "q3": 2.812389000000012,
+        "min": -7.007259999999987,
+        "max": 29.866655999999992,
+        "median_ci90": [
+          -0.7601140000000062,
+          0.8526605000000048
+        ]
+      },
+      "null_minus_base_ms": {
+        "n": 40,
+        "median": 2.7080249999999957,
+        "mean": 2.2501514000000005,
+        "stdev": 4.511571706573948,
+        "q1": 0.9109520000000135,
+        "q3": 5.090498499999985,
+        "min": -11.630939999999978,
+        "max": 10.555094999999987,
+        "median_ci90": [
+          1.927768499999996,
+          4.024839000000002
+        ]
+      },
+      "calls_per_run": 1383.5,
+      "body_ns_per_call": -59.92121431152608,
+      "body_ns_per_call_ci90": [
+        -549.413805565599,
+        616.3068305023526
+      ],
+      "conclusive": false
+    },
+    "security_file_permission": {
+      "normal_minus_base_ms": {
+        "n": 40,
+        "median": 3.8650679999999853,
+        "mean": 3.463068649999999,
+        "stdev": 3.734764599103168,
+        "q1": 1.3627952500000067,
+        "q3": 5.195619249999998,
+        "min": -9.897772,
+        "max": 12.309227000000005,
+        "median_ci90": [
+          2.1053639999999985,
+          4.494045000000002
+        ]
+      },
+      "normal_minus_null_ms": {
+        "n": 40,
+        "median": 0.5287954999999983,
+        "mean": 0.5360871499999993,
+        "stdev": 4.59016831095629,
+        "q1": -2.0009047499999904,
+        "q3": 3.139613249999992,
+        "min": -11.347880999999976,
+        "max": 9.26093,
+        "median_ci90": [
+          -0.5103065000000018,
+          1.7693859999999977
+        ]
+      },
+      "null_minus_base_ms": {
+        "n": 40,
+        "median": 2.0484510000000067,
+        "mean": 2.9269814999999997,
+        "stdev": 3.718333422011027,
+        "q1": 0.9105157499999933,
+        "q3": 4.513730250000007,
+        "min": -4.264833000000023,
+        "max": 17.571240000000017,
+        "median_ci90": [
+          1.3888024999999944,
+          2.7365410000000088
+        ]
+      },
+      "calls_per_run": 3963.0,
+      "body_ns_per_call": 133.43313146606062,
+      "body_ns_per_call_ci90": [
+        -128.7677264698465,
+        446.47640676255304
+      ],
+      "conclusive": false
+    },
+    "security_mmap_file": {
+      "normal_minus_base_ms": {
+        "n": 40,
+        "median": 3.866618000000002,
+        "mean": 4.131100975,
+        "stdev": 3.7855715013726194,
+        "q1": 2.220327750000001,
+        "q3": 6.250631000000003,
+        "min": -7.356609000000014,
+        "max": 11.934217999999996,
+        "median_ci90": [
+          3.457605500000009,
+          5.079309000000004
+        ]
+      },
+      "normal_minus_null_ms": {
+        "n": 40,
+        "median": -1.001093500000008,
+        "mean": -1.6960578749999988,
+        "stdev": 8.323166675624686,
+        "q1": -4.008020500000001,
+        "q3": 3.327222000000012,
+        "min": -38.80751699999998,
+        "max": 9.088837000000016,
+        "median_ci90": [
+          -2.390385999999994,
+          0.8248775000000014
+        ]
+      },
+      "null_minus_base_ms": {
+        "n": 40,
+        "median": 3.9684145000000033,
+        "mean": 5.827158849999998,
+        "stdev": 7.370869523366909,
+        "q1": 2.1236370000000044,
+        "q3": 7.723725250000011,
+        "min": -2.01663299999999,
+        "max": 43.070179,
+        "median_ci90": [
+          3.366894999999995,
+          5.68132000000001
+        ]
+      },
+      "calls_per_run": 1466.0,
+      "body_ns_per_call": -682.8741473397054,
+      "body_ns_per_call_ci90": [
+        -1630.5497953615238,
+        562.6722373806285
+      ],
+      "conclusive": false
+    },
+    "sched_process_exec": {
+      "normal_minus_base_ms": {
+        "n": 40,
+        "median": 3.378968499999996,
+        "mean": 2.9961710750000004,
+        "stdev": 5.9955234659536725,
+        "q1": -0.5135372499999874,
+        "q3": 5.580104500000006,
+        "min": -20.891192000000004,
+        "max": 18.826038999999987,
+        "median_ci90": [
+          2.456277,
+          4.3409140000000015
+        ]
+      },
+      "normal_minus_null_ms": {
+        "n": 40,
+        "median": -0.2720160000000138,
+        "mean": 0.7463136750000006,
+        "stdev": 5.109974020290301,
+        "q1": -3.190981249999995,
+        "q3": 3.7689639999999924,
+        "min": -8.896754000000007,
+        "max": 15.008101999999996,
+        "median_ci90": [
+          -1.3012984999999921,
+          2.220415500000003
+        ]
+      },
+      "null_minus_base_ms": {
+        "n": 40,
+        "median": 1.7167979999999985,
+        "mean": 2.2498574000000002,
+        "stdev": 5.236397605154791,
+        "q1": -0.38024074999998964,
+        "q3": 5.096315999999996,
+        "min": -16.83881199999998,
+        "max": 14.609233000000014,
+        "median_ci90": [
+          0.9816125000000064,
+          3.497781999999998
+        ]
+      },
+      "calls_per_run": 306.0,
+      "body_ns_per_call": -888.9411764706333,
+      "body_ns_per_call_ci90": [
+        -4252.609477124157,
+        7256.259803921579
+      ],
+      "conclusive": false
+    },
+    "sched_process_fork": {
+      "normal_minus_base_ms": {
+        "n": 40,
+        "median": 2.495829000000005,
+        "mean": 2.4436905999999996,
+        "stdev": 7.563957790672589,
+        "q1": -0.31512074999999473,
+        "q3": 7.056346499999995,
+        "min": -34.174080999999994,
+        "max": 13.259617000000002,
+        "median_ci90": [
+          1.5787710000000066,
+          4.466443999999986
+        ]
+      },
+      "normal_minus_null_ms": {
+        "n": 40,
+        "median": 0.29549499999999285,
+        "mean": -0.31366152500000055,
+        "stdev": 4.830087319093407,
+        "q1": -3.4403277500000065,
+        "q3": 2.3031184999999996,
+        "min": -12.937125999999994,
+        "max": 9.102757999999989,
+        "median_ci90": [
+          -1.4872409999999863,
+          1.465020999999983
+        ]
+      },
+      "null_minus_base_ms": {
+        "n": 40,
+        "median": 2.7101684999999986,
+        "mean": 2.7573521249999997,
+        "stdev": 6.0068942307291,
+        "q1": 0.6879657499999775,
+        "q3": 5.798855250000005,
+        "min": -24.97598199999998,
+        "max": 14.814640000000004,
+        "median_ci90": [
+          1.353071999999997,
+          3.9706900000000127
+        ]
+      },
+      "calls_per_run": 305.0,
+      "body_ns_per_call": 968.836065573747,
+      "body_ns_per_call_ci90": [
+        -4876.199999999955,
+        4803.347540983551
+      ],
+      "conclusive": false
+    },
+    "sched_process_exit": {
+      "normal_minus_base_ms": {
+        "n": 40,
+        "median": 4.59034299999999,
+        "mean": 3.6564185250000008,
+        "stdev": 4.574001006765487,
+        "q1": 0.03543774999999194,
+        "q3": 5.987193499999984,
+        "min": -7.220869999999991,
+        "max": 17.29565100000001,
+        "median_ci90": [
+          2.1067139999999958,
+          5.281121499999999
+        ]
+      },
+      "normal_minus_null_ms": {
+        "n": 40,
+        "median": -0.8998109999999865,
+        "mean": -0.17643792499999858,
+        "stdev": 5.963149557689352,
+        "q1": -3.078196999999991,
+        "q3": 3.2186347499999837,
+        "min": -17.65956200000002,
+        "max": 11.977786000000004,
+        "median_ci90": [
+          -1.7057289999999892,
+          0.32563200000000625
+        ]
+      },
+      "null_minus_base_ms": {
+        "n": 40,
+        "median": 3.496521999999988,
+        "mean": 3.832856449999999,
+        "stdev": 4.567076945576746,
+        "q1": 0.6540969999999993,
+        "q3": 7.123429499999993,
+        "min": -6.226381999999974,
+        "max": 17.554279000000005,
+        "median_ci90": [
+          2.3519875,
+          5.179952000000015
+        ]
+      },
+      "calls_per_run": 305.0,
+      "body_ns_per_call": -2950.1999999999557,
+      "body_ns_per_call_ci90": [
+        -5592.55409836062,
+        1067.6459016393646
+      ],
+      "conclusive": false
+    }
+  },
+  "userspace_split": {
+    "kernel_minus_base_ms": {
+      "n": 40,
+      "median": 4.639694500000006,
+      "mean": 4.7203360750000005,
+      "stdev": 3.4605142444717556,
+      "q1": 2.1169625000000067,
+      "q3": 7.078072249999998,
+      "min": -1.258893000000011,
+      "max": 12.286770000000002,
+      "median_ci90": [
+        3.6310750000000116,
+        5.937730000000002
+      ]
+    },
+    "nostore_minus_kernel_ms": {
+      "n": 40,
+      "median": 4.7261755000000125,
+      "mean": 4.7179047249999995,
+      "stdev": 3.2489110842110445,
+      "q1": 3.240791000000007,
+      "q3": 6.163459749999995,
+      "min": -1.4169079999999945,
+      "max": 11.381225999999995,
+      "median_ci90": [
+        4.294183500000006,
+        5.2764549999999995
+      ]
+    },
+    "full_minus_nostore_ms": {
+      "n": 40,
+      "median": 1.115511500000013,
+      "mean": 1.5506338000000008,
+      "stdev": 4.761248689608762,
+      "q1": -0.8291387499999927,
+      "q3": 3.3054219999999885,
+      "min": -5.368040000000018,
+      "max": 23.525564999999997,
+      "median_ci90": [
+        0.43065400000000253,
+        1.957816000000015
+      ]
+    },
+    "full_minus_kernel_ms": {
+      "n": 40,
+      "median": 5.374479499999987,
+      "mean": 6.268538525,
+      "stdev": 4.514127320002699,
+      "q1": 3.4097680000000077,
+      "q3": 8.027706000000002,
+      "min": 1.2823369999999945,
+      "max": 27.657690999999986,
+      "median_ci90": [
+        4.417039499999997,
+        6.3493740000000045
+      ]
+    },
+    "full_minus_base_ms": {
+      "n": 40,
+      "median": 10.72212950000001,
+      "mean": 10.9888746,
+      "stdev": 5.059641254398913,
+      "q1": 8.548560499999997,
+      "q3": 13.18173125000001,
+      "min": 2.2120230000000074,
+      "max": 32.15516199999999,
+      "median_ci90": [
+        9.8369955,
+        11.812945499999998
+      ]
+    },
+    "full_overhead_pct": {
+      "n": 40,
+      "median": 8.407530428162513,
+      "mean": 8.829650010689587,
+      "stdev": 4.136750165113844,
+      "q1": 6.845520678171219,
+      "q3": 10.770058574568136,
+      "min": 1.7081487143905338,
+      "max": 25.640368669246037,
+      "median_ci90": [
+        7.804088148968901,
+        9.491685360349944
+      ]
+    },
+    "kernel_only_overhead_pct": {
+      "n": 40,
+      "median": 3.7123736329811696,
+      "mean": 3.816631245493288,
+      "stdev": 2.8322831674726374,
+      "q1": 1.646480940036349,
+      "q3": 5.59898326081027,
+      "min": -0.9814478506160906,
+      "max": 10.172158129024877,
+      "median_ci90": [
+        2.9152820597456386,
+        4.878249283169556
+      ]
+    },
+    "no_store_overhead_pct": {
+      "n": 40,
+      "median": 6.913801800015207,
+      "mean": 7.590577608169292,
+      "stdev": 3.1879811033118983,
+      "q1": 4.715251490908861,
+      "q3": 10.295089561634342,
+      "min": 2.037447462844999,
+      "max": 13.74288576669107,
+      "median_ci90": [
+        6.500960200265348,
+        8.201926220865484
+      ]
+    },
+    "collector_cpu_s": {
+      "base": 0.001938710499992169,
+      "kernel_only": 0.047536741999998355,
+      "no_store": 0.19331627100000048,
+      "full": 0.14743799000000024
+    }
+  },
+  "mechanism": {
+    "kernel_minus_base_ms": {
+      "n": 40,
+      "median": 3.8185830000000074,
+      "mean": 3.666317950000002,
+      "stdev": 4.7748056434184285,
+      "q1": 1.6039154999999972,
+      "q3": 5.711774749999999,
+      "min": -11.335867,
+      "max": 16.260434000000004,
+      "median_ci90": [
+        3.2424750000000087,
+        4.343110000000005
+      ]
+    },
+    "nostore_minus_kernel_ms": {
+      "n": 40,
+      "median": 5.440866000000002,
+      "mean": 5.2414842749999995,
+      "stdev": 5.322615834837146,
+      "q1": 2.25146024999999,
+      "q3": 8.302667499999993,
+      "min": -6.213168999999991,
+      "max": 23.039260000000006,
+      "median_ci90": [
+        3.0049545000000037,
+        6.51997700000001
+      ]
+    },
+    "burn_minus_kernel_ms": {
+      "n": 40,
+      "median": 0.5024409999999924,
+      "mean": 0.6235225999999973,
+      "stdev": 6.108241911237257,
+      "q1": -1.6399117500000004,
+      "q3": 3.58650399999999,
+      "min": -13.984173000000016,
+      "max": 23.553310999999994,
+      "median_ci90": [
+        -0.4522550000000125,
+        1.847287000000003
+      ]
+    },
+    "nostore_minus_burn_ms": {
+      "n": 40,
+      "median": 4.245042000000004,
+      "mean": 4.617961675000003,
+      "stdev": 5.94345402293989,
+      "q1": 2.011186750000012,
+      "q3": 6.067601499999998,
+      "min": -17.829994999999986,
+      "max": 22.361180000000008,
+      "median_ci90": [
+        3.3414920000000015,
+        5.350432999999988
+      ]
+    }
+  },
+  "callback_time_per_event_type": {
+    "open": {
+      "events_per_run": 1264.4,
+      "us_per_event": 24.394480385953813,
+      "ms_per_run": 30.844381
+    },
+    "read": {
+      "events_per_run": 792.8,
+      "us_per_event": 14.473763370332998,
+      "ms_per_run": 11.474799599999999
+    },
+    "fork": {
+      "events_per_run": 307.4,
+      "us_per_event": 6.882202992843201,
+      "ms_per_run": 2.1155892
+    },
+    "chdir": {
+      "events_per_run": 4.0,
+      "us_per_event": 32.0118,
+      "ms_per_run": 0.1280472
+    },
+    "exec": {
+      "events_per_run": 310.4,
+      "us_per_event": 108.09712113402063,
+      "ms_per_run": 33.553346399999995
+    },
+    "mmap_read": {
+      "events_per_run": 156.0,
+      "us_per_event": 2.1687948717948715,
+      "ms_per_run": 0.338332
+    },
+    "unlink": {
+      "events_per_run": 300.0,
+      "us_per_event": 84.66155,
+      "ms_per_run": 25.398465
+    },
+    "exit": {
+      "events_per_run": 307.4,
+      "us_per_event": 4.077889394925179,
+      "ms_per_run": 1.2535432
+    },
+    "write": {
+      "events_per_run": 300.0,
+      "us_per_event": 14.427858666666667,
+      "ms_per_run": 4.3283575999999995
+    }
+  }
+}

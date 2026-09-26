@@ -1,0 +1,53 @@
+{
+  "source_runs": ["20260926-step1c-751d6f3", "20260926-step1d-7726faf"],
+  "workload": "scripts/v02_graduation.py static_binary_x300 (300 fork/execs per run)",
+  "units": "per 300-process run unless stated",
+  "headline": {"median_paired_overhead_pct": 5.52, "ci90_pct": [3.37, 7.25], "delta_ms": 7.06,
+               "us_per_process": 23.5, "bpf_runtime_ms": 2.99, "kernel_drops": 0, "queue_drops": 0},
+  "total_cost": [
+    {"rank": 1, "center": "userspace event processing (interference)", "ms": 4.30, "ci90_ms": [3.57, 5.32], "source": "phase X (U: 4.73, V: 5.44)"},
+    {"rank": "1a", "center": "realpath/lstat within processing", "ms": 2.53, "ci90_ms": [1.91, 4.07], "source": "phase X"},
+    {"rank": "1b", "center": "remaining processing (mechanism unknown)", "ms": 1.44, "ci90_ms": [0.33, 2.54], "source": "phase X"},
+    {"rank": 2, "center": "kernel BPF programs", "ms": 2.99, "calls": 7733, "ns_per_call_avg": 387, "source": "phase T bpf_stats"},
+    {"rank": "2a", "center": "io_seen map operations", "ms_approx": 1.20, "ops": 7501, "source": "phase Q"},
+    {"rank": "2b", "center": "ring-buffer emission", "ms_approx": 0.70, "records": 3062, "source": "phase Q"},
+    {"rank": "2c", "center": "namespace translation", "ms_approx": 0.53, "translations": 4285, "source": "phase Q"},
+    {"rank": "2d", "center": "bpf_d_path", "ms_approx": 0.26, "calls": 1077, "source": "phase Q"},
+    {"rank": "2e", "center": "exec filename+argv copies", "ms_approx": 0.08, "calls": 306, "source": "phase Q"},
+    {"rank": 3, "center": "SQLite store", "ms": 1.12, "ci90_ms": [0.43, 1.96], "source": "phase U"},
+    {"rank": 4, "center": "hook dispatch", "ms": -0.23, "ci90_ms": [-1.71, 0.97], "source": "phase A null_all", "conclusion": "not measurable"}
+  ],
+  "cost_per_invocation": [
+    {"rank": 1, "op": "python callback: exec", "us": 108.1, "calls": 310},
+    {"rank": 2, "op": "python callback: unlink", "us": 84.7, "calls": 300},
+    {"rank": 3, "op": "python callback: open", "us": 24.4, "calls": 1264},
+    {"rank": 4, "op": "python callback: read/write", "us": 14.5, "calls": 1093},
+    {"rank": 5, "op": "BPF sched_process_fork", "ns": 942, "calls": 305},
+    {"rank": 6, "op": "BPF security_file_open", "ns": 910, "calls": 1384},
+    {"rank": 7, "op": "BPF sched_process_exec", "ns": 812, "calls": 306},
+    {"rank": 8, "op": "ringbuf emit fork (incl. comm copy)", "ns_approx": 475, "calls": 305},
+    {"rank": 9, "op": "namespace translation, foreign WSL init task", "ns_approx": [436, 230], "calls": 612},
+    {"rank": 10, "op": "io_seen delete at open (LRU, bucket lock)", "ns_approx": 421, "calls": 1077},
+    {"rank": 11, "op": "upid walk (fork child, exec parent)", "ns_approx": 300, "calls": 611},
+    {"rank": 12, "op": "BPF sched_process_exit", "ns": 301, "calls": 305},
+    {"rank": 13, "op": "ringbuf emit open", "ns_approx": 278, "calls": 1077},
+    {"rank": 14, "op": "BPF security_file_permission", "ns": 277, "calls": 3963},
+    {"rank": 15, "op": "bpf_d_path", "ns_approx": 241, "calls": 1077},
+    {"rank": 16, "op": "io_seen lookup/update (permission)", "ns_approx": 116, "calls": 4894},
+    {"rank": 17, "op": "fast namespace translation (helper)", "ns_approx": 75, "calls": 3060}
+  ],
+  "avoidable_cost": [
+    {"rank": 1, "candidate": "resolve rename/unlink/exec names against canonical base instead of realpath()", "est_saving_ms": 2.5, "ci90_ms": [1.91, 4.07], "evidence_neutral": true, "correctness": "fixes final-component symlink bug", "confidence": "high"},
+    {"rank": 2, "candidate": "io_seen open-time delete -> lockless lookup, delete only if present", "est_saving_ms_max": 0.35, "evidence_neutral": true, "confidence": "medium (below wall noise)"},
+    {"rank": 3, "candidate": "reject ancestor-namespace (WSL init) tasks before upid walk", "est_saving_ms_max": 0.13, "upper_bound_ms": 0.20, "evidence_neutral": true, "confidence": "medium (runs concurrently)"},
+    {"rank": 4, "candidate": "remaining userspace processing", "est_saving_ms_max": 1.44, "evidence_neutral": null, "confidence": "uncertain"},
+    {"rank": 5, "candidate": "SQLite store tuning", "est_saving_ms_max": 1.12, "evidence_neutral": null, "confidence": "uncertain"},
+    {"rank": 6, "candidate": "fork child walk / exec record size", "est_saving_ms_max": 0.1, "confidence": "low"}
+  ],
+  "not_avoidable_in_this_workload": ["fork/exec/exit bookkeeping (all 300 processes are workspace-relevant)",
+                                     "workspace open d_path", "read/write dedup lookups"],
+  "wsl_init_foreign": {"invocations_per_run": 612, "hooks": {"security_file_open": 306, "security_file_permission": 306},
+                       "upid_walks": 612, "est_us_per_run": 204, "pct_bpf_runtime": 6.8, "pct_wall_overhead_upper_bound": 2.9,
+                       "events_emitted": 0, "deterministic_rejection_possible": true},
+  "selected_next_target": "userspace name resolution (realpath -> canonical-base join; exec: single final-component lstat)"
+}

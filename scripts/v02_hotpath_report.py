@@ -53,6 +53,21 @@ def main() -> int:
     res = json.loads((d / "hotpath.json").read_text())
     procs = res["params"].get("processes_per_run", PROCS_DEFAULT)
     P, Q, T = res.get("phase_P"), res.get("phase_Q"), res.get("phase_T")
+    if not (P and T):  # a follow-up run with only e.g. phase X
+        X = res.get("phase_X") or {}
+        lines = ["## realpath/lstat mechanism (phase X; rotated rounds, shell-timed)\n", "| comparison | ms per run |", "|---|---|"]
+        for k in ("kernel_minus_base_ms", "nostore_minus_kernel_ms", "canon_only_minus_kernel_ms",
+                  "nostore_nocanon_minus_kernel_ms", "nostore_minus_nostore_nocanon_ms"):
+            if k in X:
+                lines.append(f"| {k.replace('_ms', '').replace('_minus_', ' − ')} | {ci(X[k])} |")
+        (d / "derived.json").write_text(json.dumps({"source": str(d), "git": res.get("git"),
+                                                    "realpath_mechanism": {k: X[k] for k in X if k.endswith("_ms")},
+                                                    "rounds": sum(1 for r in X.get("rounds", []) if not r["warmup"]),
+                                                    "kernel_drops": X.get("kernel_drops_total"),
+                                                    "queue_drops": X.get("queue_drops_total")}, indent=2))
+        (d / "HOTPATH_TABLES.md").write_text("\n".join(lines) + "\n")
+        print("\n".join(lines))
+        return 0
     A, U, V = res.get("phase_A", {}), res.get("phase_U"), res.get("phase_V")
     tables = d / "tables"
     tables.mkdir(exist_ok=True)
@@ -272,6 +287,16 @@ def main() -> int:
         L += ["", "Callback time per event type (no_store mode):\n", "| event | per run | µs/event | ms/run |", "|---|---|---|---|"]
         for k, v in sorted(out["callback_time_per_event_type"].items(), key=lambda kv: -kv[1]["ms_per_run"]):
             L.append(f"| {k} | {v['events_per_run']:.0f} | {v['us_per_event']:.1f} | {v['ms_per_run']:.2f} |")
+        L.append("")
+    X = res.get("phase_X")
+    if X:
+        out["realpath_mechanism"] = {k: X[k] for k in ("kernel_minus_base_ms", "nostore_minus_kernel_ms",
+                                                       "canon_only_minus_kernel_ms", "nostore_nocanon_minus_kernel_ms",
+                                                       "nostore_minus_nostore_nocanon_ms")}
+        (d / "derived.json").write_text(json.dumps(out, indent=2, default=str))
+        L += ["## realpath/lstat mechanism (phase X; rotated rounds, shell-timed)\n", "| comparison | ms per run |", "|---|---|"]
+        for k, v in out["realpath_mechanism"].items():
+            L.append(f"| {k.replace('_ms', '').replace('_minus_', ' − ')} | {ci(v)} |")
         L.append("")
     L += ["## Consistency checks\n", "| check | result |", "|---|---|"] + [f"| {k} | {v} |" for k, v in chk.items()]
     (d / "HOTPATH_TABLES.md").write_text("\n".join(L) + "\n")
