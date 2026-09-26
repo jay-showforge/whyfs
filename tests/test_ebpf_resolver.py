@@ -549,7 +549,7 @@ class BpfSourceStaticChecks(unittest.TestCase):
         self.assertIn("wf_task_ns_tgid", src)
         # Fast path for the collector's own namespace; the upid walk must stay
         # as the fallback for tasks in nested namespaces (containers).
-        body = src[src.index("wf_cur_tgid(void)"):]
+        body = src[src.index("wf_cur_tgid(u32 prog)"):]
         body = body[:body.index("\n}")]
         self.assertIn("bpf_get_ns_current_pid_tgid(NS_DEV, NS_INUM", body)
         self.assertIn("return wf_task_ns_tgid(", body)
