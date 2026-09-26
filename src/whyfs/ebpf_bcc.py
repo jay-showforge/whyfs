@@ -113,7 +113,8 @@ struct hdr_t {
 struct path_ev { struct hdr_t h; char path[PATH_N]; };
 struct path2_ev { struct hdr_t h; char path[PATH_N]; char path2[PATH_N]; };
 
-struct io_key_t { u64 file; u64 ino; u32 tgid; u32 dir; };
+/* value: bitmask of directions already reported (1 = read, 2 = write) */
+struct io_key_t { u64 file; u64 ino; u32 tgid; u32 pad; };
 
 struct pend_rename_t { u64 f1; u64 f2; s32 d1; s32 d2; u32 trunc; u32 pad; char a[PATH_N]; char b[PATH_N]; };
 struct pend_unlink_t { u64 f1; s32 d1; u32 trunc; char a[PATH_N]; };
@@ -174,6 +175,12 @@ static __always_inline u32 wf_task_ns_tgid(struct task_struct *t) {
 }
 
 static __always_inline u32 wf_cur_tgid(void) {
+    /* Fast path: one helper when the current task lives directly in the
+     * collector's namespace (the common case).  Tasks in nested namespaces
+     * (containers) fall back to the upid walk. */
+    struct bpf_pidns_info ns = {};
+    if (bpf_get_ns_current_pid_tgid(NS_DEV, NS_INUM, &ns, sizeof(ns)) == 0 && ns.tgid)
+        return ns.tgid;
     return wf_task_ns_tgid((struct task_struct *)bpf_get_current_task());
 }
 
@@ -231,10 +238,8 @@ KFUNC_PROBE(security_file_open, struct file *file) {
     u64 ino = inode->i_ino;
     /* A (re)used struct file starts a new open description: forget old dedup. */
     u32 root_tgid = bpf_get_current_pid_tgid() >> 32;
-    struct io_key_t r = {.file = (u64)file, .ino = ino, .tgid = root_tgid, .dir = 1};
-    struct io_key_t w = {.file = (u64)file, .ino = ino, .tgid = root_tgid, .dir = 2};
-    io_seen.delete(&r);
-    io_seen.delete(&w);
+    struct io_key_t k = {.file = (u64)file, .ino = ino, .tgid = root_tgid};
+    io_seen.delete(&k);
     struct path_ev *e = events.ringbuf_reserve(sizeof(struct path_ev));
     if (!e) { wf_count_drop(); return 0; }
     wf_hdr(&e->h, tgid, EV_OPEN);
@@ -255,12 +260,14 @@ static __always_inline int wf_emit_io(struct file *file, u32 dir, u32 type) {
     if (!inode) return 0;
     if (!S_ISREG(inode->i_mode)) return 0;
     u64 ino = inode->i_ino;
-    struct io_key_t k = {.file = (u64)file, .ino = ino, .tgid = bpf_get_current_pid_tgid() >> 32, .dir = dir};
-    if (io_seen.lookup(&k)) return 0;
+    struct io_key_t k = {.file = (u64)file, .ino = ino, .tgid = bpf_get_current_pid_tgid() >> 32};
+    u8 *seen = io_seen.lookup(&k);
+    u8 mask = seen ? *seen : 0;
+    if (mask & dir) return 0;
     u32 tgid = wf_cur_tgid();
     if (!tgid) return 0;
-    u8 one = 1;
-    io_seen.update(&k, &one);
+    mask |= dir;
+    io_seen.update(&k, &mask);
     struct hdr_t *e = events.ringbuf_reserve(sizeof(struct hdr_t));
     if (!e) { wf_count_drop(); return 0; }
     wf_hdr(e, tgid, type);
@@ -458,7 +465,9 @@ RAW_TRACEPOINT_PROBE(sched_process_fork) {
     if (!e) { wf_count_drop(); return 0; }
     wf_hdr(e, ns_child, EV_FORK);
     e->tid = cpid;
-    e->aux_pid = wf_task_ns_tgid(parent);
+    /* sched_process_fork always fires in the forking task: parent == current. */
+    e->aux_pid = (parent == (struct task_struct *)bpf_get_current_task()) ? wf_cur_tgid()
+                                                                          : wf_task_ns_tgid(parent);
     bpf_probe_read_kernel_str(&e->comm, sizeof(e->comm), child->comm);
     events.ringbuf_submit(e, wf_wake());
     return 0;
@@ -999,7 +1008,7 @@ class BCCCollector:
         try:
             level, inum = pid_namespace_identity()
             self.pidns = {"level_visible": level, "inum": inum}
-            self.bpf = BPF(text=BPF_SOURCE, cflags=[f"-DNS_INUM={inum}U"])
+            self.bpf = BPF(text=BPF_SOURCE, cflags=[f"-DNS_INUM={inum}U", f"-DNS_DEV={pid_namespace_kdev()}ULL"])
             self.bpf["events"].open_ring_buffer(self._process_event)
         except BaseException:
             self.q.put(None)
@@ -1062,6 +1071,13 @@ def pid_namespace_identity() -> tuple[int, int]:
     link = os.readlink("/proc/self/ns/pid")  # "pid:[4026531836]"
     inum = int(link[link.index("[") + 1: link.index("]")])
     return level, inum
+
+
+def pid_namespace_kdev() -> int:
+    """nsfs device of our PID namespace, in the kernel's internal dev_t
+    encoding (major << 20 | minor) that bpf_get_ns_current_pid_tgid expects."""
+    st = os.stat("/proc/self/ns/pid")
+    return (os.major(st.st_dev) << 20) | os.minor(st.st_dev)
 
 
 def install_signal_stop(stop_event: threading.Event) -> None:

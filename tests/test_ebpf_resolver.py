@@ -547,6 +547,18 @@ class BpfSourceStaticChecks(unittest.TestCase):
         src = m.BPF_SOURCE
         self.assertIn("NS_INUM", src)
         self.assertIn("wf_task_ns_tgid", src)
+        # Fast path for the collector's own namespace; the upid walk must stay
+        # as the fallback for tasks in nested namespaces (containers).
+        body = src[src.index("wf_cur_tgid(void)"):]
+        body = body[:body.index("\n}")]
+        self.assertIn("bpf_get_ns_current_pid_tgid(NS_DEV, NS_INUM", body)
+        self.assertIn("return wf_task_ns_tgid(", body)
+
+    def test_io_dedup_is_reset_by_one_delete_per_open(self):
+        src = m.BPF_SOURCE
+        body = src[src.index("KFUNC_PROBE(security_file_open"):]
+        body = body[:body.index("\n}")]
+        self.assertEqual(body.count("io_seen.delete"), 1)
 
 
 if __name__ == "__main__":
