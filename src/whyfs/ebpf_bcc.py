@@ -123,14 +123,6 @@ struct pend_rename_t { u64 f1; u64 f2; s32 d1; s32 d2; u32 trunc; u32 pad; char 
 struct pend_unlink_t { u64 f1; s32 d1; u32 trunc; char a[PATH_N]; };
 
 BPF_TABLE("lru_hash", struct io_key_t, u8, io_seen, 262144);
-/* Diagnostic io_seen reset variants (production: 0).
- *   0  delete the key on every open (regular files and directories)
- *   1  lockless lookup; delete only if a stale entry exists; skip directories
- *   2  NO reset at all -- UNSAFE: stale state can suppress first-I/O events;
- *      only an upper bound on what any stale-tolerant design could save. */
-#ifndef WF_IOSEEN_MODE
-#define WF_IOSEEN_MODE 0
-#endif
 BPF_HASH(pending_rename, u64, struct pend_rename_t, 4096);
 BPF_HASH(pending_unlink, u64, struct pend_unlink_t, 4096);
 BPF_HASH(pending_chdir, u64, u64, 4096);
@@ -313,19 +305,14 @@ KFUNC_PROBE(security_file_open, struct file *file) {
     /* A (re)used struct file starts a new open description: forget old dedup. */
     u32 root_tgid = bpf_get_current_pid_tgid() >> 32;
     struct io_key_t k = {.file = (u64)file, .ino = ino, .tgid = root_tgid};
+    /* Required: freed struct file memory is re-used by later opens, and stale
+     * state would suppress the new open's first read/write (tests:
+     * IoSeenSemanticsTests).  Cheaper resets were measured and rejected:
+     * results/v02-ioseen/IOSEEN_REPORT.md. */
     WF_T0(t_map);
-#if WF_IOSEEN_MODE == 1
-    if (!S_ISDIR(mode)) {
-        WF_P(P_OPEN, 2);
-        if (io_seen.lookup(&k)) { io_seen.delete(&k); WF_P(P_OPEN, 4); }
-    }
-#elif WF_IOSEEN_MODE == 2
-    /* diagnostic only: no reset */
-#else
     io_seen.delete(&k);
-    WF_P(P_OPEN, 4);
-#endif
     WF_T1(P_OPEN, 12, t_map);
+    WF_P(P_OPEN, 4);
     WF_T0(t_rb);
     struct path_ev *e = events.ringbuf_reserve(sizeof(struct path_ev));
     if (!e) { wf_count_drop(); return 0; }

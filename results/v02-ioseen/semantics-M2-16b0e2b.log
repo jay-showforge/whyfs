@@ -1,0 +1,39 @@
+test_back_to_back_reopens_report_every_read (tests.test_ebpf_live.IoSeenSemanticsTests.test_back_to_back_reopens_report_every_read) ... ok
+test_concurrent_processes_each_report_their_read (tests.test_ebpf_live.IoSeenSemanticsTests.test_concurrent_processes_each_report_their_read) ... ok
+test_dup_shares_the_open_description (tests.test_ebpf_live.IoSeenSemanticsTests.test_dup_shares_the_open_description) ... ok
+test_every_reopen_reports_its_first_read (tests.test_ebpf_live.IoSeenSemanticsTests.test_every_reopen_reports_its_first_read) ... FAIL
+test_every_reopen_reports_write_and_read (tests.test_ebpf_live.IoSeenSemanticsTests.test_every_reopen_reports_write_and_read) ... FAIL
+test_fork_child_reports_its_read_of_an_inherited_fd (tests.test_ebpf_live.IoSeenSemanticsTests.test_fork_child_reports_its_read_of_an_inherited_fd) ... ok
+test_new_image_reopening_its_input_keeps_lineage (tests.test_ebpf_live.IoSeenSemanticsTests.test_new_image_reopening_its_input_keeps_lineage) ... FAIL
+test_read_then_write_on_one_open_reports_one_each (tests.test_ebpf_live.IoSeenSemanticsTests.test_read_then_write_on_one_open_reports_one_each) ... ok
+test_two_opens_of_one_inode_are_independent (tests.test_ebpf_live.IoSeenSemanticsTests.test_two_opens_of_one_inode_are_independent) ... ok
+test_write_then_read_on_one_open_reports_one_each (tests.test_ebpf_live.IoSeenSemanticsTests.test_write_then_read_on_one_open_reports_one_each) ... ok
+
+======================================================================
+FAIL: test_every_reopen_reports_its_first_read (tests.test_ebpf_live.IoSeenSemanticsTests.test_every_reopen_reports_its_first_read)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ftmon/whyfs-ioseen-variants/tests/test_ebpf_live.py", line 385, in test_every_reopen_reports_its_first_read
+    self.assertEqual(self.io(con, pid, f, read=True), 100, "stale io_seen state suppressed a reopen's first read")
+AssertionError: 7 != 100 : stale io_seen state suppressed a reopen's first read
+
+======================================================================
+FAIL: test_every_reopen_reports_write_and_read (tests.test_ebpf_live.IoSeenSemanticsTests.test_every_reopen_reports_write_and_read)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ftmon/whyfs-ioseen-variants/tests/test_ebpf_live.py", line 395, in test_every_reopen_reports_write_and_read
+    self.assertEqual(self.io(con, pid, f, read=False), 100)
+AssertionError: 7 != 100
+
+======================================================================
+FAIL: test_new_image_reopening_its_input_keeps_lineage (tests.test_ebpf_live.IoSeenSemanticsTests.test_new_image_reopening_its_input_keeps_lineage)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ftmon/whyfs-ioseen-variants/tests/test_ebpf_live.py", line 435, in test_new_image_reopening_its_input_keeps_lineage
+    self.assertEqual(self.io(con, pid, f, True), 51)
+AssertionError: 15 != 51
+
+----------------------------------------------------------------------
+Ran 10 tests in 34.159s
+
+FAILED (failures=3)

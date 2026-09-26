@@ -1,0 +1,28 @@
+{
+  "user": "ftmon",
+  "out": "/home/ftmon/whyfs-ioseen/exp-2e7e937",
+  "base": "/home/{user}/whyfs-ioseen-ws",
+  "workloads": "static,make,vite",
+  "rounds": "static=40,make=30,vite=30",
+  "bpf_reps": 8,
+  "variants": {
+    "M0": "-DWF_IOSEEN_MODE=0",
+    "M1": "-DWF_IOSEEN_MODE=1",
+    "M2": "-DWF_IOSEEN_MODE=2"
+  },
+  "workloads_def": {
+    "static": [
+      "rm -f out-*.txt",
+      "for i in $(seq 1 300); do ./static_copy raw.txt out-$i.txt; done"
+    ],
+    "make": [
+      "make -s clean >/dev/null; true",
+      "make -s -j8"
+    ],
+    "vite": [
+      "true",
+      "node node_modules/vite/bin/vite.js build --logLevel warn"
+    ]
+  },
+  "timing": "shell (date +%s%N) inside the workload; never a collecting process"
+}

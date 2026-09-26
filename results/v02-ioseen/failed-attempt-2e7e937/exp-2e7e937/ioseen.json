@@ -1,0 +1,62 @@
+{
+ "started": "2026-09-26T09:51:04-0700",
+ "params": {
+  "user": "ftmon",
+  "out": "/home/ftmon/whyfs-ioseen/exp-2e7e937",
+  "base": "/home/{user}/whyfs-ioseen-ws",
+  "workloads": "static,make,vite",
+  "rounds": "static=40,make=30,vite=30",
+  "bpf_reps": 8,
+  "variants": {
+   "M0": "-DWF_IOSEEN_MODE=0",
+   "M1": "-DWF_IOSEEN_MODE=1",
+   "M2": "-DWF_IOSEEN_MODE=2"
+  },
+  "workloads_def": {
+   "static": [
+    "rm -f out-*.txt",
+    "for i in $(seq 1 300); do ./static_copy raw.txt out-$i.txt; done"
+   ],
+   "make": [
+    "make -s clean >/dev/null; true",
+    "make -s -j8"
+   ],
+   "vite": [
+    "true",
+    "node node_modules/vite/bin/vite.js build --logLevel warn"
+   ]
+  },
+  "timing": "shell (date +%s%N) inside the workload; never a collecting process"
+ },
+ "git": {
+  "head": "2e7e93728595905e2173b9d89099f4ed51cbb0bd",
+  "dirty_files": [],
+  "diff_bytes": 0
+ },
+ "environment": {
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "machine": "x86_64",
+  "python": "3.12.3",
+  "cpu": "Intel(R) Core(TM) i5-14400F",
+  "cpus": 16,
+  "mem": "MemTotal:       16292024 kB",
+  "bcc": "0.29.1",
+  "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+  "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "node": "v18.19.1",
+  "make": "GNU Make 4.3",
+  "doctor": {
+   "linux": true,
+   "euid": 0,
+   "bcc_importable": true,
+   "bpf_fs": true,
+   "btf_vmlinux": true,
+   "kernel_headers": true,
+   "cap_bpf": true,
+   "cap_perfmon": true,
+   "ready": true
+  }
+ },
+ "workloads": {},
+ "finished": "2026-09-26T09:51:04-0700"
+}

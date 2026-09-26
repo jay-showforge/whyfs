@@ -27,6 +27,32 @@ called graduated. Build workloads were 0.4–3.1% in every run.
 - See `results/v02-graduation-final/VERDICT.md`. The in-process profiler's improvement (5.52% → 3.86%)
   did not carry over to the real-daemon harness; that gap is the next thing to characterize.
 
+### Update 2026-09-26 (later): gap resolved; two hypotheses rejected; alpha limitation accepted
+
+**V0.2 PERFORMANCE GATE REMAINS FAILED.** No graduation rerun, because no candidate produced a clear win.
+
+- **Daemon gap** (`results/v02-daemon-gap/DAEMON_GAP_REPORT.md`): there is no real fresh-vs-steady or
+  in-process-vs-daemon difference.
+  - The steady-state production path costs ≈ 6.3–8.3 ms per 300-process run (≈ 5–7%) in every topology.
+  - The profiler's 3.86% was a low reading.
+- **Writer-handoff batching** (commit 96b9b9f, `results/v02-handoff/HANDOFF_REPORT.md`):
+  - Handoffs fell from 3,014 to 7 per run, collector context switches −79%, collector CPU −26%.
+  - Workload time did not change (−0.50 ms, CI −1.27..+0.81), so the hypothesis was rejected.
+  - Kept as a collector resource improvement.
+- **io_seen** (`results/v02-ioseen/IOSEEN_REPORT.md`):
+  - The per-open reset is **required**. Without it, the kernel's reuse of freed `struct file` memory
+    suppressed 93 of 100 reopen reads in the new tests.
+  - The cheapest correct variant saves ≈ 0.1 ms of BPF time and no measurable workload time.
+  - Rejected and reverted; production is unchanged.
+- **Accepted limitation (the bound set for this work):** on exec-heavy microprocess workloads, a fresh
+  process every ~0.4 ms, whyfs v0.2 costs ≈ 5–7% on this WSL2 host.
+  - The cost spreads across per-event kernel hook work (≈ 3 ms BPF per 300 processes), which *is* the
+    evidence collection, and ≈ 2 ms of userspace processing and store.
+  - No remaining single correctness-neutral cost is large enough to justify further sub-millisecond work.
+  - Normal builds measure 0–3%.
+  - v0.2 remains an **alpha** with this limitation documented.
+- Known noise issue KI-1 (the daemon records its own `daemon.json` replace) is in `docs/KNOWN_ISSUES.md`.
+
 Do not describe v0.2 as proven always-on host-level provenance yet.
 The capture is proven correct; the overhead on fork/exec-heavy work is not yet within target.
 
