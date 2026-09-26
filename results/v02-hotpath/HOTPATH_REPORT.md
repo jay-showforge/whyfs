@@ -314,3 +314,69 @@ next measured candidates.
 - The mechanism of the remaining ~1.4 ms of userspace processing cost.
 - Whether WSL `init`'s foreign invocations delay the workload at all, since they run on another CPU.
 - Whether BCC/runtime machinery contributes. Dispatch is ~0 and `bpf_stats` agrees with the body-ablation total, so there is no evidence it matters. A CO-RE/libbpf prototype is not justified by these data.
+
+---
+
+## Optimization 1 result: name resolution without per-event `realpath()` (commit a30fd65)
+
+**One isolated change.** `BCCCollector._resolve()` now joins a single-component rename, unlink,
+exec or chdir name to the already-canonical base (the cwd model or the directory file object's
+`d_path`) without touching the filesystem.
+
+- Names containing `/` or `..` canonicalize only their parent.
+- exec and chdir, which follow a final symlink, do one `lstat` of the final component, and run a full `realpath` only if it is a symlink.
+- rename and unlink never follow the final component.
+
+The kernel program is untouched.
+
+**Correctness fixes included,** both found by the new regression tests and both in the same
+resolution code path:
+
+- rename and unlink followed a final-component symlink and recorded its target;
+- `_canon()` collapsed `link/..` lexically, because it applied `normpath` before `realpath`. Verified against the unmodified function: it gave `/tmp/…/x` where the kernel resolves `/tmp/…/other/x`.
+
+Neither affects the benchmark: it has no symlinks and no `..`.
+
+**Regression tests (8 new, all pass):**
+
+- rename destination symlink not followed; unlink of a symlink records the link (both *failed* before the fix);
+- rename through a symlinked directory canonical; exec through a symlink records the target;
+- `..` after a symlink resolved physically; absolute name through a symlinked directory;
+- chdir into a symlinked directory; multi-component relative exec name.
+
+Full suite: **62 tests, all OK as root; OK as a normal user (16 live tests skipped).**
+Graduation functional suite (`--skip-perf`, `opt1-functional-a30fd65/`): **PASS, 0 failed checks**,
+creator attribution 44/44, useful-input recall 118/118.
+
+**Identical profiling protocol** (`20260926-opt1-a30fd65/`: phases P, Q, T, A, U, V, X, same
+parameters). Full comparison in `opt1-compare.json`.
+
+| Metric | Before (1c / 1d) | After (opt1) |
+|---|---|---|
+| collector `lstat` syscalls per run (cProfile) | 3,038 | **338** |
+| X: no-store − kernel-only (userspace interference) | 4.30 ms (3.57..5.32) | **2.07 ms** (1.57..2.97) |
+| U / V: no-store − kernel-only | 4.73 / 5.44 ms | **2.13 / 2.57 ms** |
+| X: no-store − no-store-nocanon (`realpath` share) | 2.53 ms (1.91..4.07) | **−0.11 ms** (−1.57..+0.53), eliminated |
+| U: full − baseline | 10.72 ms (9.84..11.81) | **7.72 ms** (6.58..8.41), non-overlapping CIs |
+| T: median paired overhead (20 alternating pairs) | 5.52% (3.37..7.25) | **3.86%** (2.00..6.46) |
+| T: µs per process | 23.5 | **15.9** |
+| callback CPU per run; exec / unlink µs per event | 109 ms; 108 / 85 | **71 ms; 53 / 19** |
+| events received / ring-buffer records / hook calls per run | 3,064 / identical / identical | **unchanged** |
+| BPF run time per run | 2.99 ms | 2.93 ms (unchanged, as expected) |
+| kernel / queue drops | 0 / 0 | 0 / 0 |
+
+**Verdict on the optimization: a clear win; kept.** The mechanism is confirmed: the `realpath`
+component of the userspace interference went from 2.53 ms to indistinguishable from zero. No
+kernel or evidence metric changed, and lineage correctness improved.
+
+**Graduation status is unchanged: V0.2 DOES NOT GRADUATE.** The 3.86% above comes from the
+in-process profiler, in one phase whose CI reaches 6.46%. It is **not** a graduation campaign. The
+precommitted protocol still decides: freeze one commit, then two independent 20-pair static ×300
+campaigns through the real daemon (`scripts/v02_graduation.py`), each with median < 5%; plus make,
+Vite, the full functional suite and the unmodified `scripts/v02_gate.py`.
+
+Remaining measured cost centers after this change (per run):
+
+- userspace processing ≈ 2.1 ms, mechanism not isolated;
+- kernel BPF ≈ 2.9 ms, of which `io_seen` operations ≈ 1.2 ms;
+- SQLite store ≈ 1.3 ms (0.30..2.90).
