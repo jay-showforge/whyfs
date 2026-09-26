@@ -62,7 +62,7 @@ def proc_metrics(pid: int | None) -> dict:
         out.update(vol_ctx=vol, invol_ctx=invol, migrations=mig)
         for line in Path(f"/proc/{pid}/io").read_text().splitlines():
             k, v = line.split(":")
-            if k in ("wchar", "write_bytes", "syscw"):
+            if k in ("wchar", "write_bytes", "syscw", "rchar", "read_bytes", "syscr"):
                 out[k] = int(v)
     except OSError:
         pass
