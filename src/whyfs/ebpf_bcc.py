@@ -128,6 +128,15 @@ BPF_PERCPU_ARRAY(scratch_unlink, struct pend_unlink_t, 1);
 BPF_ARRAY(drop_count, u64, 1);
 BPF_RINGBUF_OUTPUT(events, 4096);
 
+/* Batched notification: waking the collector on every event costs the traced
+ * workload an irq_work + context switch per file.  Events are committed
+ * without a wakeup and the collector drains on a short timer; a wakeup is
+ * forced only once WF_WAKE_BYTES are pending, so bursts never overflow. */
+#define WF_WAKE_BYTES (1 << 20)
+static __always_inline u64 wf_wake(void) {
+    return events.ringbuf_query(BPF_RB_AVAIL_DATA) > WF_WAKE_BYTES ? BPF_RB_FORCE_WAKEUP : BPF_RB_NO_WAKEUP;
+}
+
 static __always_inline void wf_count_drop(void) {
     u32 k = 0;
     u64 *v = drop_count.lookup(&k);
@@ -235,7 +244,7 @@ KFUNC_PROBE(security_file_open, struct file *file) {
     e->h.fd = S_ISDIR(mode) ? 1 : 0;
     long n = bpf_d_path(&file->f_path, e->path, PATH_N);
     if (n < 0) { e->path[0] = 0; e->h.truncated = (n == -WF_ENAMETOOLONG) ? 1 : 2; }
-    events.ringbuf_submit(e, 0);
+    events.ringbuf_submit(e, wf_wake());
     return 0;
 }
 
@@ -257,7 +266,7 @@ static __always_inline int wf_emit_io(struct file *file, u32 dir, u32 type) {
     wf_hdr(e, tgid, type);
     e->file = (u64)file;
     e->ino = (u32)ino;
-    events.ringbuf_submit(e, 0);
+    events.ringbuf_submit(e, wf_wake());
     return 0;
 }
 
@@ -305,7 +314,7 @@ KRETFUNC_PROBE(do_renameat2, int olddfd, struct filename *from, int newdfd, stru
                 e->h.truncated = p->trunc;
                 bpf_probe_read_kernel(e->path, PATH_N, p->a);
                 bpf_probe_read_kernel(e->path2, PATH_N, p->b);
-                events.ringbuf_submit(e, 0);
+                events.ringbuf_submit(e, wf_wake());
             } else {
                 wf_count_drop();
             }
@@ -341,7 +350,7 @@ KRETFUNC_PROBE(do_unlinkat, int dfd, struct filename *name, int ret) {
                 wf_hdr(&e->h, tgid, EV_UNLINK);
                 e->h.dirfd = p->d1; e->h.file = p->f1; e->h.truncated = p->trunc;
                 bpf_probe_read_kernel(e->path, PATH_N, p->a);
-                events.ringbuf_submit(e, 0);
+                events.ringbuf_submit(e, wf_wake());
             } else {
                 wf_count_drop();
             }
@@ -370,7 +379,7 @@ TRACEPOINT_PROBE(syscalls, sys_exit_chdir) {
                 wf_hdr(&e->h, tgid, EV_CHDIR);
                 /* read at exit: getname() has faulted the page in by now */
                 wf_read_ustr(e->path, *uptr, &e->h.truncated);
-                events.ringbuf_submit(e, 0);
+                events.ringbuf_submit(e, wf_wake());
             } else {
                 wf_count_drop();
             }
@@ -397,7 +406,7 @@ TRACEPOINT_PROBE(syscalls, sys_exit_fchdir) {
                 wf_hdr(e, tgid, EV_FCHDIR);
                 e->fd = *fd;
                 e->file = wf_fd_file(*fd);
-                events.ringbuf_submit(e, 0);
+                events.ringbuf_submit(e, wf_wake());
             } else {
                 wf_count_drop();
             }
@@ -431,7 +440,7 @@ TRACEPOINT_PROBE(sched, sched_process_exec) {
     } else {
         e->h.fd = 0;
     }
-    events.ringbuf_submit(e, 0);
+    events.ringbuf_submit(e, wf_wake());
     return 0;
 }
 
@@ -451,7 +460,7 @@ RAW_TRACEPOINT_PROBE(sched_process_fork) {
     e->tid = cpid;
     e->aux_pid = wf_task_ns_tgid(parent);
     bpf_probe_read_kernel_str(&e->comm, sizeof(e->comm), child->comm);
-    events.ringbuf_submit(e, 0);
+    events.ringbuf_submit(e, wf_wake());
     return 0;
 }
 
@@ -463,7 +472,7 @@ TRACEPOINT_PROBE(sched, sched_process_exit) {
     struct hdr_t *e = events.ringbuf_reserve(sizeof(struct hdr_t));
     if (!e) { wf_count_drop(); return 0; }
     wf_hdr(e, tgid, EV_EXIT);
-    events.ringbuf_submit(e, 0);
+    events.ringbuf_submit(e, wf_wake());
     return 0;
 }
 """
@@ -604,9 +613,11 @@ class _BoundedMap(OrderedDict):
 class BatchWriter(threading.Thread):
     """Single SQLite writer so capture callbacks never block on a commit."""
 
-    def __init__(self, root: Path, q: "queue.Queue[dict | None]", batch_size: int = 512, flush_ms: int = 100):
+    def __init__(self, root: Path, q: "queue.Queue[dict | None]", batch_size: int = 512, flush_ms: int = 100,
+                 store=None):
         super().__init__(name="whyfs-sqlite-writer", daemon=True)
         self.root = root
+        self.store = store  # privsep.Store: SQLite runs as the workspace owner
         self.q = q
         self.batch_size = batch_size
         self.flush_s = flush_ms / 1000.0
@@ -616,13 +627,13 @@ class BatchWriter(threading.Thread):
         self.error: BaseException | None = None
 
     def _flush(self, con, batch: list[dict]) -> None:
-        self.written += ingest_events(con, batch)
+        self.written += self.store.ingest(batch) if self.store is not None else ingest_events(con, batch)
         self.batches += 1
         self.max_batch = max(self.max_batch, len(batch))
         batch.clear()
 
     def run(self) -> None:
-        con = connect(self.root)
+        con = connect(self.root) if self.store is None else None
         batch: list[dict] = []
         deadline = time.monotonic() + self.flush_s
         try:
@@ -645,7 +656,8 @@ class BatchWriter(threading.Thread):
         except BaseException as exc:  # surfaced by collector.stop()
             self.error = exc
         finally:
-            con.close()
+            if con is not None:
+                con.close()
 
 
 class BCCUnavailable(RuntimeError):
@@ -659,7 +671,7 @@ class BCCCollector:
     owns lifecycle/pidfile semantics around it.
     """
 
-    def __init__(self, root: Path, run_id: str, *, capture_all: bool = False):
+    def __init__(self, root: Path, run_id: str, *, capture_all: bool = False, store=None):
         self.root = root.resolve()
         self.run_id = run_id
         self.capture_all = capture_all
@@ -670,9 +682,12 @@ class BCCCollector:
         self.cwd: dict[int, str] = {}
         self.image: dict[int, tuple[str | None, str | None]] = {}  # pid -> (exe, command)
         self.pkey: dict[int, int] = {}
+        self.proc_rows = _BoundedMap(200_000)          # key -> latest process row (in memory)
+        self.pending_exec: dict[int, list[dict]] = {}  # exec boundaries of not-yet-relevant keys
+        self.relevant: set[int] = set()                # keys whose rows are persisted
         self._seq = 0
         self.q: "queue.Queue[dict | None]" = queue.Queue(maxsize=262144)
-        self.writer = BatchWriter(self.root, self.q)
+        self.writer = BatchWriter(self.root, self.q, store=store)
         self.bpf = None
         self.pidns: dict = {}
         self._stopped = False
@@ -710,11 +725,50 @@ class BCCCollector:
         exe = _clean_link(_safe_proc_link(pid, "exe"))
         argv = self._proc_cmdline(pid)
         self.image[pid] = (exe, _redact_cmdline(argv) if argv else exe)
-        self._put({
+        self._record_process({
             "run_id": self.run_id, "ts_ns": time.time_ns(), "kind": "process",
             "pid": pid, "os_pid": pid, "ppid": None, "parent_key": None,
             "exe": exe, "cwd": self._cwd(pid), "command": self.image[pid][1], "source": "ebpf",
         })
+
+    # Privacy: the kernel sees every process in the namespace.  Process rows
+    # (command lines!) and exec boundaries are held in memory and persisted
+    # only for processes that produce stored evidence, plus a bounded chain of
+    # their ancestors for parentage -- not for unrelated activity on the host.
+    MAX_ANCESTORS = 8
+
+    def _record_process(self, row: dict) -> None:
+        k = row["pid"]
+        old = self.proc_rows.get(k)
+        if old:
+            merged = dict(old)
+            merged.update({x: v for x, v in row.items() if v is not None})
+            merged["ts_ns"] = old["ts_ns"]
+            row = merged
+        self.proc_rows.put(k, row)
+        if k in self.relevant:
+            self._put(dict(row))
+
+    def _record_exec(self, event: dict) -> None:
+        k = event["pid"]
+        if k in self.relevant:
+            self._put(event)
+        else:
+            lst = self.pending_exec.setdefault(k, [])
+            if len(lst) < 16:
+                lst.append(event)
+
+    def _make_relevant(self, k: int) -> None:
+        for _ in range(self.MAX_ANCESTORS + 1):
+            if k is None or k in self.relevant:
+                return
+            self.relevant.add(k)
+            row = self.proc_rows.get(k)
+            if row:
+                self._put(dict(row))
+            for ev in self.pending_exec.pop(k, []):
+                self._put(ev)
+            k = row.get("parent_key") if row else None
 
     @staticmethod
     def _proc_cmdline(pid: int) -> list[str]:
@@ -758,9 +812,11 @@ class BCCCollector:
             self.stats.queue_drops += 1
 
     def _file_event(self, pid: int, ts: int, kind: str, path: str | None, **extra) -> None:
+        k = self.key(pid)
+        self._make_relevant(k)
         self._put({
             "run_id": self.run_id, "ts_ns": ts, "kind": kind,
-            "pid": self.key(pid), "os_pid": pid, "path": path, "source": "ebpf", **extra,
+            "pid": k, "os_pid": pid, "path": path, "source": "ebpf", **extra,
         })
 
     # ---------------------------------------------------------------- events
@@ -837,7 +893,7 @@ class BCCCollector:
                 self.cwd.pop(pid, None)
             exe, cmd = self.image.get(parent, (None, None))
             self.image[pid] = (exe, cmd)
-            self._put({
+            self._record_process({
                 "run_id": self.run_id, "ts_ns": ts, "kind": "process",
                 "pid": child_key, "os_pid": pid, "ppid": parent or None, "parent_key": parent_key,
                 "exe": exe, "cwd": self.cwd.get(pid), "command": cmd, "source": "ebpf",
@@ -856,7 +912,7 @@ class BCCCollector:
             command = _redact_cmdline(argv) if argv else exe
             self.image[pid] = (exe, command)
             ppid = int(e.aux_pid)
-            self._put({
+            self._record_process({
                 "run_id": self.run_id, "ts_ns": ts, "kind": "process",
                 "pid": k, "os_pid": pid, "ppid": ppid or None,
                 "parent_key": self.pkey.get(ppid, ppid) if ppid else None,
@@ -864,13 +920,16 @@ class BCCCollector:
             })
             # Raw evidence of the image boundary: the query layer attributes a
             # write to the program image that performed it (see query._image_start).
-            self._put({
+            self._record_exec({
                 "run_id": self.run_id, "ts_ns": ts, "kind": "exec", "pid": k, "os_pid": pid,
                 "path": exe, "api": "ebpf:exec", "source": "ebpf",
             })
             return
 
         if typ == EV_EXIT:
+            k = self.pkey.get(pid)
+            if k is not None and k not in self.relevant:
+                self.pending_exec.pop(k, None)  # can no longer become relevant
             self.cwd.pop(pid, None)
             self.image.pop(pid, None)
             # Keep pkey: late events of this pid still belong to this instance
@@ -950,7 +1009,10 @@ class BCCCollector:
     def poll(self, timeout_ms: int = 100) -> None:
         if self.bpf is None:
             raise RuntimeError("collector not started")
+        # Kernel side submits without wakeups (see wf_wake): wait up to the
+        # timeout for a forced wakeup, then drain whatever has been committed.
         self.bpf.ring_buffer_poll(timeout_ms)
+        self.bpf.ring_buffer_consume()
 
     def drain(self) -> None:
         """Consume everything already committed to the ring buffer."""

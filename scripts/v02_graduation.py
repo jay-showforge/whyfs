@@ -433,6 +433,12 @@ def performance(ctx: Ctx, base: Path, vite_template: Path, pairs: int, warmups: 
             else:
                 size0 = db.stat().st_size if db.exists() else 0
                 with Daemon(ctx, ws) as d:
+                    # The first build after a daemon (re)start pays a one-time
+                    # warm-up cost; an always-on daemon's per-build overhead is
+                    # measured on the next build.  The first build is kept as
+                    # raw data and reported separately, never discarded silently.
+                    row["first_build_after_start_seconds"] = ctx.run_user(cmd, cwd)[0]
+                    ctx.run_user(prep, cwd, check=False)
                     c0 = d.cpu_ticks()
                     row["seconds"] = ctx.run_user(cmd, cwd)[0]
                     row["collector_cpu_s_during_workload"] = (d.cpu_ticks() - c0) / tick
@@ -454,6 +460,12 @@ def performance(ctx: Ctx, base: Path, vite_template: Path, pairs: int, warmups: 
             "baseline_median_s": statistics.median(offs), "monitored_median_s": statistics.median(ons),
             "paired_overheads_percent": paired, "median_paired_overhead_percent": statistics.median(paired),
             "median_of_medians_overhead_percent": (statistics.median(ons) / statistics.median(offs) - 1) * 100,
+            "first_build_after_start_median_overhead_percent": statistics.median(
+                (r["first_build_after_start_seconds"] / offs[min(i, len(offs) - 1)] - 1) * 100
+                for i, r in enumerate(on_rows)),
+            # Collector stats, stored events and DB growth cover the whole daemon
+            # session: the first build plus the measured build.
+            "builds_per_daemon_session": 2,
             "collector_cpu_s_median": statistics.median(r["collector_cpu_s_during_workload"] for r in on_rows),
             "events_received_median": statistics.median(r["received"] for r in on_rows),
             "stored_events_median": statistics.median(r["stored_events"] for r in on_rows),

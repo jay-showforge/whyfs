@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 
 from .ebpf_bcc import BCCCollector, BCCUnavailable, install_signal_stop
-from .store import connect, set_collector_stat
+from .privsep import Store, open_state_dirfd, open_state_file, replace_state_file
 
 STATE_NAME = "daemon.json"
 LOG_NAME = "daemon.log"
@@ -35,69 +35,79 @@ def _pid_alive(pid: int) -> bool:
         return True
 
 
-def read_state(root: Path) -> dict | None:
-    p = _state_path(root)
+# State files live in the user-controlled .whyfs directory but may be written
+# by a root daemon: every access goes through an O_NOFOLLOW directory fd.
+def _load_state(root: Path) -> dict | None:
+    if not (root / ".whyfs").is_dir():
+        return None
     try:
-        state = json.loads(p.read_text())
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        fd = open_state_file(root, STATE_NAME, os.O_RDONLY)
+    except OSError:
+        return None
+    try:
+        with os.fdopen(fd, "rb") as fh:
+            return json.loads(fh.read(1 << 20))
+    except (json.JSONDecodeError, OSError, ValueError):
+        return None
+
+
+def _unlink_state(root: Path) -> None:
+    try:
+        dfd = open_state_dirfd(root)
+    except OSError:
+        return
+    try:
+        os.unlink(STATE_NAME, dir_fd=dfd)  # unlink never follows the final component
+    except OSError:
+        pass
+    finally:
+        os.close(dfd)
+
+
+def read_state(root: Path) -> dict | None:
+    state = _load_state(root)
+    if state is None:
         return None
     if not _pid_alive(int(state.get("pid", -1))):
-        try:
-            p.unlink()
-        except OSError:
-            pass
+        _unlink_state(root)
         return None
     return state
 
 
 def _write_state(root: Path, state: dict) -> None:
-    p = _state_path(root)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(state, indent=2) + "\n")
-    os.replace(tmp, p)
+    replace_state_file(root, STATE_NAME, (json.dumps(state, indent=2) + "\n").encode())
 
 
 def _clear_state(root: Path, pid: int) -> None:
-    p = _state_path(root)
-    try:
-        state = json.loads(p.read_text())
-        if int(state.get("pid", -1)) == pid:
-            p.unlink()
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        pass
+    state = _load_state(root)
+    if state is not None and int(state.get("pid", -1)) == pid:
+        _unlink_state(root)
 
 
 def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False) -> int:
     root = root.resolve()
-    (root / ".whyfs").mkdir(parents=True, exist_ok=True)
+    os.close(open_state_dirfd(root))
     existing = read_state(root)
     if existing and int(existing.get("pid", -1)) != os.getpid():
         raise SystemExit(f"whyfs daemon already running as pid {existing['pid']} for {root}")
 
     run_id = "daemon-" + uuid.uuid4().hex
     started = time.time_ns()
-    con = connect(root)
-    con.execute(
-        "INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES(?,?,?,?,?,?)",
-        (run_id, started, str(root), "whyfs daemon", str(root), "ebpf-bcc"),
-    )
-    con.commit()
-    con.close()
+    # Forked before any BPF state exists; runs as the workspace owner when we are root.
+    store = Store(root).start()
+    store.call("begin_run", run_id, started, str(root))
 
     ensure_kernel_headers()
-    collector = BCCCollector(root, run_id, capture_all=capture_all)
+    collector = BCCCollector(root, run_id, capture_all=capture_all, store=store)
     try:
         collector.start()
     except BCCUnavailable as exc:
-        con = connect(root)
-        con.execute("UPDATE runs SET ended_ns=?,exit_code=? WHERE id=?", (time.time_ns(), 2, run_id))
-        con.commit(); con.close()
+        store.call("end_run", run_id, time.time_ns(), 2, {})
+        store.close()
         raise SystemExit(str(exc))
-    except Exception as exc:
-        con = connect(root)
-        con.execute("UPDATE runs SET ended_ns=?,exit_code=? WHERE id=?", (time.time_ns(), 2, run_id))
-        con.commit(); con.close()
+    except Exception:
+        store.call("end_run", run_id, time.time_ns(), 2, {})
+        store.close()
         raise
 
     state = {
@@ -117,7 +127,7 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
     exit_code = 0
     try:
         while not stop.is_set():
-            collector.poll(100)
+            collector.poll(50)
     except KeyboardInterrupt:
         pass
     except Exception:
@@ -126,14 +136,11 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
     finally:
         stats = collector.stop()
         ended = time.time_ns()
-        con = connect(root)
-        con.execute("UPDATE runs SET ended_ns=?,exit_code=? WHERE id=?", (ended, exit_code, run_id))
-        for key, value in vars(stats).items():
-            set_collector_stat(con, run_id, key, int(value))
-        set_collector_stat(con, run_id, "writer_rows", collector.writer.written)
-        set_collector_stat(con, run_id, "writer_batches", collector.writer.batches)
-        set_collector_stat(con, run_id, "writer_max_batch", collector.writer.max_batch)
-        con.close()
+        final = {k: int(v) for k, v in vars(stats).items()}
+        final.update(writer_rows=collector.writer.written, writer_batches=collector.writer.batches,
+                     writer_max_batch=collector.writer.max_batch)
+        store.call("end_run", run_id, ended, exit_code, final)
+        store.close()
         _clear_state(root, os.getpid())
         if not quiet:
             print(
@@ -147,13 +154,13 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
 
 def start_background(root: Path, *, capture_all: bool = False) -> dict:
     root = root.resolve()
-    (root / ".whyfs").mkdir(parents=True, exist_ok=True)
+    os.close(open_state_dirfd(root))
     existing = read_state(root)
     if existing:
         return existing
 
     log_path = _log_path(root)
-    log = open(log_path, "ab", buffering=0)
+    log = os.fdopen(open_state_file(root, LOG_NAME, os.O_WRONLY | os.O_CREAT | os.O_APPEND), "ab", buffering=0)
     args = [sys.executable, "-m", "whyfs", "_daemon-worker", "--workspace", str(root)]
     if capture_all:
         args.append("--all-files")

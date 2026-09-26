@@ -88,6 +88,12 @@ class ResolverRegressionTests(unittest.TestCase):
     def reads(self, items):
         return [(x["os_pid"], x["path"]) for x in items if x["kind"] == "io" and x["read"]]
 
+    def touch(self, pid, rel):
+        """A workspace write, which makes ``pid`` relevant enough to persist."""
+        f = new_file()
+        return (ev(m.EV_OPEN, pid, file=f, fd=0, path=self.p(rel), flags=os.O_WRONLY | os.O_CREAT),
+                ev(m.EV_WRITE, pid, file=f))
+
     def db(self, items):
         con = connect(self.root)
         con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES('run',1,?,?,?,?)",
@@ -102,6 +108,7 @@ class ResolverRegressionTests(unittest.TestCase):
         self.h.feed(
             ev(m.EV_FORK, child, aux=FAKE),
             ev(m.EV_EXEC, child, aux=FAKE, path=b"/usr/bin/tr", path2=argv, fd=len(argv)),
+            *self.touch(child, "tr-out.txt"),
         )
         procs = [x for x in self.h.drained() if x["kind"] == "process" and x["os_pid"] == child]
         self.assertEqual(procs[-1]["command"], "tr a-z A-Z")
@@ -135,6 +142,7 @@ class ResolverRegressionTests(unittest.TestCase):
             ev(m.EV_FORK, child, aux=FAKE),
             ev(m.EV_CHDIR, child, path=b"bin"),
             ev(m.EV_EXEC, child, aux=FAKE, path=b"./tool", path2=b"./tool\0", fd=7),
+            *self.touch(child, "tool-out.txt"),
         )
         procs = [x for x in self.h.drained() if x["kind"] == "process" and x["os_pid"] == child]
         self.assertEqual(procs[-1]["exe"], str(self.root / "bin" / "tool"))
@@ -332,6 +340,170 @@ class ResolverRegressionTests(unittest.TestCase):
         con.close()
 
 
+class ProcessPrivacyTests(unittest.TestCase):
+    """The kernel sees every process in the namespace; preload only ever saw
+    the traced command tree.  Process rows (command lines) and exec boundaries
+    must be persisted only for processes that produced stored evidence, plus a
+    bounded ancestor chain for parentage."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name).resolve()
+        self.h = Harness(self.root)
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def touch_by(self, pid):
+        f = new_file()
+        return (ev(m.EV_OPEN, pid, file=f, fd=0, path=str(self.root / f"o{pid}").encode(), flags=os.O_WRONLY),
+                ev(m.EV_WRITE, pid, file=f))
+
+    def test_unrelated_process_command_line_is_not_stored(self):
+        other = FAKE + 40
+        f = new_file()
+        self.h.feed(
+            ev(m.EV_FORK, other, aux=FAKE),
+            ev(m.EV_EXEC, other, aux=FAKE, path=b"/usr/bin/mysql",
+               path2=b"mysql\0-u\0admin\0secretdb\0", fd=26),
+            ev(m.EV_OPEN, other, file=f, fd=0, path=b"/home/someone/.my.cnf"),
+            ev(m.EV_READ, other, file=f),
+            ev(m.EV_EXIT, other),
+        )
+        items = self.h.drained()
+        self.assertEqual([x for x in items if x.get("os_pid") == other], [])
+        self.assertNotIn("secretdb", repr(items))
+        self.assertEqual(self.h.c.pending_exec, {})
+
+    def test_writer_and_its_ancestors_are_persisted_with_exec_boundaries(self):
+        make, cc = FAKE + 41, FAKE + 42
+        f = new_file()
+        self.h.feed(
+            ev(m.EV_FORK, make, aux=FAKE),
+            ev(m.EV_EXEC, make, aux=FAKE, path=b"/usr/bin/make", path2=b"make\0-j8\0", fd=9),
+            ev(m.EV_FORK, cc, aux=make),
+            ev(m.EV_EXEC, cc, aux=make, path=b"/usr/bin/cc", path2=b"cc\0-c\0a.c\0", fd=12),
+            ev(m.EV_OPEN, cc, file=f, fd=0, path=str(self.root / "a.o").encode(), flags=os.O_WRONLY),
+            ev(m.EV_WRITE, cc, file=f),
+        )
+        items = self.h.drained()
+        procs = {}
+        for x in items:
+            if x["kind"] == "process":
+                procs[x["os_pid"]] = x
+        self.assertEqual(procs[cc]["command"], "cc -c a.c")
+        self.assertEqual(procs[make]["command"], "make -j8")
+        self.assertEqual(procs[cc]["parent_key"], procs[make]["pid"])
+        execs = [x for x in items if x["kind"] == "exec" and x["os_pid"] == cc]
+        writes = [x for x in items if x["kind"] == "io" and x["write"]]
+        self.assertEqual(len(execs), 1)
+        self.assertLess(execs[0]["ts_ns"], writes[0]["ts_ns"])
+        # Persisted before the evidence that made it relevant.
+        self.assertLess(items.index(procs[cc]), items.index(writes[0]))
+
+    def test_ancestor_chain_is_bounded(self):
+        chain = [FAKE + 100 + i for i in range(20)]
+        parent = FAKE
+        for pid in chain:
+            self.h.feed(ev(m.EV_FORK, pid, aux=parent),
+                        ev(m.EV_EXEC, pid, aux=parent, path=b"/bin/sh", path2=b"sh\0", fd=3))
+            parent = pid
+        self.h.feed(*self.touch_by(chain[-1]))
+        procs = {x["os_pid"] for x in self.h.drained() if x["kind"] == "process"}
+        self.assertEqual(len(procs), m.BCCCollector.MAX_ANCESTORS + 1)
+        self.assertIn(chain[-1], procs)
+        self.assertNotIn(chain[0], procs)
+
+    def test_relevant_process_later_exec_is_stored_immediately(self):
+        p = FAKE + 43
+        self.h.feed(ev(m.EV_FORK, p, aux=FAKE), *self.touch_by(p),
+                    ev(m.EV_EXEC, p, aux=FAKE, path=b"/usr/bin/tr", path2=b"tr\0", fd=3))
+        procs = [x for x in self.h.drained() if x["kind"] == "process" and x["os_pid"] == p]
+        self.assertEqual(procs[-1]["exe"], "/usr/bin/tr")
+
+
+class StateDirectoryHardeningTests(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name).resolve()
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def test_symlinked_state_directory_is_refused(self):
+        from whyfs import privsep
+        elsewhere = self.root / "elsewhere"
+        elsewhere.mkdir()
+        (self.root / ".whyfs").symlink_to(elsewhere)
+        with self.assertRaises(PermissionError):
+            connect(self.root)
+        with self.assertRaises(PermissionError):
+            privsep.open_state_dirfd(self.root)
+        self.assertEqual(list(elsewhere.iterdir()), [])
+
+    def test_symlinked_database_file_is_refused(self):
+        (self.root / ".whyfs").mkdir()
+        victim = self.root / "victim"
+        victim.write_text("keep")
+        (self.root / ".whyfs" / "whyfs.db").symlink_to(victim)
+        with self.assertRaises(PermissionError):
+            connect(self.root)
+        self.assertEqual(victim.read_text(), "keep")
+
+    def test_symlinked_daemon_state_file_is_not_followed(self):
+        from whyfs import privsep
+        (self.root / ".whyfs").mkdir()
+        victim = self.root / "victim"
+        victim.write_text("keep")
+        (self.root / ".whyfs" / "daemon.json.tmp").symlink_to(victim)
+        with self.assertRaises(OSError):
+            privsep.replace_state_file(self.root, "daemon.json", b"{}")
+        self.assertEqual(victim.read_text(), "keep")
+
+    def test_state_is_private(self):
+        connect(self.root).close()
+        d = self.root / ".whyfs"
+        self.assertEqual(d.stat().st_mode & 0o777, 0o700)
+        self.assertEqual((d / "whyfs.db").stat().st_mode & 0o777, 0o600)
+
+    @unittest.skipUnless(hasattr(os, "geteuid") and os.geteuid() == 0, "needs root")
+    def test_root_daemon_store_runs_as_workspace_owner(self):
+        from whyfs import privsep
+        uid, gid = 65534, 65534  # nobody
+        os.chown(self.root, uid, gid)
+        store = privsep.Store(self.root).start()
+        self.assertTrue(store.privsep)
+        store.call("begin_run", "r1", 1, str(self.root))
+        n = store.ingest([{"run_id": "r1", "ts_ns": 2, "kind": "open", "pid": 7,
+                           "path": str(self.root / "x"), "source": "ebpf"}])
+        store.call("end_run", "r1", 3, 0, {"kernel_drops": 0})
+        store.close()
+        self.assertEqual(n, 1)
+        d = self.root / ".whyfs"
+        for p in [d, *d.iterdir()]:
+            st = p.lstat()
+            self.assertEqual((st.st_uid, st.st_gid), (uid, gid), p)
+            self.assertEqual(st.st_mode & 0o077, 0, p)
+
+    @unittest.skipUnless(hasattr(os, "geteuid") and os.geteuid() == 0, "needs root")
+    def test_root_owned_state_left_by_older_run_is_adopted_without_following_links(self):
+        # Found by the graduation harness: a .whyfs created earlier by root made
+        # the unprivileged store worker fail with "unable to open database file".
+        from whyfs import privsep
+        uid, gid = 65534, 65534
+        connect(self.root).close()  # root-owned .whyfs and whyfs.db
+        victim = Path(self.td.name + "-victim")
+        victim.write_text("keep")
+        self.addCleanup(victim.unlink)
+        (self.root / ".whyfs" / "planted").symlink_to(victim)
+        os.chown(self.root, uid, gid)
+        store = privsep.Store(self.root).start()
+        store.call("begin_run", "r2", 1, str(self.root))
+        store.close()
+        self.assertEqual((self.root / ".whyfs" / "whyfs.db").stat().st_uid, uid)
+        self.assertEqual(victim.stat().st_uid, 0, "a symlink target must never be chowned")
+
+
 class BpfSourceStaticChecks(unittest.TestCase):
     """Guard kernel-program construction rules without needing a kernel."""
 
@@ -362,6 +534,14 @@ class BpfSourceStaticChecks(unittest.TestCase):
         body = src[src.index("sys_enter_chdir)"):src.index("}", src.index("sys_enter_chdir)"))]
         self.assertNotIn("read_user", body)
         self.assertIn("wf_read_ustr(e->path, *uptr", src)
+
+    def test_ring_buffer_does_not_wake_the_collector_per_event(self):
+        # A wakeup per event cost the traced workload an irq_work and a context
+        # switch per file (>10% on exec-heavy builds).
+        src = m.BPF_SOURCE
+        self.assertNotIn("ringbuf_submit(e, 0)", src)
+        self.assertIn("BPF_RB_NO_WAKEUP", src)
+        self.assertIn("BPF_RB_FORCE_WAKEUP", src)
 
     def test_pids_are_namespace_relative(self):
         src = m.BPF_SOURCE

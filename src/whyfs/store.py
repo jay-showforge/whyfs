@@ -65,10 +65,37 @@ def _ensure_column(con: sqlite3.Connection, table: str, name: str, ddl: str) -> 
         con.execute(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
 
 
+STATE_DIR = ".whyfs"
+DB_NAME = "whyfs.db"
+
+
+def _check_state_paths(root: Path) -> Path:
+    """Refuse a symlinked state directory or database file.  Raw evidence
+    stays private: the directory is created 0700 and the database 0600."""
+    d = root / STATE_DIR
+    if d.is_symlink():
+        raise PermissionError(f"refusing symlinked whyfs state directory {d}")
+    if not d.exists():
+        root.mkdir(parents=True, exist_ok=True)
+        os.mkdir(d, 0o700)
+    if not d.is_dir():
+        raise PermissionError(f"whyfs state path {d} is not a directory")
+    for name in (DB_NAME, DB_NAME + "-wal", DB_NAME + "-shm", DB_NAME + "-journal"):
+        if (d / name).is_symlink():
+            raise PermissionError(f"refusing symlinked whyfs database file {d / name}")
+    return d
+
+
 def connect(root: Path) -> sqlite3.Connection:
-    d = root / ".whyfs"
-    d.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(d / "whyfs.db", timeout=30)
+    d = _check_state_paths(root)
+    db = d / DB_NAME
+    fresh = not db.exists()
+    con = sqlite3.connect(db, timeout=30)
+    if fresh:
+        try:
+            os.chmod(db, 0o600)  # -wal/-shm inherit the database file's mode
+        except OSError:
+            pass
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
     # v0.1 -> v0.2 in-place migration. SQLite lacks ADD COLUMN IF NOT EXISTS.
