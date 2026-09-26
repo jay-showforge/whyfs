@@ -45,9 +45,13 @@ class EbpfUserspaceTests(unittest.TestCase):
             finally:
                 os.close(fd)
 
+            # Records are handed to the writer in ordered batches at the end of a
+            # ring-buffer drain; direct _process_event calls bypass the ring.
+            collector.flush_pending()
             items = []
             while not collector.q.empty():
-                items.append(collector.q.get_nowait())
+                item = collector.q.get_nowait()
+                items.extend(item if isinstance(item, list) else [item])
             # A process that predates the collector is announced once (v0.2
             # process-instance model); file evidence follows in order.
             procs = [x for x in items if x["kind"] == "process"]
@@ -75,6 +79,8 @@ class EbpfUserspaceTests(unittest.TestCase):
             e.flags = os.O_RDONLY
             e.path = os.path.realpath(outside.name).encode()
             collector._process_event(None, ct.addressof(e), ct.sizeof(e))
+            collector.flush_pending()  # nothing may be pending either, not just nothing queued
+            self.assertEqual(collector._pending, [])
             self.assertTrue(collector.q.empty())
             self.assertEqual(collector.stats.filtered, 1)
 

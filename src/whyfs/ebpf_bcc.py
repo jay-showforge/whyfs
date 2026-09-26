@@ -51,6 +51,8 @@ AT_FDCWD = -100
 O_CLOEXEC = 0o2000000
 PID_BITS = 22  # pid_max never exceeds 2**22 on Linux
 PATH_N = 512
+QUEUE_RECORDS = 262144  # bound on records waiting for the SQLite writer
+HANDOFF_BATCH = 512     # records per handoff batch (= the writer's SQLite batch size)
 
 # Keep these synchronized with the C enum in BPF_SOURCE.
 EV_OPEN = 1        # file opened: kernel file pointer + absolute path (bpf_d_path)
@@ -783,7 +785,9 @@ class BatchWriter(threading.Thread):
                     if batch:
                         self._flush(con, batch)
                     return
-                if item is not ...:
+                if isinstance(item, list):  # ordered handoff batch from BCCCollector._flush_pending
+                    batch.extend(item)
+                elif item is not ...:
                     batch.append(item)
                 if len(batch) >= self.batch_size or time.monotonic() >= deadline:
                     if batch:
@@ -824,7 +828,12 @@ class BCCCollector:
         self.pending_exec: dict[int, list[dict]] = {}  # exec boundaries of not-yet-relevant keys
         self.relevant: set[int] = set()                # keys whose rows are persisted
         self._seq = 0
-        self.q: "queue.Queue[dict | None]" = queue.Queue(maxsize=262144)
+        # Records go to the writer thread in ordered batches, one queue item per
+        # ring-buffer drain cycle (or per HANDOFF_BATCH records): a handoff per
+        # record woke the writer ~3,000 times per 300-process build
+        # (results/v02-daemon-gap/).  Same bound as before: QUEUE_RECORDS records.
+        self._pending: list[dict] = []
+        self.q: "queue.Queue[list[dict] | None]" = queue.Queue(maxsize=QUEUE_RECORDS // HANDOFF_BATCH)
         self.writer = BatchWriter(self.root, self.q, store=store)
         self.bpf = None
         self.pidns: dict = {}
@@ -969,13 +978,24 @@ class BCCCollector:
 
     # ---------------------------------------------------------------- output
     def _put(self, event: dict) -> None:
+        self._pending.append(event)
+        if len(self._pending) >= HANDOFF_BATCH:
+            self.flush_pending()
+
+    def flush_pending(self) -> None:
+        """Hand the records gathered so far to the writer as one ordered batch.
+        Called at the end of every ring-buffer drain (poll/drain/stop), so no
+        record waits longer than one poll interval, as before."""
+        if not self._pending:
+            return
+        batch, self._pending = self._pending, []
         try:
-            self.q.put_nowait(event)
-            self.stats.submitted += 1
+            self.q.put_nowait(batch)
+            self.stats.submitted += len(batch)
         except queue.Full:
             # Do not backpressure the observed workload.  We count the loss and
             # make it visible in status; evidence is never silently invented.
-            self.stats.queue_drops += 1
+            self.stats.queue_drops += len(batch)
 
     def _file_event(self, pid: int, ts: int, kind: str, path: str | None, **extra) -> None:
         k = self.key(pid)
@@ -1180,16 +1200,18 @@ class BCCCollector:
         # timeout for a forced wakeup, then drain whatever has been committed.
         self.bpf.ring_buffer_poll(timeout_ms)
         self.bpf.ring_buffer_consume()
+        self.flush_pending()
 
     def drain(self) -> None:
-        """Consume everything already committed to the ring buffer."""
-        if self.bpf is None:
-            return
-        for _ in range(1000):
-            before = self.stats.received
-            self.bpf.ring_buffer_consume()
-            if self.stats.received == before:
-                break
+        """Consume everything already committed to the ring buffer, then hand
+        every gathered record to the writer (also when BPF never loaded)."""
+        if self.bpf is not None:
+            for _ in range(1000):
+                before = self.stats.received
+                self.bpf.ring_buffer_consume()
+                if self.stats.received == before:
+                    break
+        self.flush_pending()
 
     def kernel_drop_count(self) -> int:
         if self.bpf is None:

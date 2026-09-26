@@ -12,6 +12,7 @@ resolved against the cwd model or a directory file pointer.
 """
 import ctypes as ct
 import os
+import queue
 import sqlite3
 import tempfile
 import time
@@ -64,9 +65,13 @@ class Harness:
             self.c._process_event(None, ct.addressof(e), ct.sizeof(e))
 
     def drained(self):
+        # Records reach the writer queue in ordered batches, handed off at the
+        # end of each ring-buffer drain; feed() bypasses the ring, so flush here.
+        self.c.flush_pending()
         out = []
         while not self.c.q.empty():
-            out.append(self.c.q.get_nowait())
+            item = self.c.q.get_nowait()
+            out.extend(item if isinstance(item, list) else [item])
         return out
 
 
@@ -415,6 +420,122 @@ class ResolverRegressionTests(unittest.TestCase):
         cols = {r[1] for r in con.execute("PRAGMA table_info(events)")}
         self.assertTrue({"os_pid", "source"} <= cols)
         con.close()
+
+
+class HandoffBatchingTests(unittest.TestCase):
+    """Records reach the SQLite writer thread in ordered batches (one queue item per
+    ring-buffer drain, or per HANDOFF_BATCH records) instead of one queue handoff per
+    record, which woke the writer ~3,000 times per 300-process build."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name).resolve()
+        self.h = Harness(self.root)
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def p(self, rel: str) -> bytes:
+        return str(self.root / rel).encode()
+
+    def files(self, n, prefix="o"):
+        out = []
+        for i in range(n):
+            f = new_file()
+            out += [ev(m.EV_OPEN, FAKE, file=f, fd=0, path=str(self.root / f"{prefix}{i:04d}.txt").encode(), flags=os.O_WRONLY),
+                    ev(m.EV_WRITE, FAKE, file=f)]
+        return out
+
+    def test_order_is_preserved_across_batches(self):
+        self.h.feed(*self.files(700))  # 1,400 records: two size-triggered handoffs + a partial one
+        self.assertEqual(self.h.c.q.qsize(), 2)
+        items = self.h.drained()
+        got = [(x["kind"], x["path"]) for x in items if x["kind"] in ("open", "io")]
+        want = [(k, str(self.root / f"o{i:04d}.txt")) for i in range(700) for k in ("open", "io")]
+        self.assertEqual(got, want)
+        self.assertEqual(self.h.c.stats.submitted, len(items))
+        self.assertEqual(self.h.c.stats.queue_drops, 0)
+
+    def test_final_partial_batch_is_flushed_on_stop(self):
+        c = self.h.c
+        c.writer.start()  # no store: the writer thread uses SQLite in-process
+        self.h.feed(*self.files(3))
+        self.assertTrue(c.q.empty(), "records wait for the end of a drain cycle")
+        c.stop()          # stop() -> drain() -> flush_pending() -> writer sentinel
+        con = connect(self.root)
+        n = con.execute("SELECT COUNT(*) FROM events WHERE run_id='run'").fetchone()[0]
+        con.close()
+        self.assertEqual(n, 6)
+        self.assertEqual(c.writer.written, 6)
+
+    def test_full_queue_drops_the_batch_and_counts_every_record(self):
+        c = self.h.c
+        c.q = queue.Queue(maxsize=1)
+        c.q.put_nowait(["occupied"])
+        self.h.feed(*self.files(5))
+        c.flush_pending()
+        self.assertEqual((c.stats.queue_drops, c.stats.submitted, c._pending), (10, 0, []))
+        c.q.get_nowait()  # space again: the next batch is accepted
+        self.h.feed(*self.files(1, "p"))
+        c.flush_pending()
+        self.assertEqual((c.stats.queue_drops, c.stats.submitted), (10, 2))
+
+    def test_writer_failure_still_propagates(self):
+        class Boom:
+            pid = None
+
+            def ingest(self, events):
+                raise OSError("disk gone")
+
+        c = m.BCCCollector(self.root, "run", store=Boom())
+        c.pkey[FAKE] = FAKE
+        c.cwd[FAKE] = str(self.root)
+        c.writer.start()
+        for e in self.files(2):
+            c._process_event(None, ct.addressof(e), ct.sizeof(e))
+        with self.assertRaises(RuntimeError) as cm:
+            c.stop()
+        self.assertIn("writer failed", str(cm.exception))
+
+    def test_memory_bound_is_unchanged(self):
+        c = self.h.c
+        self.assertEqual(c.q.maxsize * m.HANDOFF_BATCH, m.QUEUE_RECORDS)
+        self.h.feed(*self.files(600))
+        self.assertLess(len(c._pending), m.HANDOFF_BATCH)
+
+    def test_batched_and_per_record_ingest_give_identical_lineage(self):
+        (self.root / "in.txt").write_text("x")
+        child, fi, fo = FAKE + 60, new_file(), new_file()
+        self.h.feed(
+            ev(m.EV_FORK, child, aux=FAKE),
+            ev(m.EV_EXEC, child, aux=FAKE, path=b"/usr/bin/tr", path2=b"tr\0a\0b\0", fd=9),
+            ev(m.EV_OPEN, child, file=fi, fd=0, path=self.p("in.txt")),
+            ev(m.EV_READ, child, file=fi),
+            ev(m.EV_OPEN, child, file=fo, fd=0, path=self.p("out.txt"), flags=os.O_WRONLY),
+            ev(m.EV_WRITE, child, file=fo),
+            ev(m.EV_RENAME, child, path=b"out.txt", path2=b"final.txt"),
+        )
+        items = self.h.drained()
+        results = []
+        for mode in ("batched", "per-record"):
+            with tempfile.TemporaryDirectory() as td:
+                con = connect(Path(td))
+                con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES('run',1,?,?,?,?)",
+                            (td, "t", td, "ebpf-bcc"))
+                if mode == "batched":
+                    ingest_events(con, items)
+                else:
+                    for x in items:
+                        ingest_events(con, [x])
+                rows = con.execute("SELECT kind,path,path2,is_read,is_write,pid,ts_ns FROM events ORDER BY rowid").fetchall()
+                procs = con.execute("SELECT pid,ppid,exe,command,parent_key FROM processes ORDER BY pid").fetchall()
+                w = why(con, str(self.root / "final.txt"))
+                imp = impact(con, str(self.root / "in.txt"))
+                con.close()
+                results.append((rows, procs, w["exe"], w["inputs"], sorted(imp)))
+        self.assertEqual(results[0], results[1])
+        self.assertEqual(results[0][2], "/usr/bin/tr")
+        self.assertEqual(results[0][3], [str(self.root / "in.txt")])
 
 
 class ProcessPrivacyTests(unittest.TestCase):

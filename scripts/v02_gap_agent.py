@@ -28,13 +28,33 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "src"))
+# --src selects which tree's production code this agent runs (before/after experiments).
+_SRC = sys.argv[sys.argv.index("--src") + 1] if "--src" in sys.argv else str(REPO / "src")
 sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, _SRC)
 
 import whyfs.ebpf_bcc as eb  # noqa: E402
 from whyfs.ebpf_bcc import BCCCollector  # noqa: E402
 from whyfs.privsep import Store  # noqa: E402
 from v02_hotpath_profile import prog_stats, set_attached  # noqa: E402
+
+
+def thread_metrics(tid: int | None) -> dict:
+    """CPU and context switches of one thread of this process."""
+    if not tid:
+        return {}
+    try:
+        f = Path(f"/proc/self/task/{tid}/stat").read_text().rsplit(")", 1)[1].split()
+        tck = os.sysconf("SC_CLK_TCK")
+        out = {"utime_s": int(f[11]) / tck, "stime_s": int(f[12]) / tck}
+        for line in Path(f"/proc/self/task/{tid}/status").read_text().splitlines():
+            if line.startswith("voluntary_ctxt_switches"):
+                out["vol_ctx"] = int(line.split()[1])
+            elif line.startswith("nonvoluntary_ctxt_switches"):
+                out["invol_ctx"] = int(line.split()[1])
+        return out
+    except OSError:
+        return {}
 
 
 def proc_metrics(pid: int | None) -> dict:
@@ -73,6 +93,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--run-id", required=True)
+    ap.add_argument("--src", default=str(REPO / "src"))
     a = ap.parse_args()
     ws = Path(a.workspace).resolve()
     mode = {"discard": False, "nostore": False}
@@ -111,6 +132,30 @@ def main() -> int:
         return n
 
     store.ingest = ingest
+
+    # Queue instrumentation (observes the handoff; works for per-record and batched code).
+    q = c.q
+    qs = {"puts": 0, "put_records": 0, "gets": 0, "get_waited": 0, "high_water_items": 0, "high_water_records_est": 0}
+    orig_put, orig_get = q.put_nowait, q.get
+
+    def put_nowait(item):
+        orig_put(item)
+        n = len(item) if isinstance(item, list) else 1
+        qs["puts"] += 1
+        qs["put_records"] += n
+        size = q.qsize()
+        qs["high_water_items"] = max(qs["high_water_items"], size)
+        qs["high_water_records_est"] = max(qs["high_water_records_est"], size * n)
+
+    def get(block=True, timeout=None):
+        was_empty = q.empty()
+        item = orig_get(block, timeout)
+        qs["gets"] += 1
+        if was_empty:
+            qs["get_waited"] += 1  # the writer was blocked and had to be woken for this item
+        return item
+
+    q.put_nowait, q.get = put_nowait, get
     c.start()
     set_attached(c.bpf, False)  # BCC auto-attaches at load; the driver attaches per run
     stop = threading.Event()
@@ -126,7 +171,8 @@ def main() -> int:
         sys.stdout.write(json.dumps(obj) + "\n")
         sys.stdout.flush()
 
-    reply({"ready": True, "pid": os.getpid(), "store_pid": store.pid})
+    reply({"ready": True, "pid": os.getpid(), "store_pid": store.pid, "src": _SRC,
+           "batched_handoff": hasattr(c, "flush_pending")})
     for line in sys.stdin:
         cmd = line.split()
         if not cmd:
@@ -149,7 +195,10 @@ def main() -> int:
                 reply({"stats": {k: int(v) for k, v in vars(c.stats).items()}, "counters": dict(counters),
                        "kernel_drops": c.kernel_drop_count(), "writer_rows": c.writer.written,
                        "writer_batches": c.writer.batches, "self": proc_metrics(os.getpid()),
-                       "store": proc_metrics(store.pid)})
+                       "store": proc_metrics(store.pid), "queue": dict(qs),
+                       "threads": {"ring_consumer": thread_metrics(th.native_id),
+                                   "writer": thread_metrics(c.writer.native_id),
+                                   "main": thread_metrics(threading.main_thread().native_id)}})
             elif cmd[0] == "progstats":
                 reply({str(k): v for k, v in prog_stats(c.bpf).items()})
             elif cmd[0] == "quit":

@@ -113,15 +113,17 @@ def delta(a: dict, b: dict) -> dict:
 
 # ---------------------------------------------------------------- agent (separate process)
 class Agent:
-    def __init__(self, ws: Path, run_id: str, log: Log):
-        env = dict(os.environ, PYTHONPATH=str(REPO / "src"), PATH=LINUX_PATH)
+    def __init__(self, ws: Path, run_id: str, log: Log, src: str | None = None):
+        src = src or str(REPO / "src")
+        env = dict(os.environ, PYTHONPATH=src, PATH=LINUX_PATH)
         self.p = subprocess.Popen([sys.executable, "-W", "ignore", str(REPO / "scripts" / "v02_gap_agent.py"),
-                                   "--workspace", str(ws), "--run-id", run_id],
+                                   "--workspace", str(ws), "--run-id", run_id, "--src", src],
                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=open(ws.parent / f"{run_id}.agent.log", "w"),
                                   text=True, env=env)
         hello = self._read()
         self.pid, self.store_pid = hello["pid"], hello["store_pid"]
-        log(f"  agent pid {self.pid} store worker {self.store_pid}")
+        self.src, self.batched = hello.get("src"), hello.get("batched_handoff")
+        log(f"  agent pid {self.pid} store worker {self.store_pid} src {self.src} batched_handoff={self.batched}")
 
     def _read(self) -> dict:
         while True:
