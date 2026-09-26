@@ -16,12 +16,31 @@ NOISE_BASENAMES = {
 }
 
 
+if os.name == "nt":
+    # Windows paths compare case-insensitively (same folding as SQLite NOCASE: ASCII).
+    _FOLD = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
+    NOISE_PREFIXES_NT = tuple(p.lower() for p in (
+        os.environ.get("SystemRoot", r"C:\Windows") + "\\",
+        os.environ.get("ProgramFiles", r"C:\Program Files") + "\\",
+        os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)") + "\\",
+        os.environ.get("ProgramData", r"C:\ProgramData") + "\\",
+    ))
+
+    def pkey(p: str) -> str:
+        return p.translate(_FOLD)
+else:
+    NOISE_PREFIXES_NT = ()
+
+    def pkey(p: str) -> str:
+        return p
+
+
 def _is_noise(path: str, workspace: str) -> bool:
-    if path.startswith(workspace.rstrip(os.sep) + os.sep) or path == workspace:
+    if _in_workspace(path, workspace):
         return False
     if os.path.basename(path) in NOISE_BASENAMES:
         return True
-    return path.startswith(NOISE_PREFIXES)
+    return path.startswith(NOISE_PREFIXES) or (bool(NOISE_PREFIXES_NT) and pkey(path).startswith(NOISE_PREFIXES_NT))
 
 
 def last_writer(con: sqlite3.Connection, path: str):
@@ -75,13 +94,24 @@ def _is_dependency(path: str) -> bool:
     return any(d in parts for d in DEPENDENCY_DIRS)
 
 
+def _self_written_before(con: sqlite3.Connection, run_id: str, pid: int, path: str, ts_ns: int) -> bool:
+    """True if this process instance itself wrote ``path`` before ``ts_ns``: what it
+    then reads back is its own output (a linker's scratch file, a compiler re-reading
+    the object it just wrote), not an upstream input."""
+    return con.execute(
+        "SELECT 1 FROM events WHERE run_id=? AND pid=? AND path=? AND is_write=1 AND ts_ns<? LIMIT 1",
+        (run_id, pid, path, ts_ns),
+    ).fetchone() is not None
+
+
 def process_inputs(con: sqlite3.Connection, run_id: str, pid: int, before_ns: int, workspace: str, include_noise=False):
     rows = _input_rows(con, run_id, pid, before_ns)
     visible: list[str] = []
     hidden = 0
     for r in rows:
         p = r["path"]
-        if include_noise or not (_is_noise(p, workspace) or _is_dependency(p)):
+        if include_noise or not (_is_noise(p, workspace) or _is_dependency(p)
+                                 or _self_written_before(con, run_id, pid, p, r["first_ns"])):
             visible.append(p)
         else:
             hidden += 1
@@ -94,21 +124,32 @@ def process_outputs(con: sqlite3.Connection, run_id: str, pid: int, workspace: s
     or after that time (an output cannot depend on an input it read later)."""
     rows = con.execute(
         """
-      SELECT DISTINCT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path
+      SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns
       FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename') AND ts_ns>=?
+      GROUP BY out_path ORDER BY MIN(id)
     """,
         (run_id, pid, since_ns),
     ).fetchall()
     out = []
     for r in rows:
         p = r["out_path"]
-        if p and (include_noise or not _is_noise(p, workspace)):
-            out.append(p)
+        if not p or (not include_noise and (_is_noise(p, workspace) or _self_deleted_after(con, run_id, pid, p, r["last_ns"]))):
+            continue
+        out.append(p)
     return out
 
 
+def _self_deleted_after(con: sqlite3.Connection, run_id: str, pid: int, path: str, ts_ns: int) -> bool:
+    """A scratch file the same process wrote and then deleted: not a lasting output."""
+    return con.execute(
+        "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='unlink' AND path=? AND ts_ns>=? LIMIT 1",
+        (run_id, pid, path, ts_ns),
+    ).fetchone() is not None
+
+
 def _in_workspace(path: str, workspace: str) -> bool:
-    return path == workspace or path.startswith(workspace.rstrip(os.sep) + os.sep)
+    p, w = pkey(path), pkey(workspace)
+    return p == w or p.startswith(w.rstrip(os.sep) + os.sep)
 
 
 def _through_temporaries(con: sqlite3.Connection, inputs: list[str], workspace: str, before_ns: int, depth: int = 3):
@@ -197,13 +238,13 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
     # O_RDWR output files can appear as both read and write.  A file is not its
     # own upstream cause (under its current or any earlier name), so suppress
     # the self-edge from the human view while preserving the raw event.
-    self_names = {target} | {r["from"] for r in renames}
+    self_names = {pkey(target)} | {pkey(r["from"]) for r in renames}
     # execve() itself opens/reads/maps the program image.  That is real
     # evidence (kept, and shown with --raw), but in the human view the program
     # is already reported as the creator, not as a data input.
     if not include_noise and w["exe"]:
-        self_names.add(w["exe"])
-    inputs = [p for p in inputs if p not in self_names]
+        self_names.add(pkey(w["exe"]))
+    inputs = [p for p in inputs if pkey(p) not in self_names]
     via_inputs, via_temps = _through_temporaries(con, inputs, w["workspace"], w["ts_ns"])
     return {
         "path": target,
@@ -268,7 +309,7 @@ def history(con: sqlite3.Connection, path: str, limit=20):
 
 def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False):
     start = normalize(path)
-    seen_files = {start}
+    seen_files = {pkey(start)}
     frontier = [start]
     edges = []
     for _depth in range(max_depth):
@@ -292,10 +333,10 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
                 (f,),
             ).fetchall():
                 o = mv["path2"]
-                if o and o != f:
+                if o and pkey(o) != pkey(f):
                     edges.append((f, o, (mv["exe"] or "?") + " (rename)", mv["run_id"]))
-                    if o not in seen_files:
-                        seen_files.add(o)
+                    if pkey(o) not in seen_files:
+                        seen_files.add(pkey(o))
                         nxt.append(o)
             for rr in readers:
                 # Read-before-write ordering needs observed reads; open-only evidence
@@ -303,11 +344,11 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
                 outs = process_outputs(con, rr["run_id"], rr["pid"], rr["workspace"], include_noise,
                                        since_ns=rr["first_read_ns"] if rr["observed_io"] else 0)
                 for o in outs:
-                    if o == f:
+                    if pkey(o) == pkey(f):
                         continue
                     edges.append((f, o, rr["exe"] or "?", rr["run_id"]))
-                    if o not in seen_files:
-                        seen_files.add(o)
+                    if pkey(o) not in seen_files:
+                        seen_files.add(pkey(o))
                         nxt.append(o)
         frontier = nxt
         if not frontier:

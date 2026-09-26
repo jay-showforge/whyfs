@@ -7,6 +7,10 @@ import time
 from pathlib import Path
 from typing import Iterable
 
+# Path equality is a platform property: POSIX paths are case-sensitive; Windows paths
+# are compared case-insensitively (NTFS semantics; SQLite NOCASE folds ASCII only).
+PATH_COLLATE = " COLLATE NOCASE" if os.name == "nt" else ""
+
 SCHEMA = """
 PRAGMA journal_mode=WAL;
 PRAGMA synchronous=NORMAL;
@@ -24,7 +28,7 @@ CREATE TABLE IF NOT EXISTS processes(
   run_id TEXT NOT NULL,
   pid INTEGER NOT NULL,
   ppid INTEGER,
-  exe TEXT,
+  exe TEXT{C},
   cwd TEXT,
   command TEXT,
   source TEXT,
@@ -38,8 +42,8 @@ CREATE TABLE IF NOT EXISTS events(
   pid INTEGER NOT NULL,
   ppid INTEGER,
   kind TEXT NOT NULL,
-  path TEXT,
-  path2 TEXT,
+  path TEXT{C},
+  path2 TEXT{C},
   is_read INTEGER DEFAULT 0,
   is_write INTEGER DEFAULT 0,
   flags INTEGER,
@@ -97,7 +101,7 @@ def connect(root: Path, *, check_same_thread: bool = True) -> sqlite3.Connection
         except OSError:
             pass
     con.row_factory = sqlite3.Row
-    con.executescript(SCHEMA)
+    con.executescript(SCHEMA.replace("{C}", PATH_COLLATE))
     # v0.1 -> v0.2 in-place migration. SQLite lacks ADD COLUMN IF NOT EXISTS.
     _ensure_column(con, "runs", "collector", "TEXT DEFAULT 'preload'")
     _ensure_column(con, "processes", "command", "TEXT")
