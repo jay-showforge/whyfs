@@ -51,6 +51,8 @@ from the request.
 | `get_file_inputs` | `path` | creator, `inputs`, `inputs_via_temporaries`, `hidden_input_count`, `shared_by_outputs` |
 | `get_file_dependents` | `path`, `depth?` | downstream edges `{from, to, exe, run_id, shared}` |
 | `get_recent_changes` | `since_ns?` (default 24 h), `limit?`, `path_prefix?` | newest change per file, with its agent session if any |
+| `search_files` | any of `name`, `path`, `creator`, `user`, `agent`, `session_id`, `since_ns`, `until_ns`, `action` (`any`/`created`/`changed`/`deleted`), `limit?` | one row per file, newest activity first: `path`, `last_action`, `at`, `exe`, `user_name`, `agent`, `first_observed`, `created_in_range`, `exists` |
+| `list_agent_sessions` | `agent?`, `since_ns?`, `limit?` | registered sessions and detected agent process trees (one per process instance), newest first |
 | `get_agent_session` | `session_id` | the session, with its root process(es) |
 | `get_files_by_agent` | `session_id`, `limit?` | files written, moved or deleted by the session's process tree during the session |
 | `session_start` | `agent_name`, `agent_version?`, `session_id?`, `root_pid?`, `workspace?`, `task?` | `{session_id, started_ns, root_pid}` |
@@ -85,7 +87,12 @@ from the request.
   "inputs": ["...\\src\\main.ts", "...\\src\\api.ts", "...\\vite.config.ts"],
   "renamed_from": [],
   "history": [{"at": "...", "action": "written", "exe": "..."}],
-  "dependents": [{"from": "...", "to": "...", "exe": "..."}],
+  "dependents": [{"from": "...", "to": "...", "exe": "...", "shared": 0}],
+  "impact": {"generated_outputs": ["..."], "possibly_affected": [], "readers": [{"exe": "...", "processes": 1}],
+             "is_generated": true, "no_observed_dependents": false,
+             "summary": "2 files were observed being generated from this file ...; changing or removing it may affect them ..."},
+  "observation": {"complete": false, "observing_since": "...",
+                  "gaps": ["whyfs was not recording from ... to ..."]},
   "identity": {"current": "win:...", "recorded": "win:...", "check": "match"},
   "evidence": "OS-observed + registered agent context"
 }
@@ -104,6 +111,25 @@ Two kinds of "why" are kept apart:
 - **`intent`** is present only when a registered session supplied task text, and it says so.
   Without it, `intent.task` is `null`, with the note "no intent context was provided; whyfs
   does not infer intent".
+
+`impact` answers "what happens if this file is removed or changed" from observed activity only
+([HUMAN_INTERFACE.md](HUMAN_INTERFACE.md)).  `no_observed_dependents: true` is **not** a
+statement that removal is safe.  `observation.complete: false` lists the gaps that make the
+label incomplete.
+
+## Using whyfs from an agent
+
+Use the API (or `whyfs … --json`); never scrape the window.  Typical checks:
+
+| Before you… | Ask | Look at |
+|---|---|---|
+| edit an unfamiliar file | `get_file_provenance` | `impact.is_generated`: if true, edit its `inputs` and rerun `created_by.command` rather than editing the output |
+| decide whether it is generated | `get_file_provenance` | `impact.is_generated`, `inputs`, `created_by` |
+| find its sources | `get_file_inputs` | `inputs`, `inputs_via_temporaries` |
+| delete or change it | `get_file_provenance` | `impact.generated_outputs`, `impact.readers`, `impact.possibly_affected`, `observation` |
+| attribute it | `get_file_provenance` → `get_agent_session` | `agent.session_id`, `agent.source` (`registered` / `detected`) |
+| trust the answer | any label | `observation.complete` and `observation.gaps`; `identity.check` |
+| find files | `search_files` | by name, folder, program, user, agent, session, time |
 
 ## Registering an agent session
 

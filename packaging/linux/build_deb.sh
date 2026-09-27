@@ -80,6 +80,16 @@ cat > "$PKG/etc/whyfs/scope.conf" <<'EOF'
 # Patterns: absolute paths; `*` matches one component; `~` means every user's home.
 EOF
 
+# file-manager integration (right-click -> WhyFS) and the WhyFS window in the application menu;
+# `whyfs label FILE` / `whyfs ui` remain the universal fallback (docs/HUMAN_INTERFACE.md)
+D="$REPO/packaging/linux/desktop"
+install -D -m 644 "$D/whyfs.desktop" "$PKG/usr/share/applications/whyfs.desktop"
+install -D -m 644 "$D/whyfs-label.desktop" "$PKG/usr/share/applications/whyfs-label.desktop"
+install -D -m 644 "$D/whyfs-servicemenu.desktop" "$PKG/usr/share/kio/servicemenus/whyfs.desktop"             # Dolphin (KF6)
+install -D -m 644 "$D/whyfs-servicemenu.desktop" "$PKG/usr/share/kservices5/ServiceMenus/whyfs.desktop"      # Dolphin (KF5)
+for f in "$D"/*.nemo_action; do install -D -m 644 "$f" "$PKG/usr/share/nemo/actions/$(basename "$f")"; done  # Nemo
+install -D -m 644 "$D/whyfs_nautilus.py" "$PKG/usr/share/nautilus-python/extensions/whyfs_nautilus.py"    # Files
+
 cp "$REPO/LICENSE" "$PKG/usr/share/doc/whyfs/copyright"
 cp "$REPO/README.md" "$PKG/usr/share/doc/whyfs/README.md"
 
@@ -90,6 +100,7 @@ Architecture: $ARCH
 Maintainer: Jonathan Tyler Montgomery <licensing@tenzorpipe.org>
 Depends: python3 (>= 3.10), python3-bpfcc, libbpf1, libsqlite3-0, libelf1
 Recommends: bpfcc-tools
+Suggests: python3-nautilus
 Section: devel
 Priority: optional
 Description: automatic provenance labels for files

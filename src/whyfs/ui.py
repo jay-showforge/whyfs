@@ -40,8 +40,18 @@ def state_path() -> Path:
         base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local") / "whyfs"
     else:
         rt = os.environ.get("XDG_RUNTIME_DIR")
-        base = Path(rt) / "whyfs" if rt and os.path.isdir(rt) else Path.home() / ".cache" / "whyfs"
+        base = Path(rt) / "whyfs" if rt and _own_private_dir(rt) else Path.home() / ".cache" / "whyfs"
     return base / "ui.json"
+
+
+def _own_private_dir(d: str) -> bool:
+    """XDG_RUNTIME_DIR is used only when it is this user's own private directory (su/runuser can
+    pass another user's value through)."""
+    try:
+        st = os.stat(d)
+    except OSError:
+        return False
+    return st.st_uid == os.getuid() and not st.st_mode & 0o077
 
 
 def _write_state(d: dict) -> None:
@@ -222,22 +232,26 @@ def _start_server() -> dict:
     """Start the per-user server detached from this process; return its state."""
     before = _read_state()
     argv = [sys.executable, "-B", "-m", "whyfs", "ui", "--serve"]
+    import tempfile
+    err = tempfile.TemporaryFile()  # the server's start-up errors, reported if it does not come up
     if os.name == "nt":
         exe = Path(sys.executable)
         w = exe.with_name("pythonw.exe")
         argv[0] = str(w if w.exists() else exe)
-        subprocess.Popen(argv, creationflags=0x00000008 | 0x00000200 | 0x08000000,  # DETACHED | NEW_GROUP | NO_WINDOW
-                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
+        proc = subprocess.Popen(argv, creationflags=0x00000008 | 0x00000200 | 0x08000000,  # DETACHED | NEW_GROUP | NO_WINDOW
+                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=err, close_fds=True)
     else:
-        subprocess.Popen(argv, start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, close_fds=True)
+        proc = subprocess.Popen(argv, start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                stderr=err, close_fds=True)
     deadline = time.time() + 15
-    while time.time() < deadline:
+    while time.time() < deadline and proc.poll() is None:
         st = _read_state()
         if st and st != before:
             return st
         time.sleep(0.1)
-    raise SystemExit("whyfs: the WhyFS window could not be started")
+    err.seek(0)
+    tail = err.read().decode(errors="replace").strip().splitlines()[-1:]
+    raise SystemExit("whyfs: the WhyFS window could not be started" + (f": {tail[0]}" if tail else ""))
 
 
 def launch_url(file: str | None = None, view: str | None = None, path: str | None = None) -> str:

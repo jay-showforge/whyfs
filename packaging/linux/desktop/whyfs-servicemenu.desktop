@@ -1,0 +1,31 @@
+[Desktop Entry]
+Type=Service
+MimeType=all/allfiles;
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin,all/allfiles
+X-KDE-Submenu=WhyFS
+Actions=why;created;impact;history;search
+
+[Desktop Action why]
+Name=Why does this file exist?
+Icon=system-search
+Exec=whyfs ui --file %f
+
+[Desktop Action created]
+Name=What created this file?
+Icon=system-search
+Exec=whyfs ui --file %f --view created
+
+[Desktop Action impact]
+Name=What depends on this file?
+Icon=system-search
+Exec=whyfs ui --file %f --view impact
+
+[Desktop Action history]
+Name=Show WhyFS history
+Icon=system-search
+Exec=whyfs ui --file %f --view history
+
+[Desktop Action search]
+Name=Search WhyFS in this folder
+Icon=system-search
+Exec=sh -c 'whyfs ui --path "$(dirname "$1")"' sh %f

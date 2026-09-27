@@ -183,13 +183,16 @@ WEAK_RETENTION_DAYS = 30           # pure reads are kept this long by default (r
 AMBIGUOUS_SHARED = 25
 
 
-def readers(con: sqlite3.Connection, path: str, limit: int = 20) -> list[dict]:
-    """Programs observed reading the file (reads are kept for the weak-retention period)."""
+def readers(con: sqlite3.Connection, path: str, limit: int = 20, creator: tuple | None = None) -> list[dict]:
+    """Programs observed reading the file, other than the process that wrote it (reads are
+    kept for the weak-retention period)."""
+    run_id, key = creator or (None, None)
     rows = con.execute(
         "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e "
         "LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid "
-        "WHERE e.path=? AND e.is_read=1 AND e.api NOT LIKE '%derived-temp' GROUP BY pr.exe ORDER BY last DESC LIMIT ?",
-        (path, limit)).fetchall()
+        "WHERE e.path=? AND e.is_read=1 AND e.api NOT LIKE '%derived-temp' AND NOT (e.run_id IS ? AND e.pid IS ?) "
+        "GROUP BY pr.exe ORDER BY last DESC LIMIT ?",
+        (path, run_id, key, limit)).fetchall()
     return [{"exe": r["exe"], "processes": r["n"], "last_read_ns": r["last"], "last_read": iso(r["last"])} for r in rows]
 
 
@@ -252,7 +255,7 @@ def impact(lb: dict, rd: list[dict]) -> dict:
     via = sorted({_short(d.get("exe") or "?") for d in deps if (d.get("shared") or 0) > AMBIGUOUS_SHARED
                   and pkey(d["from"]) == pkey(lb["path"])})
     creator = _short((lb.get("created_by") or {}).get("exe") or "?")
-    readers_other = [r for r in rd if r.get("exe") != (lb.get("created_by") or {}).get("exe")]
+    readers_other = rd
     lines = []
     if outs:
         lines.append(f"{len(outs)} file{'s were' if len(outs) != 1 else ' was'} observed being generated from this file "
@@ -371,7 +374,7 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
         label["intent"] = {"task": None, "note": "no intent context was provided; whyfs does not infer intent"}
     label["causal_why"] = _causal_sentence(label)
     label["observation"] = observation(con, label["created_ns"], chain=label["process_chain"], identity=idcheck)
-    label["impact"] = impact(label, readers(con, target))
+    label["impact"] = impact(label, readers(con, target, creator=(run_id, key)))
     label["evidence"] = "OS-observed" + ("" if not session else
                                          " + registered agent context" if session["source"] == "registered" else
                                          " + detected agent (process image and command line)")

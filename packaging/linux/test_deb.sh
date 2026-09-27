@@ -13,6 +13,7 @@ rm -rf /var/cache/whyfs /var/lib/whyfs /run/whyfs
 check precondition_clean "$([ ! -e /usr/bin/whyfs ] && [ ! -e /usr/lib/whyfs ] && echo 1 || echo 0)"
 apt-get install -y -q "$(readlink -f "$DEB")" > "$OUT/install.log" 2>&1
 check install "$([ $? = 0 ] && echo 1 || echo 0)"
+check file_manager_entries "$([ -f /usr/share/applications/whyfs.desktop ] && [ -f /usr/share/kio/servicemenus/whyfs.desktop ] && [ -f /usr/share/nemo/actions/whyfs-why.nemo_action ] && [ -f /usr/share/nautilus-python/extensions/whyfs_nautilus.py ] && echo 1 || echo 0)"
 check cli_on_path "$(command -v whyfs >/dev/null && echo 1 || echo 0)" "$(whyfs --version 2>&1)"
 check package_modes "$([ "$(stat -c %a /usr/lib/whyfs/whyfs-collect)" = 755 ] && [ "$(stat -c %a /usr/lib/whyfs/whyfs-collect.source-sha256)" = 644 ] && [ "$(stat -c %U /usr/lib/whyfs/whyfs-collect)" = root ] && echo 1 || echo 0)" "$(stat -c '%a %U' /usr/lib/whyfs/whyfs-collect)"
 check prebuilt_collector_used "$(cd /tmp && python3 -c 'from whyfs import native_collect as n; print(n.binary())' 2>&1 | grep -q '^/usr/lib/whyfs/whyfs-collect$' && echo 1 || echo 0)"
@@ -74,6 +75,7 @@ sleep 1
 check service_stopped "$([ ! -S /run/whyfs/api.sock ] && ! pgrep -f '[/]usr/bin/whyfs machine run' >/dev/null && echo 1 || echo 0)"
 check machine_store_kept_on_remove "$([ -f /var/lib/whyfs/machine/.whyfs/whyfs.db ] && echo 1 || echo 0)"
 check files_removed "$([ ! -e /usr/bin/whyfs ] && [ ! -e /usr/lib/whyfs ] && [ ! -e /usr/lib/python3/dist-packages/whyfs ] && [ ! -e /lib/systemd/system/whyfs@.service ] && [ ! -e /lib/systemd/system/whyfs.service ] && echo 1 || echo 0)"
+check file_manager_entries_removed "$([ ! -e /usr/share/applications/whyfs.desktop ] && [ ! -e /usr/share/kio/servicemenus/whyfs.desktop ] && [ ! -e /usr/share/nautilus-python/extensions/whyfs_nautilus.py ] && echo 1 || echo 0)"
 check cache_removed "$([ ! -e /var/cache/whyfs ] && echo 1 || echo 0)"
 check user_data_kept "$([ -f "$WSDATA/.whyfs/whyfs.db" ] && echo 1 || echo 0)"
 rm -rf "$WSDATA"

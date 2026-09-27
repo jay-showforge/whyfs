@@ -311,6 +311,8 @@ def main() -> int:
     txt = (ex.get("result") or {}).get("text", "")
     g.check("label_text_renders", all(k in txt for k in ("Created by:", "Process chain:", "Agent:", "Task:", "Why:", "Evidence:")), txt[:400])
     (out / "label_example.txt").write_text(txt, encoding="utf-8")
+    # ---------------- U: discovery without a terminal (docs/HUMAN_INTERFACE.md)
+    usability(g, e_dir / "file.json", src, f_dir / "b-out.json", sid_a)
     st2 = g.api("status", as_root=True).get("result") or {}
     g.check("zero_loss", st2.get("lost") == 0, st2.get("collector_stats"))
 
@@ -326,6 +328,121 @@ def main() -> int:
         for p in [base, *b_dirs.values(), *( [p_file.parent] if p_file else [])]:
             shutil.rmtree(p, ignore_errors=True)
     return 0 if ok else 1
+
+
+def _menu_entries() -> tuple[bool, object]:
+    """The installed file-manager entries run the installed WhyFS window command."""
+    if NT:
+        import winreg
+        inst = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "whyfs"
+        found = {}
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"Software\Classes\*\shell\WhyFS") as k:
+                found["submenu"] = winreg.QueryValueEx(k, "ExtendedSubCommandsKey")[0]
+            for verb in ("1why", "2created", "3impact", "4history"):
+                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"Software\Classes\WhyFS.FileMenu\shell\{verb}\command") as k:
+                    found[verb] = winreg.QueryValueEx(k, "")[0]
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"Software\Classes\Directory\shell\WhyFS\command") as k:
+                found["folder"] = winreg.QueryValueEx(k, "")[0]
+        except OSError as exc:
+            return False, f"{exc}: {found}"
+        lnk = Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "Microsoft/Windows/Start Menu/Programs/WhyFS.lnk"
+        ok = (found.get("submenu") == "WhyFS.FileMenu" and (inst / "whyfsw.exe").exists() and lnk.exists()
+              and all(f'"{inst}\\whyfsw.exe" ui --file "%1"' in found[v] for v in ("1why", "2created", "3impact", "4history")))
+        return ok, found
+    files = ["/usr/share/applications/whyfs.desktop", "/usr/share/kio/servicemenus/whyfs.desktop",
+             "/usr/share/nemo/actions/whyfs-why.nemo_action", "/usr/share/nautilus-python/extensions/whyfs_nautilus.py"]
+    missing = [f for f in files if not os.path.exists(f)]
+    return not missing, missing or files
+
+
+def usability(g: "Gate", out_file: Path, src: Path, leaf: Path, sid: str) -> None:
+    """The WhyFS window, opened the way the menu entries open it, shows the same label the API
+    and the CLI give, searches the index, and explains impact without claiming safety."""
+    import http.cookiejar
+    import urllib.request
+    if INSTALLED:
+        ok, detail = _menu_entries()
+        g.check("U.file_manager_entries_installed", ok, detail)
+    # the menu command, with --print-url instead of opening the user's browser
+    p = g.run([*whyfs_cmd(), "ui", "--print-url", "--file", str(out_file)], check=False)
+    url = (p.stdout or "").strip().splitlines()[-1] if p.stdout.strip() else ""
+    jar = http.cookiejar.CookieJar()
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    page = b""
+    try:
+        with op.open(url, timeout=15) as r:
+            page = r.read()
+    except Exception as exc:  # noqa: BLE001 -- reported as the check's detail
+        page = repr(exc).encode()
+    g.check("U.window_opens_from_menu_command", url.startswith("http://127.0.0.1:") and b"<title>WhyFS</title>" in page,
+            (url[:60], p.stderr[-300:], page[:200]))
+
+    def win(op_name, **params):
+        req = urllib.request.Request(url.split("/launch")[0] + "/api", method="POST",
+                                     data=json.dumps({"op": op_name, "params": params}).encode(),
+                                     headers={"Content-Type": "application/json", "X-Whyfs": "1"})
+        try:
+            with op.open(req, timeout=30) as r:
+                return json.loads(r.read())
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": repr(exc)}
+
+    w = win("get_file_provenance", path=str(out_file)).get("result") or {}
+    a = g.label(out_file) or {}
+    c = g.run([*whyfs_cmd(), "label", str(out_file), "--json"], check=False)
+    try:
+        cli = json.loads(c.stdout)
+    except ValueError:
+        cli = {"error": c.stdout + c.stderr}
+
+    def core(lb):
+        cb = lb.get("created_by") or {}
+        return (lb.get("status"), lb.get("created_ns"), cb.get("exe"), cb.get("pid"), tuple(lb.get("inputs") or ()),
+                (lb.get("agent") or {}).get("session_id"), (lb.get("identity") or {}).get("check"))
+    g.check("U.same_label_in_window_api_and_cli", w.get("status") == "labelled" and core(w) == core(a) == core(cli),
+            {"window": core(w), "api": core(a), "cli": core(cli)})
+    g.check("U.label_answers_the_canonical_questions",
+            all(k in w for k in ("path", "created", "created_by", "process_chain", "user", "agent", "inputs", "causal_why",
+                                 "history", "dependents", "impact", "observation", "evidence")), sorted(w))
+    names = lambda r: {os.path.basename(x["path"]) for x in (r.get("result") or [])}  # noqa: E731
+    g.check("U.search_by_name", out_file.name in names(win("search_files", name=out_file.name, path=str(out_file.parent))))
+    g.check("U.search_by_agent_session", out_file.name in names(win("search_files", session_id=sid)))
+    g.check("U.search_by_creator_and_time", out_file.name in names(win("search_files", creator="python", path=str(out_file.parent),
+                                                                      since_ns=time.time_ns() - 3600 * 10**9, action="created")))
+    im_src = (g.label(src) or {}).get("impact") or {}
+    outs = {os.path.basename(x) for x in im_src.get("generated_outputs") or []}
+    g.check("U.impact_lists_generated_outputs", {out_file.name, leaf.name} <= outs, im_src)
+    im_leaf = (g.label(leaf) or {}).get("impact") or {}
+    g.check("U.impact_never_claims_safe_removal", im_leaf.get("no_observed_dependents") is True
+            and "does not mean it is safe to remove" in (im_leaf.get("summary") or ""), im_leaf)
+    obs = w.get("observation") or {}
+    g.check("U.completeness_reported", isinstance(obs.get("complete"), bool) and isinstance(obs.get("gaps"), list), obs)
+    # stop this gate's window server (it would exit by itself after being idle)
+    try:
+        port = int(url.split("127.0.0.1:")[1].split("/")[0])
+    except (IndexError, ValueError):
+        return
+    for st in _ui_states(g):
+        try:
+            d = json.loads(Path(st).read_text())
+        except (OSError, ValueError):
+            continue
+        if d.get("port") == port:
+            if NT:
+                subprocess.run(["taskkill", "/PID", str(d["pid"]), "/F"], capture_output=True)
+            else:
+                try:
+                    os.kill(int(d["pid"]), 15)
+                except OSError:
+                    pass
+
+
+def _ui_states(g: "Gate") -> list[str]:
+    if NT:
+        return [os.path.join(os.environ.get("LOCALAPPDATA", ""), "whyfs", "ui.json")]
+    import glob
+    return [str(g.home / ".cache" / "whyfs" / "ui.json"), *glob.glob("/run/user/*/whyfs/ui.json")]
 
 
 def _store_bytes() -> bytes | None:

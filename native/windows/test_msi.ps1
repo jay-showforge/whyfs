@@ -26,6 +26,15 @@ Check "service_autostart" ((Get-CimInstance Win32_Service -Filter "Name='whyfs'"
 Check "on_machine_path" ((MachinePath) -split ";" -contains $inst)
 $ver = & "$inst\whyfs.exe" --version 2>&1
 Check "launcher_version" ($ver -match "whyfs \d") "$ver"
+# the human interface: Explorer menu entries and the Start menu run the console-less launcher
+$verb = "Registry::HKEY_LOCAL_MACHINE\Software\Classes\WhyFS.FileMenu\shell\1why\command"
+$menuCmd = if (Test-Path $verb) { (Get-ItemProperty $verb).'(default)' } else { "" }
+$sub = (Get-ItemProperty -LiteralPath "Registry::HKEY_LOCAL_MACHINE\Software\Classes\*\shell\WhyFS" -ErrorAction SilentlyContinue).ExtendedSubCommandsKey
+Check "explorer_menu_registered" (($sub -eq "WhyFS.FileMenu") -and ($menuCmd -eq "`"$inst\whyfsw.exe`" ui --file `"%1`"")) "$sub | $menuCmd"
+Check "folder_menu_registered" (Test-Path "Registry::HKEY_LOCAL_MACHINE\Software\Classes\Directory\Background\shell\WhyFS\command")
+Check "start_menu_shortcut" (Test-Path "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\WhyFS.lnk")
+$gui = [IO.File]::ReadAllBytes("$inst\whyfsw.exe"); $pe = [BitConverter]::ToInt32($gui, 0x3C)
+Check "windowless_launcher" ([BitConverter]::ToUInt16($gui, $pe + 0x5C) -eq 2) "subsystem $([BitConverter]::ToUInt16($gui, $pe + 0x5C))"
 $acl = (Get-Acl $inst).Access | Where-Object { $_.IdentityReference -match "Users" -and $_.FileSystemRights -match "Write|Modify|FullControl" }
 Check "install_dir_not_user_writable" (-not $acl)
 
@@ -106,6 +115,7 @@ Check "uninstall_exit_0" ($p.ExitCode -eq 0) "exit $($p.ExitCode)"
 Check "service_removed" (-not (Get-Service whyfs -ErrorAction SilentlyContinue))
 Check "files_removed" (-not (Test-Path $inst))
 Check "path_entry_removed" (-not ((MachinePath) -split ";" -contains $inst))
+Check "explorer_menu_removed" (-not (Test-Path "Registry::HKEY_LOCAL_MACHINE\Software\Classes\WhyFS.FileMenu") -and -not (Test-Path "Registry::HKEY_LOCAL_MACHINE\Software\Classes\Directory\shell\WhyFS") -and -not (Test-Path "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\WhyFS.lnk"))
 Check "no_orphan_etw_sessions" (-not ((logman query -ets) -match "whyfs"))
 Check "machine_process_stopped" (-not (Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -match "whyfs machine serve" }))
 Check "api_pipe_gone" (-not ([System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*whyfs-api" }))

@@ -75,7 +75,24 @@ See [docs/MACHINE_MODE.md](docs/MACHINE_MODE.md) and [docs/AGENT_PROTOCOL.md](do
 
 ## Asking
 
+**Without a terminal.**  Right-click a file in Explorer (Windows 11: *Show more options*) or in
+your Linux file manager and choose **WhyFS → Why does this file exist?**.  The WhyFS window opens
+with the file's label.  Open **WhyFS** from the Start or application menu to search every labelled
+file by:
+- name or folder;
+- the program that wrote it;
+- user;
+- AI agent or agent session;
+- time;
+- whether it was created, changed or deleted.
+
+Each label also answers *what happens if I remove or change this file*, from observed activity.
+It never claims that removal is safe, and it lists any gaps in what whyfs observed.  See
+[docs/HUMAN_INTERFACE.md](docs/HUMAN_INTERFACE.md).
+
 ```bash
+whyfs ui [--file FILE]        # the WhyFS window (search and labels in your browser, local only)
+whyfs search app.js           # search: --under DIR --creator python --agent "Claude Code" --since today …
 whyfs label FILE [--json]     # the provenance label (human or JSON)
 whyfs why FILE                # creator and inputs      whyfs history FILE   # what happened to it
 whyfs impact FILE             # what was built from it  whyfs recent         # recent changes and their causes
@@ -88,8 +105,8 @@ Agents do not need to scrape text.  A local API speaks one JSON request/reply pe
 - Windows: `\\.\pipe\whyfs-api`.
 
 It offers `get_file_provenance`, `explain_file`, `get_file_history`, `get_file_inputs`,
-`get_file_dependents`, `get_recent_changes`, `get_agent_session`, `get_files_by_agent`,
-`session_start` and `session_end`.  From any language, `whyfs api OP '{"path": "..."}'` returns
+`get_file_dependents`, `get_recent_changes`, `search_files`, `list_agent_sessions`,
+`get_agent_session`, `get_files_by_agent`, `session_start` and `session_end`.  From any language, `whyfs api OP '{"path": "..."}'` returns
 the same JSON.
 
 ## Platforms
