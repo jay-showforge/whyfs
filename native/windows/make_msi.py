@@ -120,6 +120,10 @@ def stage(arch: str, runtime: Path, stage_dir: Path, vcvars: str, build_python: 
     shutil.copytree(REPO / "src" / "whyfs", pkg, ignore=shutil.ignore_patterns("__pycache__", "_bin", "native", "*.so", "*.c"))
     subprocess.run([pyc, "-I", "-m", "compileall", "-q", str(pkg)], check=True)  # the bytecode the launcher loads
     shutil.copy2(REPO / "LICENSE", stage_dir / "LICENSE")
+    # the machine scope policy's defaults (docs/MACHINE_MODE.md); additions: %ProgramData%\whyfs\scope.conf
+    sys.path.insert(0, str(REPO / "src"))
+    from whyfs.scope import defaults_text
+    (stage_dir / "scope-default.conf").write_text(defaults_text(True), encoding="utf-8")
     (stage_dir / "THIRD_PARTY_NOTICES.txt").write_text(
         "whyfs for Windows bundles third-party components that are not part of the Licensed Work:\n\n"
         f"* CPython {runtime_version(runtime)} runtime (runtime\\): Python Software Foundation License Version 2;\n"

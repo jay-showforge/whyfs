@@ -100,15 +100,15 @@ enum event_type {
 struct hdr_t {
     u64 ts_ns;
     u64 file;      /* struct file * (open/io/mmap/fchdir) or dirfd file (rename/unlink) */
-    u64 file2;     /* second dirfd file (rename) */
+    u64 file2;     /* second dirfd file (rename); open: full inode number */
     u32 tgid;      /* thread-group id in the collector's PID namespace */
     u32 tid;       /* root-namespace thread id (informational) */
     u32 aux_pid;   /* parent tgid (fork/exec), namespace-relative */
     u32 type;
     s32 fd;        /* open: 1 if directory; exec: argv length */
-    s32 dirfd;
-    s32 dirfd2;
-    u32 flags;
+    s32 dirfd;     /* rename/unlink dirfd; open: inode generation */
+    s32 dirfd2;    /* rename second dirfd; open: superblock device (kernel dev_t) */
+    u32 flags;     /* open: f_flags; exec/fork: uid of the task */
     u32 truncated; /* bit0: path too long, bit1: path unreadable */
     u32 ino;       /* low 32 bits of the inode number (diagnostic) */
     char comm[TASK_COMM_LEN];
@@ -321,6 +321,10 @@ KFUNC_PROBE(security_file_open, struct file *file) {
     e->h.file = (u64)file;
     e->h.ino = (u32)ino;
     e->h.flags = file->f_flags;
+    /* file identity (dev, ino, generation): a path is not identity (docs/MACHINE_MODE.md) */
+    e->h.file2 = ino;
+    e->h.dirfd = (s32)inode->i_generation;
+    e->h.dirfd2 = (s32)inode->i_sb->s_dev;
     e->h.fd = S_ISDIR(mode) ? 1 : 0;
     WF_T1(P_OPEN, 13, t_rb);
     WF_T0(t_dp);
@@ -543,6 +547,7 @@ TRACEPOINT_PROBE(sched, sched_process_exec) {
     if (!e) { wf_count_drop(); return 0; }
     WF_EMIT(P_EXEC, sizeof(struct path2_ev));
     wf_hdr(&e->h, tgid, EV_EXEC);
+    e->h.flags = (u32)bpf_get_current_uid_gid();  /* uid after exec (setuid applied) */
     WF_T1(P_EXEC, 13, t_rb);
     struct task_struct *t = (struct task_struct *)bpf_get_current_task();
     struct task_struct *rp = 0;
@@ -589,6 +594,7 @@ RAW_TRACEPOINT_PROBE(sched_process_fork) {
     if (!e) { wf_count_drop(); return 0; }
     WF_EMIT(P_FORK, sizeof(struct hdr_t));
     wf_hdr(e, ns_child, EV_FORK);
+    e->flags = (u32)bpf_get_current_uid_gid();  /* the forking task's uid: the child's */
     e->tid = cpid;
     WF_T1(P_FORK, 13, t_rb);
     /* sched_process_fork always fires in the forking task: parent == current. */
@@ -713,6 +719,27 @@ def _canon(p: str) -> str:
     return os.path.realpath(p)
 
 
+MACHINE_MAX_ANCESTORS = 24  # machine mode: agent roots sit many levels above build tools
+
+
+def _file_id(e) -> str:
+    """Kernel identity of an opened file: device (major:minor of the kernel dev_t), inode,
+    generation.  Compared with the file at query time (query.current_file_id)."""
+    dev = int(e.dirfd2) & 0xFFFFFFFF
+    return f"lnx:{dev >> 20}:{dev & 0xFFFFF}:{int(e.file2)}:{int(e.dirfd) & 0xFFFFFFFF}"
+
+
+def _proc_user(pid: int) -> str | None:
+    """Effective uid of a process that predates the collector (read once from /proc)."""
+    try:
+        for line in Path(f"/proc/{pid}/status").read_text().splitlines():
+            if line.startswith("Uid:"):
+                return f"uid:{int(line.split()[2])}"
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
 def _within(path: str | None, root: Path, capture_all: bool) -> bool:
     if not path:
         return False
@@ -735,6 +762,7 @@ class CollectorStats:
     received: int = 0          # records consumed from the ring buffer
     proc_fallbacks: int = 0    # cwd lookups that had to consult /proc
     unreadable_paths: int = 0  # path string could not be read
+    excluded_image: int = 0    # machine mode: events of excluded images (scanners, indexers)
 
 
 class _BoundedMap(OrderedDict):
@@ -815,10 +843,20 @@ class BCCCollector:
     """
 
     def __init__(self, root: Path, run_id: str, *, capture_all: bool = False, store=None,
-                 extra_cflags: list[str] | None = None):
+                 extra_cflags: list[str] | None = None, machine: bool = False, scope=None):
         self.root = root.resolve()
         self.run_id = run_id
         self.capture_all = capture_all
+        # Machine mode (docs/MACHINE_MODE.md): the scope policy replaces "under the workspace";
+        # plain opens are not stored; excluded images are dropped; deeper ancestry.
+        self.machine = machine
+        if machine and scope is None:
+            from .scope import Scope
+            scope = Scope(nt=False)
+        self.scope = scope
+        if machine:
+            self.MAX_ANCESTORS = MACHINE_MAX_ANCESTORS
+        self.fid = _BoundedMap(400_000)  # struct file -> "lnx:MAJ:MIN:INO:GEN" (kernel identity at open)
         self.extra_cflags = list(extra_cflags or [])  # diagnostics only (WF_PROFILE, WF_NULL_MASK)
         self.stats = CollectorStats()
         # kernel struct file * -> absolute path (only paths whyfs may need:
@@ -864,9 +902,13 @@ class BCCCollector:
     def _in_ws(self, path: str | None, capture_all: bool) -> bool:
         if not path or _within(path, self.state_dir, False):
             return False
+        if self.machine:
+            return self.scope.classify(path) == "in"
         return _within(path, self.root, capture_all)
 
     def _is_temp(self, path: str) -> bool:
+        if self.machine:
+            return self.scope.classify(path) == "temp"
         return any(_within(path, Path(r), False) for r in self.temp_roots)
 
     # ---------------------------------------------------------------- identity
@@ -888,6 +930,7 @@ class BCCCollector:
             "run_id": self.run_id, "ts_ns": time.time_ns(), "kind": "process",
             "pid": pid, "os_pid": pid, "ppid": None, "parent_key": None,
             "exe": exe, "cwd": self._cwd(pid), "command": self.image[pid][1], "source": "ebpf",
+            "user": _proc_user(pid),
         })
 
     # Privacy: the kernel sees every process in the namespace.  Process rows
@@ -1011,6 +1054,9 @@ class BCCCollector:
 
     def _file_event(self, pid: int, ts: int, kind: str, path: str | None, **extra) -> None:
         k = self.key(pid)
+        if self.machine and self.scope.image_excluded(self.image.get(pid, (None, None))[0]):
+            self.stats.excluded_image += 1
+            return
         self._make_relevant(k)
         self._put({
             "run_id": self.run_id, "ts_ns": ts, "kind": kind,
@@ -1043,11 +1089,16 @@ class BCCCollector:
             is_dir = bool(e.fd == 1)
             if self._keep_path(path, is_dir):
                 self.files.put(int(e.file), path)
+                if not is_dir:
+                    self.fid.put(int(e.file), _file_id(e))
             else:
                 self.files.pop(int(e.file), None)
+                self.fid.pop(int(e.file), None)
             if is_dir or not self._in_ws(path, self.capture_all):
                 self.stats.filtered += 1
                 return
+            if self.machine:
+                return  # machine mode: an open is not evidence (reads/writes are), as on Windows
             # Open itself is evidence of access intent.  Actual read/write
             # events below are what query.py treats as causal I/O.
             self._file_event(pid, ts, "open", path, read=False, write=False, flags=int(e.flags), api="ebpf:open")
@@ -1062,18 +1113,19 @@ class BCCCollector:
                 return
             is_write = typ in (EV_WRITE, EV_MMAP_WRITE)
             api = "ebpf:mmap" if typ in (EV_MMAP_READ, EV_MMAP_WRITE) else "ebpf:rw"
+            ident = {"file_id": self.fid[int(e.file)]} if int(e.file) in self.fid else {}
             if self._in_ws(path, self.capture_all):
                 if not is_write and self._in_ws(path, False):
                     self._read_workspace.add(self.key(pid))
-                self._file_event(pid, ts, "io", path, read=not is_write, write=is_write, api=api)
+                self._file_event(pid, ts, "io", path, read=not is_write, write=is_write, api=api, **ident)
                 return
             if is_write and self.key(pid) in self._read_workspace and self._is_temp(path):
                 self._derived.put(path, None)
-                self._file_event(pid, ts, "io", path, read=False, write=True, api=api + ":derived-temp")
+                self._file_event(pid, ts, "io", path, read=False, write=True, api=api + ":derived-temp", **ident)
                 return
             if not is_write and path in self._derived:
                 self._read_workspace.add(self.key(pid))  # carries workspace-derived data
-                self._file_event(pid, ts, "io", path, read=True, write=False, api=api + ":derived-temp")
+                self._file_event(pid, ts, "io", path, read=True, write=False, api=api + ":derived-temp", **ident)
                 return
             self.stats.filtered += 1
             return
@@ -1095,6 +1147,7 @@ class BCCCollector:
                 "run_id": self.run_id, "ts_ns": ts, "kind": "process",
                 "pid": child_key, "os_pid": pid, "ppid": parent or None, "parent_key": parent_key,
                 "exe": exe, "cwd": self.cwd.get(pid), "command": cmd, "source": "ebpf",
+                "user": f"uid:{int(e.flags)}",
             })
             return
 
@@ -1115,6 +1168,7 @@ class BCCCollector:
                 "pid": k, "os_pid": pid, "ppid": ppid or None,
                 "parent_key": self.pkey.get(ppid, ppid) if ppid else None,
                 "exe": exe, "cwd": self._cwd(pid), "command": command, "source": "ebpf",
+                "user": f"uid:{int(e.flags)}",
             })
             # Raw evidence of the image boundary: the query layer attributes a
             # write to the program image that performed it (see query._image_start).
@@ -1151,7 +1205,7 @@ class BCCCollector:
         if typ == EV_RENAME:
             a = self._resolve(pid, int(e.dirfd), int(e.file), _cstr(_field_bytes(data, size, OFF_PATH)), follow_final=False)
             b = self._resolve(pid, int(e.dirfd2), int(e.file2), _cstr(_field_bytes(data, size, OFF_PATH2)), follow_final=False)
-            if not (self.capture_all or self._in_ws(a, False) or self._in_ws(b, False)
+            if not ((self.capture_all and not self.machine) or self._in_ws(a, False) or self._in_ws(b, False)
                     or (a in self._derived)):
                 self.stats.filtered += 1
                 return

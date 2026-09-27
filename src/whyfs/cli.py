@@ -116,13 +116,43 @@ def _root_and_con(path=None):
     return root, connect(root)
 
 
+def _workspace_of(path: str) -> Path | None:
+    """The initialized workspace containing ``path`` (explicit captures keep their own
+    store), else None: the file's label is in the machine store, asked through the service."""
+    root = project_root(Path(path).resolve().parent)
+    return root if (root / ROOT_MARKER).is_dir() else None
+
+
+def _service(op: str, **params):
+    from .api import ServiceUnavailable, call
+    try:
+        reply = call(op, params)
+    except ServiceUnavailable as exc:
+        raise SystemExit(f"whyfs: {exc}.  Labels are recorded by the whyfs service "
+                         f"({'the Windows service' if os.name == 'nt' else 'systemd: whyfs.service'}).")
+    if not reply.get("ok"):
+        raise SystemExit(f"whyfs: {reply.get('error')}")
+    return reply["result"]
+
+
+def _machine(a) -> bool:
+    return bool(getattr(a, "machine", False)) or _workspace_of(a.file) is None
+
+
 def cmd_why(a):
-    _root, con = _root_and_con(a.file)
     show_all = a.all or a.raw
+    if _machine(a):
+        result = _service("why", path=os.path.abspath(a.file), include_noise=show_all, raw=a.raw)
+        return _print_why(a, result, show_all)
+    _root, con = _root_and_con(a.file)
     result = qwhy(con, a.file, show_all)
     if result and a.raw and result.get("run_id"):
         result["raw_events"] = [dict(r) for r in raw_process_events(con, result["run_id"], result["process_key"])]
     con.close()
+    return _print_why(a, result, show_all)
+
+
+def _print_why(a, result, show_all):
     if a.json:
         print(json.dumps(result, indent=2))
         return 0 if result else 1
@@ -173,11 +203,14 @@ def cmd_why(a):
 
 
 def cmd_history(a):
-    _root, con = _root_and_con(a.file)
-    rows = qhistory(con, a.file, a.limit)
-    con.close()
+    if _machine(a):
+        rows = _service("history", path=os.path.abspath(a.file), limit=a.limit)
+    else:
+        _root, con = _root_and_con(a.file)
+        rows = [dict(r) for r in qhistory(con, a.file, a.limit)]
+        con.close()
     if a.json:
-        print(json.dumps([dict(r) for r in rows], indent=2))
+        print(json.dumps(rows, indent=2))
         return 0
     if not rows:
         print(f"No recorded writes for {normalize(a.file)}")
@@ -190,9 +223,12 @@ def cmd_history(a):
 
 
 def cmd_impact(a):
-    _root, con = _root_and_con(a.file)
-    edges = impact_details(con, a.file, a.depth, a.all)
-    con.close()
+    if _machine(a):
+        edges = _service("impact", path=os.path.abspath(a.file), depth=a.depth, include_noise=a.all)
+    else:
+        _root, con = _root_and_con(a.file)
+        edges = impact_details(con, a.file, a.depth, a.all)
+        con.close()
     if a.json:
         print(json.dumps(edges, indent=2))
         return 0
@@ -294,6 +330,104 @@ def cmd_service(a):
     return 0
 
 
+def cmd_label(a):
+    """The file's provenance label (docs/MACHINE_MODE.md)."""
+    from . import label as lbl
+    path = os.path.abspath(a.file)
+    if _machine(a):
+        lb = _service("get_file_provenance", path=path, include_noise=a.all)
+    else:
+        _root, con = _root_and_con(a.file)
+        lb = lbl.explain_file(con, path, include_noise=a.all)
+        con.close()
+    if a.json:
+        print(json.dumps(lb, indent=2, default=str))
+    else:
+        print(lbl.render_label(lb))
+    return 0 if lb.get("status") == "labelled" else 1
+
+
+def cmd_agent(a):
+    """Register an agent session with the local service (docs/AGENT_PROTOCOL.md)."""
+    if a.action == "start":
+        if not a.name:
+            raise SystemExit("whyfs agent start needs --name")
+        root = a.root_pid if a.root_pid is not None else os.getppid()
+        r = _service("session_start", agent_name=a.name, agent_version=a.agent_version, session_id=a.session_id,
+                     root_pid=root, workspace=a.workspace or os.getcwd(), task=a.task)
+        print(json.dumps(r) if a.json else r["session_id"])
+        return 0
+    if not a.session_id:
+        raise SystemExit(f"whyfs agent {a.action} needs --session-id")
+    if a.action == "end":
+        r = _service("session_end", session_id=a.session_id)
+    elif a.action == "show":
+        r = _service("get_agent_session", session_id=a.session_id)
+    else:
+        r = _service("get_files_by_agent", session_id=a.session_id, limit=a.limit)
+    if a.json or a.action != "files":
+        print(json.dumps(r, indent=2, default=str))
+    else:
+        for f in r:
+            print(f"{f['at']}  {f['action']:<10} {f['path']}  ({os.path.basename(f['exe'] or '?')})")
+    return 0 if r is not None else 1
+
+
+def cmd_recent(a):
+    since = time.time_ns() - int(a.hours * 3600 * 1e9)
+    rows = _service("get_recent_changes", since_ns=since, limit=a.limit,
+                    path_prefix=os.path.abspath(a.under) if a.under else None)
+    if a.json:
+        print(json.dumps(rows, indent=2))
+        return 0
+    for r in rows:
+        ag = f"  [{r['agent']['agent_name']}]" if r.get("agent") else ""
+        print(f"{r['at']}  {r['action']:<10} {r['path']}  ({os.path.basename(r['exe'] or '?')}){ag}")
+    return 0
+
+
+def cmd_status(a):
+    st = _service("status")
+    if a.json:
+        print(json.dumps(st, indent=2, default=str))
+        return 0
+    v = st["visible"]
+    print(f"whyfs service: collector {'running' if st['collector_running'] else 'NOT running'}"
+          + (f" (since {time.strftime('%Y-%m-%d %H:%M', time.localtime(st['collector']['started_ns'] / 1e9))})"
+             if st.get("collector") else ""))
+    print(f"  your view: {'administrator (all users)' if st['admin_view'] else st.get('requester_name') or st['requester']}")
+    print(f"  labelled files {v['labelled_files']} · events {v['events']} · processes {v['processes']} "
+          f"· agent sessions {v['agent_sessions']}")
+    print(f"  store {st['store_bytes'] / 2**20:.1f} MiB · lost events {st['lost']}")
+    pol = st["policy"]
+    print(f"  retention: {pol['retention_days']} days (pure reads {pol['weak_retention_days']} days) "
+          f"· cap {pol['max_db_mb']} MiB")
+    if a.scope:
+        print(st["scope_rules"])
+    return 0
+
+
+def cmd_forget(a):
+    if a.everything:
+        r = _service("forget", everything=True)
+    elif a.file:
+        r = _service("forget", path=os.path.abspath(a.file))
+    else:
+        raise SystemExit("whyfs forget PATH | --everything")
+    print(json.dumps(r))
+    return 0
+
+
+def cmd_api(a):
+    from .api import main as api_main
+    return api_main([a.op] + ([a.params] if a.params else []))
+
+
+def cmd_machine(a):
+    from .machine import main as machine_main
+    return machine_main([a.action])
+
+
 def cmd_daemon_worker(a):
     from .daemon import run_foreground
     return run_foreground(Path(a.workspace), capture_all=a.all_files, quiet=True)
@@ -315,8 +449,54 @@ def parser():
     q.add_argument("command", nargs=argparse.REMAINDER)
     q.set_defaults(func=cmd_trace)
 
+    q = sp.add_parser("label", help="the file's provenance label: where, when, how, who (and which agent) created it")
+    q.add_argument("file")
+    q.add_argument("--all", action="store_true", help="include system/library inputs")
+    q.add_argument("--json", action="store_true")
+    q.add_argument("--machine", action="store_true", help="ask the machine service even inside a workspace")
+    q.set_defaults(func=cmd_label)
+
+    q = sp.add_parser("agent", help="register / inspect AI agent sessions (docs/AGENT_PROTOCOL.md)")
+    q.add_argument("action", choices=("start", "end", "show", "files"))
+    q.add_argument("--name", help="agent name (start)")
+    q.add_argument("--agent-version")
+    q.add_argument("--session-id")
+    q.add_argument("--root-pid", type=int, help="the agent's own process (default: this command's parent)")
+    q.add_argument("--workspace")
+    q.add_argument("--task", help="task/context text, stored as supplied by the agent (never inferred)")
+    q.add_argument("--limit", type=int, default=500)
+    q.add_argument("--json", action="store_true")
+    q.set_defaults(func=cmd_agent)
+
+    q = sp.add_parser("recent", help="recently created/changed files and what caused them")
+    q.add_argument("--hours", type=float, default=24)
+    q.add_argument("--under", help="only paths under this directory")
+    q.add_argument("--limit", type=int, default=50)
+    q.add_argument("--json", action="store_true")
+    q.set_defaults(func=cmd_recent)
+
+    q = sp.add_parser("status", help="what the whyfs service records: scope, size, loss, retention")
+    q.add_argument("--scope", action="store_true", help="print the scope rules in effect")
+    q.add_argument("--json", action="store_true")
+    q.set_defaults(func=cmd_status)
+
+    q = sp.add_parser("forget", help="delete provenance records (yours; administrators: anyone's)")
+    q.add_argument("file", nargs="?")
+    q.add_argument("--everything", action="store_true")
+    q.set_defaults(func=cmd_forget)
+
+    q = sp.add_parser("api", help="call the local service API: whyfs api OP '{\"path\": ...}' (JSON out)")
+    q.add_argument("op")
+    q.add_argument("params", nargs="?")
+    q.set_defaults(func=cmd_api)
+
+    q = sp.add_parser("machine")  # internal: the service entry points
+    q.add_argument("action", choices=("run", "serve", "scope"))
+    q.set_defaults(func=cmd_machine)
+
     q = sp.add_parser("why", help="show the last observed creator and inputs of a file")
     q.add_argument("file")
+    q.add_argument("--machine", action="store_true", help="ask the machine service even inside a workspace")
     q.add_argument("--all", action="store_true", help="include system/library reads")
     q.add_argument("--raw", action="store_true", help="unfiltered inputs plus the creator's raw stored events")
     q.add_argument("--limit", type=int, default=20)
@@ -325,12 +505,14 @@ def parser():
 
     q = sp.add_parser("history", help="show observed write history of a file")
     q.add_argument("file")
+    q.add_argument("--machine", action="store_true")
     q.add_argument("--limit", type=int, default=20)
     q.add_argument("--json", action="store_true")
     q.set_defaults(func=cmd_history)
 
     q = sp.add_parser("impact", help="show downstream outputs that consumed this file")
     q.add_argument("file")
+    q.add_argument("--machine", action="store_true")
     q.add_argument("--depth", type=int, default=5)
     q.add_argument("--all", "--raw", dest="all", action="store_true", help="include system/runtime outputs")
     q.add_argument("--json", action="store_true")

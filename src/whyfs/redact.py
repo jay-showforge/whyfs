@@ -177,7 +177,10 @@ def redact_argv(argv: list[str]) -> str:
             out.append(a)
             secret_next = True
             continue
-        if "=" in a and any(s in low.split("=", 1)[0] for s in SENSITIVE):
+        key = low.split("=", 1)[0]
+        # KEY=VALUE only when KEY is one word: in "cmd /c ... --password X API_KEY=Y" everything
+        # before the first "=" is command text, and the text pass must see "--password X".
+        if "=" in a and not any(c in _WS for c in key) and any(s in key for s in SENSITIVE):
             out.append(a.split("=", 1)[0] + "=" + MARK)
         else:
             out.append(redact_text(a))

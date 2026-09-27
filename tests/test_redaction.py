@@ -29,6 +29,11 @@ WRAPPERS = [
     (["sh", "-c", "deploy --token 'SECRETVAL1 with space'"], ["sh", "deploy --token"]),
     (["prog", "--auth-token", "SECRETVAL1", "--verbose"], ["prog", "--auth-token", "--verbose"]),
     (["curl", "-H", "Authorization: Bearer SECRETVAL1", "https://example.test/x"], ["curl", "Authorization: Bearer", "https://example.test/x"]),
+    # a merged command line as an ordinary argument (no shell flag before it): its first "=" is not a KEY=VALUE split
+    (["whyfs-collect", "--redact-text", 'cmd.exe /c ""py.exe" -c "x" --password SECRETVAL1 API_KEY=SECRETVAL2"'],
+     ["whyfs-collect", "--password", "API_KEY="]),
+    (["tool", "TOOL --TOKEN SECRETVAL1 --Api-Key=SECRETVAL2 Password=SECRETVAL3"], ["TOOL --TOKEN", "--Api-Key=", "Password="]),
+    (["env", "PASSWORD=SECRETVAL1 with spaces"], ["env", "PASSWORD="]),  # one-word KEY: the whole value
 ]
 # Raw Windows command lines (cmd.exe and PowerShell parse their own line; no argv exists).
 WINDOWS_LINES = [

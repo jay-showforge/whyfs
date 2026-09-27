@@ -60,6 +60,22 @@ CREATE INDEX IF NOT EXISTS events_path ON events(path, ts_ns);
 CREATE INDEX IF NOT EXISTS events_path2 ON events(path2, ts_ns);
 CREATE INDEX IF NOT EXISTS events_pid ON events(run_id,pid,ts_ns);
 CREATE INDEX IF NOT EXISTS processes_exe ON processes(exe);
+CREATE TABLE IF NOT EXISTS agent_sessions(
+  session_id TEXT PRIMARY KEY,
+  agent_name TEXT NOT NULL,
+  agent_version TEXT,
+  user TEXT,
+  root_os_pid INTEGER,
+  root_start_ns INTEGER,
+  workspace TEXT,
+  task TEXT,
+  started_ns INTEGER NOT NULL,
+  ended_ns INTEGER,
+  source TEXT NOT NULL,
+  confidence TEXT NOT NULL,
+  evidence TEXT
+);
+CREATE INDEX IF NOT EXISTS agent_sessions_root ON agent_sessions(root_os_pid);
 """
 
 
@@ -101,6 +117,8 @@ def connect(root: Path, *, check_same_thread: bool = True) -> sqlite3.Connection
         except OSError:
             pass
     con.row_factory = sqlite3.Row
+    if fresh:
+        con.execute("PRAGMA auto_vacuum=INCREMENTAL")  # retention can return space (retention.prune)
     con.executescript(SCHEMA.replace("{C}", PATH_COLLATE))
     # v0.1 -> v0.2 in-place migration. SQLite lacks ADD COLUMN IF NOT EXISTS.
     _ensure_column(con, "runs", "collector", "TEXT DEFAULT 'preload'")
@@ -113,6 +131,14 @@ def connect(root: Path, *, check_same_thread: bool = True) -> sqlite3.Connection
     _ensure_column(con, "events", "os_pid", "INTEGER")
     _ensure_column(con, "processes", "os_pid", "INTEGER")
     _ensure_column(con, "processes", "parent_key", "INTEGER")
+    # machine-wide labels (docs/MACHINE_MODE.md): the process's user ("uid:N" / a Windows
+    # SID) and the file's native identity at I/O time ("lnx:MAJ:MIN:INO:GEN" / "win:VOL:FILEID")
+    _ensure_column(con, "processes", "user", "TEXT")
+    _ensure_column(con, "events", "file_id", "TEXT")
+    con.execute("CREATE INDEX IF NOT EXISTS events_file_id ON events(file_id) WHERE file_id IS NOT NULL")
+    con.execute("CREATE INDEX IF NOT EXISTS events_ts ON events(ts_ns)")
+    con.execute("CREATE INDEX IF NOT EXISTS processes_parent ON processes(run_id, parent_key)")
+    con.execute("CREATE INDEX IF NOT EXISTS processes_os_pid ON processes(os_pid)")
     con.commit()
     return con
 
@@ -149,6 +175,7 @@ def ingest_events(con: sqlite3.Connection, events: Iterable[dict]) -> int:
                 ts,
                 e.get("os_pid", pid),
                 e.get("parent_key"),
+                e.get("user"),
             ))
         else:
             p = normalize(e["path"]) if e.get("path") else None
@@ -167,14 +194,16 @@ def ingest_events(con: sqlite3.Connection, events: Iterable[dict]) -> int:
                 e.get("api"),
                 e.get("source"),
                 e.get("os_pid", pid),
+                e.get("file_id"),
             ))
         n += 1
 
     if process_rows:
         con.executemany(
-            """INSERT INTO processes(run_id,pid,ppid,exe,cwd,command,source,first_seen_ns,os_pid,parent_key)
-               VALUES(?,?,?,?,?,?,?,?,?,?)
+            """INSERT INTO processes(run_id,pid,ppid,exe,cwd,command,source,first_seen_ns,os_pid,parent_key,user)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(run_id,pid) DO UPDATE SET
+                 user=COALESCE(excluded.user,processes.user),
                  ppid=COALESCE(excluded.ppid,processes.ppid),
                  os_pid=COALESCE(excluded.os_pid,processes.os_pid),
                  parent_key=COALESCE(excluded.parent_key,processes.parent_key),
@@ -186,8 +215,8 @@ def ingest_events(con: sqlite3.Connection, events: Iterable[dict]) -> int:
         )
     if event_rows:
         con.executemany(
-            """INSERT INTO events(run_id,ts_ns,pid,ppid,kind,path,path2,is_read,is_write,flags,api,source,os_pid)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            """INSERT INTO events(run_id,ts_ns,pid,ppid,kind,path,path2,is_read,is_write,flags,api,source,os_pid,file_id)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             event_rows,
         )
     con.commit()

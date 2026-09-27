@@ -52,10 +52,10 @@ class Stream:
         self.fo += 0x100
         return self.fo
 
-    def add(self, typ, pid, *, ppid=0, flags=0, user=1, fo=0, key=0, s1=None, s2=None, dt=1000):
+    def add(self, typ, pid, *, ppid=0, flags=0, user=1, fo=0, key=0, s1=None, s2=None, s3=None, dt=1000):
         self.ts += dt
         b = struct.pack("<qIIIIIQQ", self.ts, typ, pid, ppid, flags, user, fo, key)
-        for s in (s1, s2):
+        for s in (s1, s2, s3):  # s3: the process's user SID string
             b += struct.pack("<I", 0xFFFFFFFF) if s is None else struct.pack("<I", len(s.encode())) + s.encode()
         self.recs.append(b)
         return self

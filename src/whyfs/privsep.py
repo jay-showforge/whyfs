@@ -103,10 +103,19 @@ def _end_run(con, run_id: str, ended: int, exit_code: int, stats: dict) -> int:
     return 1
 
 
+def _update_stats(con, run_id: str, stats: dict) -> int:
+    """Live collector counters of a long-running (machine) collector: loss stays visible."""
+    for key, value in stats.items():
+        set_collector_stat(con, run_id, key, int(value))
+    con.commit()
+    return 1
+
+
 _OPS = {
     "ingest": lambda con, events: ingest_events(con, events),
     "begin_run": _begin_run,
     "end_run": _end_run,
+    "update_stats": _update_stats,
 }
 
 

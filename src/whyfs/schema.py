@@ -10,7 +10,7 @@ is never presented as equivalent to stronger evidence.
 """
 from __future__ import annotations
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: + process "user", + io "file_id" (both optional: v1 records stay valid)
 
 KINDS = ("process", "exec", "open", "io", "rename", "unlink")
 
@@ -50,12 +50,15 @@ EVENT_FIELDS = {  # canonical event record (dict handed to store.ingest_events)
     "run_id": str, "ts_ns": int, "kind": str, "pid": int, "os_pid": int, "path": (str, type(None)),
     "source": str, "api": str,
 }
-OPTIONAL_EVENT_FIELDS = {"path2": (str, type(None)), "read": bool, "write": bool, "flags": (int, type(None))}
+OPTIONAL_EVENT_FIELDS = {"path2": (str, type(None)), "read": bool, "write": bool, "flags": (int, type(None)),
+                         # native file identity at I/O time: "lnx:MAJ:MIN:INO:GEN" / "win:VOLSERIAL:FILEID"
+                         "file_id": str}
 PROCESS_FIELDS = {
     "run_id": str, "ts_ns": int, "kind": str, "pid": int, "os_pid": int, "ppid": (int, type(None)),
     "parent_key": (int, type(None)), "exe": (str, type(None)), "cwd": (str, type(None)), "command": (str, type(None)),
     "source": str,
 }
+OPTIONAL_PROCESS_FIELDS = {"user": (str, type(None))}  # "uid:N" (Linux) or a SID string (Windows)
 
 # What each backend can and cannot observe (docs/SCHEMA.md "Platform semantics").
 BACKEND_CAPABILITIES = {
@@ -93,7 +96,7 @@ def validate_record(rec: dict) -> None:
     if kind not in KINDS:
         raise SchemaError(f"unknown kind {kind!r}")
     if kind == "process":
-        _check(rec, PROCESS_FIELDS)
+        _check(rec, PROCESS_FIELDS, OPTIONAL_PROCESS_FIELDS)
         return
     _check(rec, EVENT_FIELDS, OPTIONAL_EVENT_FIELDS)
     api = rec["api"]
@@ -109,6 +112,8 @@ def validate_record(rec: dict) -> None:
         raise SchemaError(f"evidence {api!r} cannot be a {kind!r} record")
     if kind == "io" and not (rec.get("read") or rec.get("write")):
         raise SchemaError(f"an io record must be a read or a write: {rec}")
+    if "file_id" in rec and kind not in ("io", "rename"):
+        raise SchemaError(f"file_id belongs to io and rename records: {rec}")
     if kind == "rename" and "path2" not in rec:
         raise SchemaError(f"a rename needs path2: {rec}")
     if rec["source"] != api.split(":", 1)[0]:

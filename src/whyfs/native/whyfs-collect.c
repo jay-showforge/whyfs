@@ -51,6 +51,7 @@
 #define QUEUE_RECORDS 262144
 #define HANDOFF_BATCH 512
 #define MAX_ANCESTORS 8
+#define MACHINE_MAX_ANCESTORS 24  // ebpf_bcc.MACHINE_MAX_ANCESTORS
 #define FILES_LIMIT 400000
 #define PROC_ROWS_LIMIT 200000
 #define DERIVED_LIMIT 200000
@@ -494,6 +495,7 @@ static int rx_is_switch(const char *a) {  // redact._is_switch: -name / --name w
     for (const char *p = name; *p; p++) if (!rx_keych(*p)) return 0;
     return rx_switch_sensitive(name, strlen(name));
 }
+static int rx_has_ws(const char *s, size_t n) { for (size_t i = 0; i < n; i++) if (rx_ws(s[i])) return 1; return 0; }
 static int rx_is_script_flag(const char *a) {  // redact._is_script_flag: -c -lc ... /c /k -Command
     size_t n = strlen(a);
     if ((n == 2 && (a[0] == '/') && (rx_low(a[1]) == 'c' || rx_low(a[1]) == 'k')) || (n == 8 && rx_ieq(a, "-command", 8))
@@ -518,7 +520,7 @@ static char *redact_cmdline(char **argv, size_t argc) {  // whyfs/redact.py reda
             }
             if (!exact) exact = rx_is_switch(a);
             if (exact) { item = xstrdup(a); secret_next = 1; }
-            else if (strchr(a, '=')) {
+            else if (strchr(a, '=') && !rx_has_ws(a, (size_t)(strchr(a, '=') - a))) {  // redact.redact_argv: one-word KEY
                 char *key = xstrndup(low, strchr(low, '=') - low);
                 int hit = 0;
                 for (size_t s = 0; s < sizeof SENSITIVE / sizeof *SENSITIVE; s++) if (strstr(key, SENSITIVE[s])) hit = 1;
@@ -588,15 +590,15 @@ static size_t proc_cmdline(uint32_t pid, char ***out) {
 
 // ---------------------------------------------------------------- collector state
 typedef struct { uint64_t submitted, filtered, unresolved_fd, truncated_paths, kernel_drops, queue_drops, received,
-                 proc_fallbacks, unreadable_paths; } stats_t;
+                 proc_fallbacks, unreadable_paths, excluded_image; } stats_t;
 static stats_t st;
 
 typedef struct {  // process row (kind 'process'); has_* mark non-None
     int64_t ts, pid, os_pid, ppid, parent_key;
     int has_ppid, has_parent_key;
-    char *exe, *cwd, *command;
+    char *exe, *cwd, *command, *user;  // user: "uid:N" (ebpf_bcc: fork/exec uid, /proc for existing)
 } prow_t;
-static void prow_free(void *p) { prow_t *r = p; if (!r) return; free(r->exe); free(r->cwd); free(r->command); free(r); }
+static void prow_free(void *p) { prow_t *r = p; if (!r) return; free(r->exe); free(r->cwd); free(r->command); free(r->user); free(r); }
 typedef struct { char *exe, *cmd; } image_t;
 static void image_free(void *p) { image_t *i = p; if (!i) return; free(i->exe); free(i->cmd); free(i); }
 typedef struct { int64_t ts, pid, os_pid; char *path; } pexec_t;
@@ -607,16 +609,17 @@ static root_t ws_root, state_root;  // state_root: <workspace>/.whyfs (never evi
 static root_t temp_roots[8];
 static int n_temp_roots;
 static int capture_all;
+static int machine_mode, max_ancestors = MAX_ANCESTORS;  // --machine (docs/MACHINE_MODE.md)
 static const char *run_id = "run";
 static int64_t clock_offset;
 static uint64_t seq;
 
-static map_t files, cwdm, image, pkey, proc_rows, pending_exec, relevant, read_workspace, derived;
+static map_t files, cwdm, image, pkey, proc_rows, pending_exec, relevant, read_workspace, derived, fidm;
 
 // ---------------------------------------------------------------- output (ordered handoff batches)
 // Record encoding shared by the writer pipe and --emit:
-//   'P' i64 ts, pid, os_pid; opt-i64 ppid, parent_key; str exe, cwd, command
-//   'E' i64 ts, pid, os_pid; u8 kind; opt-i64 flags; u8 has_rw, read, write; str path, path2, api; u8 has_path2
+//   'P' i64 ts, pid, os_pid; opt-i64 ppid, parent_key; str exe, cwd, command, user
+//   'E' i64 ts, pid, os_pid; u8 kind; opt-i64 flags; u8 has_rw, read, write; str path, path2, api; u8 has_path2; str file_id
 // str: u32 length (0xffffffff = None) + bytes.  opt-i64: u8 present + i64.
 enum { K_OPEN = 1, K_IO, K_RENAME, K_UNLINK, K_EXEC };
 static const char *KIND_NAME[] = {"", "open", "io", "rename", "unlink", "exec"};
@@ -646,14 +649,16 @@ static void put_bump(void) { pending_n++; if (pending_n >= HANDOFF_BATCH) flush_
 static void put_process(const prow_t *r) {
     w_u8(&pending, 'P'); w_i64(&pending, r->ts); w_i64(&pending, r->pid); w_i64(&pending, r->os_pid);
     w_opt(&pending, r->has_ppid, r->ppid); w_opt(&pending, r->has_parent_key, r->parent_key);
-    w_str(&pending, r->exe); w_str(&pending, r->cwd); w_str(&pending, r->command);
+    w_str(&pending, r->exe); w_str(&pending, r->cwd); w_str(&pending, r->command); w_str(&pending, r->user);
     put_bump();
 }
+static const char *cur_fid;  // identity of the file of the I/O event being recorded (NULL otherwise)
 static void put_event(int64_t ts, int64_t key, int64_t os_pid, int kind, int has_flags, int64_t flags, int has_rw, int rd, int wr,
                       const char *path, int has_path2, const char *path2, const char *api) {
     w_u8(&pending, 'E'); w_i64(&pending, ts); w_i64(&pending, key); w_i64(&pending, os_pid); w_u8(&pending, (uint8_t)kind);
     w_opt(&pending, has_flags, flags); w_u8(&pending, (uint8_t)has_rw); w_u8(&pending, (uint8_t)rd); w_u8(&pending, (uint8_t)wr);
     w_str(&pending, path); w_str(&pending, path2); w_str(&pending, api); w_u8(&pending, (uint8_t)has_path2);
+    w_str(&pending, kind == K_IO ? cur_fid : NULL);
     put_bump();
 }
 
@@ -680,23 +685,27 @@ static void emit_records(const unsigned char *p, size_t n) {
         int64_t ts = r_i64(&r), pid = r_i64(&r), os_pid = r_i64(&r);
         if (t == 'P') {
             int hp = r_u8(&r); int64_t pp = r_i64(&r); int hk = r_u8(&r); int64_t pk = r_i64(&r);
-            uint32_t l1, l2, l3; const char *exe = r_str(&r, &l1), *cwd = r_str(&r, &l2), *cmd = r_str(&r, &l3);
+            uint32_t l1, l2, l3, l4; const char *exe = r_str(&r, &l1), *cwd = r_str(&r, &l2), *cmd = r_str(&r, &l3);
+            const char *user = r_str(&r, &l4);
             fprintf(emit_fp, "{\"run_id\":\"%s\",\"ts_ns\":%lld,\"kind\":\"process\",\"pid\":%lld,\"os_pid\":%lld", run_id,
                     (long long)ts, (long long)pid, (long long)os_pid);
             j_opt(emit_fp, "ppid", hp, pp); j_opt(emit_fp, "parent_key", hk, pk);
             j_hex(emit_fp, "exe", exe, l1); j_hex(emit_fp, "cwd", cwd, l2); j_hex(emit_fp, "command", cmd, l3);
+            if (user) fprintf(emit_fp, ",\"user\":\"%.*s\"", (int)l4, user); else fprintf(emit_fp, ",\"user\":null");
             fprintf(emit_fp, ",\"source\":\"ebpf\"}\n");
         } else {
             int kind = r_u8(&r); int hf = r_u8(&r); int64_t fl = r_i64(&r);
             int hrw = r_u8(&r), rdv = r_u8(&r), wrv = r_u8(&r);
             uint32_t l1, l2, l3; const char *path = r_str(&r, &l1), *path2 = r_str(&r, &l2), *api = r_str(&r, &l3);
             int hp2 = r_u8(&r);
+            uint32_t l5; const char *fid = r_str(&r, &l5);
             fprintf(emit_fp, "{\"run_id\":\"%s\",\"ts_ns\":%lld,\"kind\":\"%s\",\"pid\":%lld,\"os_pid\":%lld", run_id,
                     (long long)ts, KIND_NAME[kind], (long long)pid, (long long)os_pid);
             j_hex(emit_fp, "path", path, l1);
             if (hp2) j_hex(emit_fp, "path2", path2, l2);
             if (hrw) fprintf(emit_fp, ",\"read\":%s,\"write\":%s", rdv ? "true" : "false", wrv ? "true" : "false");
             if (hf) fprintf(emit_fp, ",\"flags\":%lld", (long long)fl);
+            if (fid) fprintf(emit_fp, ",\"file_id\":\"%.*s\"", (int)l5, fid);
             fprintf(emit_fp, ",\"api\":\"%.*s\",\"source\":\"ebpf\"}\n", (int)l3, api);
         }
     }
@@ -764,10 +773,189 @@ static void pump_output(int block) {  // move queued batches into the writer pip
 
 // ---------------------------------------------------------------- event model (port of _process_event)
 static int64_t wall_ns(void) { struct timespec t; clock_gettime(CLOCK_REALTIME, &t); return (int64_t)t.tv_sec * 1000000000LL + t.tv_nsec; }
-static int is_temp(const char *p) { for (int i = 0; i < n_temp_roots; i++) if (within(p, &temp_roots[i])) return 1; return 0; }
+// ---------------------------------------------------------------- machine scope policy
+// whyfs/scope.py, rule for rule (both collectors carry this block; tests/scope_vectors.json).
+// Rules: exclude|include|temp <pattern>, exclude-image <pattern>; component-wise prefix
+// patterns, `*`/`pre*suf` per component, `~` = every user's home.  Precedence:
+// include > temp > exclude > in scope.
+enum { SC_IN = 0, SC_TEMP = 1, SC_OUT = 2 };
+enum { SCR_EXCLUDE, SCR_INCLUDE, SCR_TEMP, SCR_IMAGE_PATH, SCR_IMAGE_NAME };
+typedef struct { int kind; char **c; int n; } sc_rule_t;
+static sc_rule_t *sc_rules;
+static int sc_n, sc_cap;
+#ifdef SC_NT
+#define SC_SEP '\\'
+static char sc_fold(char c) { return (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c; }
+#else
+#define SC_SEP '/'
+static char sc_fold(char c) { return c; }
+#endif
+static int sc_is_sep(char c) {
+#ifdef SC_NT
+    return c == '\\' || c == '/';
+#else
+    return c == '/';
+#endif
+}
+// split into folded components (no empty ones)
+static int sc_split(const char *p, char ***out) {
+    int n = 0, cap = 8;
+    char **v = xmalloc(cap * sizeof *v);
+    while (*p) {
+        while (*p && sc_is_sep(*p)) p++;
+        if (!*p) break;
+        const char *q = p;
+        while (*q && !sc_is_sep(*q)) q++;
+        if (n == cap) { cap *= 2; v = xrealloc(v, cap * sizeof *v); }
+        char *c = xstrndup(p, (size_t)(q - p));
+        for (char *s = c; *s; s++) *s = sc_fold(*s);
+        v[n++] = c;
+        p = q;
+    }
+    *out = v;
+    return n;
+}
+static void sc_push(int kind, const char *pat) {
+    if (sc_n == sc_cap) { sc_cap = sc_cap ? sc_cap * 2 : 32; sc_rules = xrealloc(sc_rules, sc_cap * sizeof *sc_rules); }
+    sc_rule_t *r = &sc_rules[sc_n++];
+    r->kind = kind;
+    if (kind == SCR_IMAGE_NAME) {
+        r->c = xmalloc(sizeof *r->c); r->c[0] = xstrdup(pat); r->n = 1;
+        for (char *s = r->c[0]; *s; s++) *s = sc_fold(*s);
+    } else r->n = sc_split(pat, &r->c);
+}
+static void sc_add_pattern(int kind, const char *pat) {
+    if (pat[0] == '~' && (pat[1] == 0 || sc_is_sep(pat[1]))) {
+        const char *rest = pat[1] ? pat + 2 : "";
+#ifdef SC_NT
+        const char *homes[] = {"*:\\Users\\*"};
+#else
+        const char *homes[] = {"/home/*", "/root"};
+#endif
+        for (size_t i = 0; i < sizeof homes / sizeof *homes; i++) {
+            buf_t o = {0};
+            b_str(&o, homes[i]);
+            if (*rest) { b_ch(&o, SC_SEP); b_str(&o, rest); }
+            char *full = b_take(&o);
+            sc_push(kind, full);
+            free(full);
+        }
+        return;
+    }
+    sc_push(kind, pat);
+}
+// parse rule text (returns number of rules added)
+static int sc_parse(const char *text) {
+    int added = 0;
+    const char *p = text;
+    while (*p) {
+        const char *e = p; while (*e && *e != '\n') e++;
+        char *line = xstrndup(p, (size_t)(e - p));
+        p = *e ? e + 1 : e;
+        char *s = line; while (*s == ' ' || *s == '\t') s++;
+        size_t L = strlen(s); while (L && (s[L - 1] == ' ' || s[L - 1] == '\t' || s[L - 1] == '\r')) s[--L] = 0;
+        if (!*s || *s == '#') { free(line); continue; }
+        char *sp = strchr(s, ' ');
+        if (!sp) { free(line); continue; }
+        *sp = 0;
+        char *pat = sp + 1; while (*pat == ' ' || *pat == '\t') pat++;
+        if (!*pat) { free(line); continue; }
+        if (!strcmp(s, "exclude")) sc_add_pattern(SCR_EXCLUDE, pat);
+        else if (!strcmp(s, "include")) sc_add_pattern(SCR_INCLUDE, pat);
+        else if (!strcmp(s, "temp")) sc_add_pattern(SCR_TEMP, pat);
+        else if (!strcmp(s, "exclude-image")) sc_push(strchr(pat, '/') || strchr(pat, '\\') ? SCR_IMAGE_PATH : SCR_IMAGE_NAME, pat);
+        else { free(line); continue; }
+        added++;
+        free(line);
+    }
+    return added;
+}
+static int sc_load(const char *file) {  // -1: unreadable
+    FILE *f = fopen(file, "rb");
+    if (!f) return -1;
+    buf_t o = {0};
+    char tmp[4096]; size_t n;
+    while ((n = fread(tmp, 1, sizeof tmp, f)) > 0) b_add(&o, tmp, n);
+    fclose(f);
+    char *t = b_take(&o);
+    int r = sc_parse(t);
+    free(t);
+    return r;
+}
+// allocation-free matching: every classified path is walked in place
+static int sc_eq_n(const char *a, const char *pat, size_t n) {  // a (raw) vs pat (folded)
+    for (size_t i = 0; i < n; i++) if (sc_fold(a[i]) != pat[i]) return 0;
+    return 1;
+}
+static int sc_comp_match_raw(const char *pc, const char *c, size_t cl) {
+    const char *star = strchr(pc, '*');
+    if (!star) return strlen(pc) == cl && sc_eq_n(c, pc, cl);
+    size_t pre = (size_t)(star - pc), suf = strlen(star + 1);
+    return cl >= pre + suf && sc_eq_n(c, pc, pre) && sc_eq_n(c + cl - suf, star + 1, suf);
+}
+static int sc_match_raw(const char *p, const sc_rule_t *r) {
+    for (int i = 0; i < r->n; i++) {
+        while (*p && sc_is_sep(*p)) p++;
+        if (!*p) return 0;
+        const char *q = p;
+        while (*q && !sc_is_sep(*q)) q++;
+        if (!sc_comp_match_raw(r->c[i], p, (size_t)(q - p))) return 0;
+        p = q;
+    }
+    return 1;
+}
+static const char *sc_last_comp(const char *p, size_t *len) {
+    const char *end = p + strlen(p);
+    while (end > p && sc_is_sep(end[-1])) end--;
+    const char *b = end;
+    while (b > p && !sc_is_sep(b[-1])) b--;
+    *len = (size_t)(end - b);
+    return b;
+}
+static int sc_classify(const char *path) {
+    int inc = 0, tmp = 0, exc = 0;
+    for (int i = 0; i < sc_n && !inc; i++) {
+        const sc_rule_t *r = &sc_rules[i];
+        if (r->kind == SCR_INCLUDE) { if (sc_match_raw(path, r)) inc = 1; }
+        else if (r->kind == SCR_TEMP) { if (!tmp && sc_match_raw(path, r)) tmp = 1; }
+        else if (r->kind == SCR_EXCLUDE) { if (!exc && sc_match_raw(path, r)) exc = 1; }
+    }
+    return inc ? SC_IN : tmp ? SC_TEMP : exc ? SC_OUT : SC_IN;
+}
+static int sc_image_excluded(const char *exe) {
+    if (!exe || !*exe) return 0;
+    size_t nl; const char *name = sc_last_comp(exe, &nl);
+    for (int i = 0; i < sc_n; i++) {
+        const sc_rule_t *r = &sc_rules[i];
+        if (r->kind == SCR_IMAGE_NAME) { if (nl && sc_comp_match_raw(r->c[0], name, nl)) return 1; }
+        else if (r->kind == SCR_IMAGE_PATH) { if (sc_match_raw(exe, r)) return 1; }
+    }
+    return 0;
+}
+static int is_temp(const char *p) {
+    if (machine_mode) return sc_classify(p) == SC_TEMP;
+    for (int i = 0; i < n_temp_roots; i++) if (within(p, &temp_roots[i])) return 1;
+    return 0;
+}
 static int within_ws(const char *p, int cap_all) {  // BCCCollector._in_ws
     if (!p || !*p || within(p, &state_root)) return 0;
+    if (machine_mode) return sc_classify(p) == SC_IN;
     return cap_all ? 1 : within(p, &ws_root);
+}
+static char *proc_user(uint32_t pid) {  // ebpf_bcc._proc_user
+    char p[64], line[256];
+    snprintf(p, sizeof p, "/proc/%u/status", pid);
+    FILE *f = fopen(p, "r");
+    if (!f) return NULL;
+    char *r = NULL;
+    while (fgets(line, sizeof line, f)) {
+        unsigned long a, b;
+        if (!strncmp(line, "Uid:", 4) && sscanf(line + 4, "%lu %lu", &a, &b) == 2) {
+            char u[32]; snprintf(u, sizeof u, "uid:%lu", b); r = xstrdup(u); break;
+        }
+    }
+    fclose(f);
+    return r;
 }
 
 static const char *cwd_of(uint32_t pid) {  // _cwd
@@ -795,6 +983,7 @@ static void announce_existing(uint32_t pid) {
     prow_t *r = calloc(1, sizeof *r);
     r->ts = wall_ns(); r->pid = pid; r->os_pid = pid;
     r->exe = exe; r->cwd = xstrdup(cwd_of(pid)); r->command = xstrdup(im->cmd);
+    r->user = proc_user(pid);
     record_process(r);
 }
 static uint64_t key_of(uint32_t pid) {
@@ -813,6 +1002,7 @@ static void record_process(prow_t *row) {  // takes ownership of row
         m->exe = xstrdup(row->exe ? row->exe : old->exe);
         m->cwd = xstrdup(row->cwd ? row->cwd : old->cwd);
         m->command = xstrdup(row->command ? row->command : old->command);
+        m->user = xstrdup(row->user ? row->user : old->user);
         if (row->has_ppid) { m->has_ppid = 1; m->ppid = row->ppid; }
         if (row->has_parent_key) { m->has_parent_key = 1; m->parent_key = row->parent_key; }
         m->os_pid = row->os_pid;
@@ -832,7 +1022,7 @@ static void record_exec(int64_t ts, uint64_t k, uint32_t pid, const char *exe) {
 }
 static void make_relevant(uint64_t k) {
     int has_k = 1;
-    for (int i = 0; i < MAX_ANCESTORS + 1; i++) {
+    for (int i = 0; i < max_ancestors + 1; i++) {
         if (!has_k || map_has(&relevant, k, NULL)) return;
         map_set(&relevant, k, NULL, NULL);
         prow_t *row = map_get(&proc_rows, k, NULL);
@@ -850,6 +1040,10 @@ static void make_relevant(uint64_t k) {
 static void file_event(uint32_t pid, int64_t ts, int kind, const char *path, int has_flags, int64_t flags, int has_rw, int rd, int wr,
                        int has_path2, const char *path2, const char *api) {
     uint64_t k = key_of(pid);
+    if (machine_mode) {
+        image_t *im = map_get(&image, pid, NULL);
+        if (im && sc_image_excluded(im->exe)) { st.excluded_image++; return; }
+    }
     make_relevant(k);
     put_event(ts, k, pid, kind, has_flags, flags, has_rw, rd, wr, path, has_path2, path2, api);
 }
@@ -940,9 +1134,16 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         char *path = pnormpath(raw);
         free(raw);
         int is_dir = e.fd == 1;
-        if (is_dir || within_ws(path, capture_all) || is_temp(path)) map_put(&files, e.file, NULL, xstrdup(path));
-        else map_pop(&files, e.file, NULL);
+        if (is_dir || within_ws(path, capture_all) || is_temp(path)) {
+            map_put(&files, e.file, NULL, xstrdup(path));
+            if (!is_dir) {  // ebpf_bcc._file_id: kernel identity (dev major:minor, inode, generation)
+                char id[96]; uint32_t dev = (uint32_t)e.dirfd2;
+                snprintf(id, sizeof id, "lnx:%u:%u:%llu:%u", dev >> 20, dev & 0xFFFFF, (unsigned long long)e.file2, (uint32_t)e.dirfd);
+                map_put(&fidm, e.file, NULL, xstrdup(id));
+            }
+        } else { map_pop(&files, e.file, NULL); map_pop(&fidm, e.file, NULL); }
         if (is_dir || !within_ws(path, capture_all)) { st.filtered++; free(path); return 0; }
+        if (machine_mode) { free(path); return 0; }  // an open is not evidence in machine mode
         file_event(pid, ts, K_OPEN, path, 1, e.flags, 1, 0, 0, 0, NULL, "ebpf:open");
         free(path);
         return 0;
@@ -953,6 +1154,7 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         char *path = xstrdup(fp);  // the map may change below (announce never touches files, but stay safe)
         int is_write = typ == EV_WRITE || typ == EV_MMAP_WRITE;
         int mm = typ == EV_MMAP_READ || typ == EV_MMAP_WRITE;
+        cur_fid = map_get(&fidm, e.file, NULL);
         if (within_ws(path, capture_all)) {
             if (!is_write && within_ws(path, 0)) map_set(&read_workspace, key_of(pid), NULL, NULL);
             file_event(pid, ts, K_IO, path, 0, 0, 1, !is_write, is_write, 0, NULL, mm ? "ebpf:mmap" : "ebpf:rw");
@@ -963,6 +1165,7 @@ static int process_event(void *ctx, void *vdata, size_t size) {
             map_set(&read_workspace, key_of(pid), NULL, NULL);
             file_event(pid, ts, K_IO, path, 0, 0, 1, 1, 0, 0, NULL, mm ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp");
         } else st.filtered++;
+        cur_fid = NULL;
         free(path);
         return 0;
     }
@@ -987,6 +1190,7 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         r->has_ppid = parent != 0; r->ppid = parent;
         r->has_parent_key = has_pk; r->parent_key = parent_key;
         r->exe = xstrdup(im->exe); r->cwd = xstrdup(map_get(&cwdm, pid, NULL)); r->command = xstrdup(im->cmd);
+        { char u[32]; snprintf(u, sizeof u, "uid:%u", e.flags); r->user = xstrdup(u); }
         record_process(r);
         return 0;
     }
@@ -1011,6 +1215,7 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         r->has_ppid = ppid != 0; r->ppid = ppid;
         if (ppid) { ent_t *pk = map_find(&pkey, ppid, NULL); r->has_parent_key = 1; r->parent_key = pk ? (int64_t)pk->u : ppid; }
         r->exe = xstrdup(exe); r->cwd = xstrdup(cwd_of(pid)); r->command = command;
+        { char u[32]; snprintf(u, sizeof u, "uid:%u", e.flags); r->user = xstrdup(u); }
         record_process(r);
         record_exec(ts, k, pid, exe);
         free(exe);
@@ -1130,15 +1335,15 @@ static int writer_main(const char *root, int rfd, int reply_fd, long uid, long g
     sqlite3_exec(db, "PRAGMA synchronous=NORMAL", 0, 0, 0);
     sqlite3_stmt *sp, *se;
     if (!sq_ok(db, sqlite3_prepare_v2(db,
-            "INSERT INTO processes(run_id,pid,ppid,exe,cwd,command,source,first_seen_ns,os_pid,parent_key) VALUES(?,?,?,?,?,?,?,?,?,?)"
-            " ON CONFLICT(run_id,pid) DO UPDATE SET ppid=COALESCE(excluded.ppid,processes.ppid),"
+            "INSERT INTO processes(run_id,pid,ppid,exe,cwd,command,source,first_seen_ns,os_pid,parent_key,user) VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+            " ON CONFLICT(run_id,pid) DO UPDATE SET ppid=COALESCE(excluded.ppid,processes.ppid), user=COALESCE(excluded.user,processes.user),"
             " os_pid=COALESCE(excluded.os_pid,processes.os_pid), parent_key=COALESCE(excluded.parent_key,processes.parent_key),"
             " exe=COALESCE(excluded.exe,processes.exe), cwd=COALESCE(excluded.cwd,processes.cwd),"
             " command=COALESCE(excluded.command,processes.command), source=COALESCE(excluded.source,processes.source)",
             -1, &sp, 0), "prepare processes") ||
         !sq_ok(db, sqlite3_prepare_v2(db,
-            "INSERT INTO events(run_id,ts_ns,pid,ppid,kind,path,path2,is_read,is_write,flags,api,source,os_pid)"
-            " VALUES(?,?,?,NULL,?,?,?,?,?,?,?,?,?)", -1, &se, 0), "prepare events"))
+            "INSERT INTO events(run_id,ts_ns,pid,ppid,kind,path,path2,is_read,is_write,flags,api,source,os_pid,file_id)"
+            " VALUES(?,?,?,NULL,?,?,?,?,?,?,?,?,?,?)", -1, &se, 0), "prepare events"))
         return 1;
     uint64_t rows = 0, batches = 0, max_batch = 0;
     int failed = 0, eof = 0;
@@ -1160,7 +1365,9 @@ static int writer_main(const char *root, int rfd, int reply_fd, long uid, long g
                 int64_t ts = r_i64(&rd), pid = r_i64(&rd), os_pid = r_i64(&rd);
                 if (t == 'P') {
                     int hp = r_u8(&rd); int64_t pp = r_i64(&rd); int hk = r_u8(&rd); int64_t pk = r_i64(&rd);
-                    uint32_t l1, l2, l3; const char *exe = r_str(&rd, &l1), *cwd = r_str(&rd, &l2), *cmd = r_str(&rd, &l3);
+                    uint32_t l1, l2, l3, l4; const char *exe = r_str(&rd, &l1), *cwd = r_str(&rd, &l2), *cmd = r_str(&rd, &l3);
+                    const char *user = r_str(&rd, &l4);
+                    bind_text_or_null(sp, 11, user, l4);
                     sqlite3_bind_text(sp, 1, run_id, -1, SQLITE_STATIC);
                     sqlite3_bind_int64(sp, 2, pid);
                     if (hp) sqlite3_bind_int64(sp, 3, pp); else sqlite3_bind_null(sp, 3);
@@ -1176,6 +1383,8 @@ static int writer_main(const char *root, int rfd, int reply_fd, long uid, long g
                     int hrw = r_u8(&rd), rdv = r_u8(&rd), wrv = r_u8(&rd);
                     uint32_t l1, l2, l3; const char *path = r_str(&rd, &l1), *path2 = r_str(&rd, &l2), *api = r_str(&rd, &l3);
                     r_u8(&rd);
+                    uint32_t l5; const char *fid = r_str(&rd, &l5);
+                    bind_text_or_null(se, 13, fid, l5);
                     char *np = path && l1 ? norm_for_store(path, l1) : NULL;
                     char *np2 = path2 && l2 ? norm_for_store(path2, l2) : NULL;
                     sqlite3_bind_text(se, 1, run_id, -1, SQLITE_STATIC);
@@ -1240,13 +1449,13 @@ static void on_sig(int s) { (void)s; stop_flag = 1; }
 static void on_usr1(int s) { (void)s; stats_flag = 1; }
 static void print_stats(unsigned long long w_rows, unsigned long long w_batches, unsigned long long w_max, int w_failed) {
     printf("{\"submitted\":%llu,\"filtered\":%llu,\"unresolved_fd\":%llu,\"truncated_paths\":%llu,\"kernel_drops\":%llu,"
-           "\"queue_drops\":%llu,\"received\":%llu,\"proc_fallbacks\":%llu,\"unreadable_paths\":%llu,"
+           "\"queue_drops\":%llu,\"received\":%llu,\"proc_fallbacks\":%llu,\"unreadable_paths\":%llu,\"excluded_image\":%llu,"
            "\"writer_rows\":%llu,\"writer_batches\":%llu,\"writer_max_batch\":%llu,\"writer_failed\":%d,"
            "\"pending_exec\":%zu,\"consumer_yields\":%llu}\n",
            (unsigned long long)st.submitted, (unsigned long long)st.filtered, (unsigned long long)st.unresolved_fd,
            (unsigned long long)st.truncated_paths, (unsigned long long)st.kernel_drops, (unsigned long long)st.queue_drops,
            (unsigned long long)st.received, (unsigned long long)st.proc_fallbacks, (unsigned long long)st.unreadable_paths,
-           w_rows, w_batches, w_max, w_failed, pending_exec.count, (unsigned long long)yields);
+           (unsigned long long)st.excluded_image, w_rows, w_batches, w_max, w_failed, pending_exec.count, (unsigned long long)yields);
     fflush(stdout);
 }
 
@@ -1272,6 +1481,12 @@ int main(int argc, char **argv) {
         else if (ARG("--seed")) { if (nseeds < 64) seeds[nseeds++] = (char *)v; }
         else if (ARG("--clock-offset")) { clock_offset = atoll(v); have_offset = 1; }
         else if (!strcmp(a, "--capture-all")) capture_all = 1;
+        else if (!strcmp(a, "--machine")) { machine_mode = 1; max_ancestors = MACHINE_MAX_ANCESTORS; }
+        else if (ARG("--scope")) { if (sc_load(v) < 0) die("cannot read scope file %s", v); }
+        else if (ARG("--scope-classify")) {  // test hook: scope.Scope.classify over the rules loaded so far
+            int c = sc_classify(v); fputs(c == SC_IN ? "in" : c == SC_TEMP ? "temp" : "out", stdout); return 0;
+        }
+        else if (ARG("--scope-image")) { fputs(sc_image_excluded(v) ? "1" : "0", stdout); return 0; }
         else if (!strcmp(a, "--emit")) emit_json = 1;
         else if (!strcmp(a, "--diag-discard")) diag_discard = 1;
         else if (!strcmp(a, "--diag-no-store")) diag_nostore = 1;
@@ -1291,6 +1506,7 @@ int main(int argc, char **argv) {
         clock_offset = ((int64_t)rt.tv_sec * 1000000000LL + rt.tv_nsec) - ((int64_t)mt.tv_sec * 1000000000LL + mt.tv_nsec);
     }
     map_init(&files, 0, FILES_LIMIT, free);
+    map_init(&fidm, 0, FILES_LIMIT, free);
     map_init(&cwdm, 0, 0, free);
     map_init(&image, 0, 0, image_free);
     map_init(&pkey, 0, 0, NULL);

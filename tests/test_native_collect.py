@@ -80,11 +80,22 @@ class NativeProcessPrivacyTests(base.ProcessPrivacyTests):
 
 # ---------------------------------------------------------------- differential
 STAT_KEYS = ("submitted", "filtered", "unresolved_fd", "truncated_paths", "queue_drops", "received",
-             "proc_fallbacks", "unreadable_paths")
+             "proc_fallbacks", "unreadable_paths", "excluded_image")
 
 
-def python_run(root, raw, clock_offset, seeds, capture_all=False):
-    c = m.BCCCollector(root, "run", capture_all=capture_all)
+def machine_rules(root: Path) -> str:
+    """Machine-mode scope for the fuzzer: the file tree is in scope except one excluded
+    subtree; the temp dir is a temp root; one program image is excluded."""
+    return (f"temp {TMPDIR.name}\nexclude {root}/sub/deep\nexclude /usr\nexclude /etc\n"
+            f"exclude-image /usr/bin/tr\nexclude-image tool\n")
+
+
+def python_run(root, raw, clock_offset, seeds, capture_all=False, machine=False):
+    scope = None
+    if machine:
+        from whyfs.scope import Scope
+        scope = Scope(nt=False, text=machine_rules(root))
+    c = m.BCCCollector(root, "run", capture_all=capture_all, machine=machine, scope=scope)
     c.clock_offset = clock_offset
     for pid, cwd in seeds:
         c.pkey[pid] = pid
@@ -162,7 +173,9 @@ class StreamGen:
                 f = R.choice(self.files)
                 trunc = R.choice([0] * 12 + [1, 2, 3])
                 out.append(self.ev(m.EV_OPEN, pid, file=f, fd=R.choice([0, 0, 0, 1]), path=R.choice(self.abs_paths),
-                                   flags=R.choice([0, os.O_WRONLY | os.O_CREAT, os.O_RDWR]), trunc=trunc))
+                                   flags=R.choice([0, os.O_WRONLY | os.O_CREAT, os.O_RDWR]), trunc=trunc,
+                                   file2=R.choice([0, 12, 1 << 40, (1 << 64) - 1]),  # identity: inode,
+                                   dirfd=R.choice([0, 7, -5]), dirfd2=R.choice([0, (8 << 20) | 1, -1])))  # gen, dev
             elif op < 0.65:
                 out.append(self.ev(R.choice([m.EV_READ, m.EV_WRITE, m.EV_MMAP_READ, m.EV_MMAP_WRITE]), pid,
                                    file=R.choice(self.files + [0xDEAD])))
@@ -194,11 +207,12 @@ class DifferentialTests(unittest.TestCase):
     def tearDown(self):
         self.td.cleanup()
 
-    def compare(self, raw, *, capture_all=False, seeds=None):
+    def compare(self, raw, *, capture_all=False, seeds=None, machine=False):
         seeds = seeds if seeds is not None else [(base.FAKE, self.root)]
-        py, pst, c = python_run(self.root, raw, 1_700_000_000_000_000_000, seeds, capture_all)
+        py, pst, c = python_run(self.root, raw, 1_700_000_000_000_000_000, seeds, capture_all, machine)
         nat, nst = native_collect.replay(raw, root=self.root, temp_roots=c.temp_roots, seeds=seeds,
-                                         clock_offset=1_700_000_000_000_000_000, capture_all=capture_all)
+                                         clock_offset=1_700_000_000_000_000_000, capture_all=capture_all,
+                                         machine_rules=machine_rules(self.root) if machine else None)
         self.assertEqual(len(py), len(nat))
         for i, (a, b) in enumerate(zip(mask_announce_ts(py), mask_announce_ts(nat))):
             self.assertEqual(a, b, f"record {i} differs")
@@ -212,6 +226,19 @@ class DifferentialTests(unittest.TestCase):
             g = StreamGen(self.root, random.Random(seed))
             total += len(self.compare(g.stream(160), capture_all=seed % 10 == 9))
         self.assertGreater(total, 3000, "the fuzzer must exercise stored evidence, not only filtering")
+
+    def test_machine_mode_streams_are_identical(self):
+        total = ids = users = 0
+        for seed in range(250):
+            g = StreamGen(self.root, random.Random(10_000 + seed))
+            recs = self.compare(g.stream(160), machine=True)
+            total += len(recs)
+            ids += sum(1 for r in recs if "file_id" in r)
+            users += sum(1 for r in recs if r["kind"] == "process" and r.get("user"))
+            self.assertFalse([r for r in recs if r["kind"] == "open"], "machine mode stores no opens")
+        self.assertGreater(total, 2000)
+        self.assertGreater(ids, 200, "I/O records must carry kernel identity")
+        self.assertGreater(users, 200, "process rows must carry their user")
 
     def test_long_stream_with_many_processes(self):
         g = StreamGen(self.root, random.Random(12345))

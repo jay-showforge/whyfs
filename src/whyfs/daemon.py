@@ -85,7 +85,11 @@ def _clear_state(root: Path, pid: int) -> None:
         _unlink_state(root)
 
 
-def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False) -> int:
+def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False, machine: bool = False,
+                   scope_files: tuple[str, ...] = (), tick=None, tick_every: float = 60.0) -> int:
+    """Run one collector until signalled.  ``machine``: the machine-wide collector
+    (docs/MACHINE_MODE.md): the scope policy in ``scope_files`` replaces "under ``root``",
+    and ``tick(ctx)`` runs every ``tick_every`` seconds (live loss counters, retention)."""
     if os.name == "nt":
         raise SystemExit("on Windows the collector runs in the whyfs service: use `whyfs daemon start`")
     root = root.resolve()
@@ -110,13 +114,23 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
     store.call("begin_run", run_id, started, str(root), "ebpf-native" if use_native else "ebpf-bcc")
 
     ensure_kernel_headers()
-    collector = BCCCollector(root, run_id, capture_all=capture_all, store=store)
+    scope = None
+    extra: tuple[str, ...] = ()
+    if machine:
+        from .scope import Scope
+        scope = Scope(nt=False, text="")
+        for f in scope_files:
+            scope.add(Path(f).read_text())
+            extra += ("--scope", str(f))
+        extra = ("--machine",) + extra
+    collector = BCCCollector(root, run_id, capture_all=capture_all, store=store, machine=machine, scope=scope)
     native = None
     try:
         if use_native:
             collector.load_programs()
             native = native_collect.NativeIngest(collector, root, run_id, capture_all=capture_all,
-                                                 owner=workspace_owner(root) if store.privsep else None).start()
+                                                 owner=workspace_owner(root) if store.privsep else None,
+                                                 extra_args=extra).start()
         else:
             collector.start()
     except BCCUnavailable as exc:
@@ -136,6 +150,7 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
         "collector": "native" if native else "python",
         "collector_pid": native.pid if native else os.getpid(),
         "capture_all": bool(capture_all),
+        "machine": bool(machine),
         "started_ns": started,
     }
     _write_state(root, state)
@@ -146,6 +161,7 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
     stop = threading.Event()
     install_signal_stop(stop)
     exit_code = 0
+    next_tick = time.monotonic() + tick_every
     try:
         while not stop.is_set():
             if native:
@@ -157,6 +173,15 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
                     break
             else:
                 collector.poll(50)
+            if tick is not None and time.monotonic() >= next_tick:
+                next_tick = time.monotonic() + tick_every
+                live = native.stats() if native else {k: int(v) for k, v in vars(collector.stats).items()}
+                if live:
+                    store.call("update_stats", run_id, {k: int(v) for k, v in live.items() if isinstance(v, (int, bool))})
+                try:
+                    tick({"run_id": run_id, "root": root, "stats": live})
+                except Exception as exc:  # retention must never stop collection
+                    print(f"whyfs daemon: periodic task failed: {exc}", file=sys.stderr)
     except KeyboardInterrupt:
         pass
     except Exception:

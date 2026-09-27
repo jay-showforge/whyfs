@@ -118,7 +118,7 @@ def available() -> tuple[bool, str]:
 
 
 def replay(records: list[bytes], *, root: Path, run_id: str = "run", temp_roots=(), seeds=(), clock_offset: int | None = None,
-           capture_all: bool = False) -> tuple[list[dict], dict]:
+           capture_all: bool = False, machine_rules: str | None = None) -> tuple[list[dict], dict]:
     """Run the native event model over raw ring payloads; return (records, stats).
 
     Records are the dicts BCCCollector hands to its writer (tests compare the two)."""
@@ -138,9 +138,17 @@ def replay(records: list[bytes], *, root: Path, run_id: str = "run", temp_roots=
             args += ["--clock-offset", str(clock_offset)]
         if capture_all:
             args.append("--capture-all")
+        rules = None
+        if machine_rules is not None:
+            with tempfile.NamedTemporaryFile("w", prefix="whyfs-scope-", delete=False) as rf:
+                rf.write(machine_rules)
+                rules = rf.name
+            args += ["--machine", "--scope", rules]
         p = subprocess.run(args, capture_output=True, check=True)
     finally:
         os.unlink(name)
+        if rules:
+            os.unlink(rules)
     lines = p.stdout.decode().splitlines()
     stats = json.loads(lines[-1])
     out = []
@@ -187,7 +195,28 @@ class NativeIngest:
             self.p.wait(timeout=10)
             raise RuntimeError(f"whyfs native collector failed to start (exit {self.p.returncode})")
         self.info = json.loads(line)
+        import queue
+        import threading
+        self._lines: "queue.Queue[str | None]" = queue.Queue()
+
+        def reader():  # stats lines (SIGUSR1) and the final line at exit
+            for ln in self.p.stdout:
+                if ln.strip():
+                    self._lines.put(ln)
+            self._lines.put(None)
+        threading.Thread(target=reader, name="whyfs-native-stdout", daemon=True).start()
         return self
+
+    def stats(self, timeout: float = 5.0) -> dict | None:
+        """Current collector counters (SIGUSR1), without stopping it."""
+        import queue
+        import signal
+        try:
+            self.p.send_signal(signal.SIGUSR1)
+            ln = self._lines.get(timeout=timeout)
+        except (ProcessLookupError, queue.Empty):
+            return None
+        return json.loads(ln) if ln else None
 
     @property
     def pid(self) -> int | None:
@@ -204,7 +233,12 @@ class NativeIngest:
             self.p.send_signal(signal.SIGTERM)
         except ProcessLookupError:
             pass
-        out, _ = self.p.communicate(timeout=timeout)
-        lines = [x for x in out.splitlines() if x.strip()]
+        self.p.wait(timeout=timeout)
+        lines = []
+        while True:
+            ln = self._lines.get(timeout=timeout)
+            if ln is None:
+                break
+            lines.append(ln)
         stats = json.loads(lines[-1]) if lines else {}
         return stats, self.p.returncode

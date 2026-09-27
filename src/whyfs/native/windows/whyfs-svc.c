@@ -363,8 +363,59 @@ done:
     return 0;
 }
 
+// ---------------------------------------------------------------- machine-wide labels
+// The machine service (docs/MACHINE_MODE.md): `runtime\python.exe -B -m whyfs machine serve`,
+// running as SYSTEM, supervises the machine-mode ETW collector, serves the local API pipe
+// (\\.\pipe\whyfs-api) and applies retention.  Restarted with backoff if it exits; asked
+// to drain ("stop" on its stdin) when the service stops.
+static DWORD WINAPI machine_thread(LPVOID arg) {
+    (void)arg;
+    wchar_t dir[MAX_PATH]; exe_dir(dir, MAX_PATH);
+    wchar_t py[MAX_PATH + 32]; swprintf(py, MAX_PATH + 32, L"%s\\runtime\\python.exe", dir);
+    if (GetFileAttributesW(py) == INVALID_FILE_ATTRIBUTES) {
+        logmsg("machine labels unavailable: no bundled runtime at %ls (install with the MSI)", py);
+        return 0;
+    }
+    DWORD backoff = 5000;
+    while (WaitForSingleObject(stop_event, 0) == WAIT_TIMEOUT) {
+        SECURITY_ATTRIBUTES isa = {sizeof isa, NULL, TRUE};
+        HANDLE in_r, in_w;
+        if (!CreatePipe(&in_r, &in_w, &isa, 0)) { logmsg("machine: CreatePipe %lu", GetLastError()); Sleep(5000); continue; }
+        SetHandleInformation(in_w, HANDLE_FLAG_INHERIT, 0);
+        wchar_t pd[MAX_PATH], logp[MAX_PATH + 64];
+        GetEnvironmentVariableW(L"ProgramData", pd, MAX_PATH);
+        swprintf(logp, MAX_PATH + 64, L"%s\\whyfs\\logs\\machine-output.log", pd);
+        HANDLE out = CreateFileW(logp, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, &isa, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+        STARTUPINFOW si = {sizeof si};
+        si.dwFlags = STARTF_USESTDHANDLES; si.hStdInput = in_r; si.hStdOutput = out; si.hStdError = out;
+        PROCESS_INFORMATION pi;
+        wchar_t cmd[MAX_PATH + 96]; swprintf(cmd, MAX_PATH + 96, L"\"%s\" -B -m whyfs machine serve", py);
+        DWORD started = GetTickCount();
+        BOOL ok = CreateProcessW(NULL, cmd, NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, dir, &si, &pi);
+        CloseHandle(in_r);
+        if (out != INVALID_HANDLE_VALUE) CloseHandle(out);
+        if (!ok) { logmsg("machine: CreateProcess %lu", GetLastError()); CloseHandle(in_w); Sleep(backoff); continue; }
+        CloseHandle(pi.hThread);
+        logmsg("machine labels: service process %lu started", pi.dwProcessId);
+        HANDLE hs[2] = {pi.hProcess, stop_event};
+        DWORD w = WaitForMultipleObjects(2, hs, FALSE, INFINITE);
+        if (w == WAIT_OBJECT_0 + 1) {  // service stopping: let it drain the collector
+            DWORD n; WriteFile(in_w, "stop\n", 5, &n, NULL);
+            if (WaitForSingleObject(pi.hProcess, 150000) == WAIT_TIMEOUT) { TerminateProcess(pi.hProcess, 1); logmsg("machine: terminated after 150 s"); }
+        }
+        DWORD code = 0; GetExitCodeProcess(pi.hProcess, &code);
+        CloseHandle(pi.hProcess); CloseHandle(in_w);
+        logmsg("machine labels: service process exited %lu", code);
+        if (WaitForSingleObject(stop_event, 0) != WAIT_TIMEOUT) break;
+        backoff = GetTickCount() - started > 300000 ? 5000 : (backoff < 300000 ? backoff * 2 : 300000);
+        WaitForSingleObject(stop_event, backoff);
+    }
+    return 0;
+}
+
 static void serve(void) {
     cleanup_orphan_sessions();
+    HANDLE machine = CreateThread(NULL, 0, machine_thread, NULL, 0, NULL);
     // SYSTEM and Administrators: full; authenticated local users: read/write (connect + requests)
     PSECURITY_DESCRIPTOR sd = NULL;
     ConvertStringSecurityDescriptorToSecurityDescriptorW(L"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;AU)", SDDL_REVISION_1, &sd, NULL);
@@ -396,6 +447,7 @@ static void serve(void) {
         logmsg("stopped collector for %s at service shutdown", runs[i].workspace);
     }
     LeaveCriticalSection(&runs_lock);
+    if (machine) { WaitForSingleObject(machine, 180000); CloseHandle(machine); }
     cleanup_orphan_sessions();
     LocalFree(sd);
 }
@@ -434,7 +486,7 @@ static int install(void) {
                                  SERVICE_AUTO_START, SERVICE_ERROR_NORMAL, quoted, NULL, NULL, NULL, NULL, NULL);
     if (!s && GetLastError() == ERROR_SERVICE_EXISTS) s = OpenServiceW(scm, SERVICE_NAME, SERVICE_ALL_ACCESS);
     if (!s) { fprintf(stderr, "CreateService failed %lu\n", GetLastError()); CloseServiceHandle(scm); return 1; }
-    SERVICE_DESCRIPTIONW d = {L"Records which processes create, read and move files in whyfs workspaces, so `whyfs why/impact/history` can answer where a file came from. Only workspaces a user explicitly starts are recorded."};
+    SERVICE_DESCRIPTIONW d = {L"Labels files with their provenance: which process (and, when known, which AI agent session) created or changed them, from which inputs. Local only; file contents are never read. `whyfs label FILE`."};
     ChangeServiceConfig2W(s, SERVICE_CONFIG_DESCRIPTION, &d);
     SERVICE_FAILURE_ACTIONSW fa = {0}; SC_ACTION act[2] = {{SC_ACTION_RESTART, 5000}, {SC_ACTION_RESTART, 30000}};
     fa.dwResetPeriod = 86400; fa.cActions = 2; fa.lpsaActions = act;

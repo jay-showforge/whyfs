@@ -76,7 +76,7 @@ def _input_rows(con: sqlite3.Connection, run_id: str, pid: int, before_ns: int):
     since = _image_start(con, run_id, pid, before_ns)
     return con.execute(
         """
-      SELECT path, MIN(ts_ns) AS first_ns FROM events
+      SELECT path, MIN(ts_ns) AS first_ns, MAX(COALESCE(api, '') NOT LIKE '%mmap%') AS read_io FROM events
       WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL AND ts_ns<=? AND ts_ns>=?
       GROUP BY path ORDER BY first_ns
     """,
@@ -92,6 +92,19 @@ def _is_dependency(path: str) -> bool:
     Collapsed in the default human view only; always kept as raw evidence."""
     parts = path.split(os.sep)
     return any(d in parts for d in DEPENDENCY_DIRS)
+
+
+CODE_IMAGE_SUFFIXES = (".dll", ".exe", ".pyd", ".so", ".node", ".dylib", ".sys", ".ocx", ".cpl")
+
+
+def _is_loaded_code(path: str, read_io: int) -> bool:
+    """A program image or library the loader mapped (never read as data): code the process
+    ran, not an input it consumed.  Collapsed in the human view only; raw evidence keeps it."""
+    if read_io:
+        return False
+    low = path.lower()
+    name = os.path.basename(low)
+    return low.endswith(CODE_IMAGE_SUFFIXES) or ".so." in name
 
 
 def _self_written_before(con: sqlite3.Connection, run_id: str, pid: int, path: str, ts_ns: int) -> bool:
@@ -110,7 +123,7 @@ def process_inputs(con: sqlite3.Connection, run_id: str, pid: int, before_ns: in
     hidden = 0
     for r in rows:
         p = r["path"]
-        if include_noise or not (_is_noise(p, workspace) or _is_dependency(p)
+        if include_noise or not (_is_noise(p, workspace) or _is_dependency(p) or _is_loaded_code(p, r["read_io"])
                                  or _self_written_before(con, run_id, pid, p, r["first_ns"])):
             visible.append(p)
         else:
