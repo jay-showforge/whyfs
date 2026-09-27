@@ -38,7 +38,17 @@ jobs:
         run: bash packaging/linux/build_deb.sh dist
       - name: package clean install / tamper refusal / installed corpus / systemd / uninstall
         run: sudo bash packaging/linux/test_deb.sh dist/whyfs_*.deb runner results/deb-test
-      - name: shared A-H corpus (source tree)
+      - name: install the .deb (the machine-wide labelling service starts with it)
+        run: |
+          sudo apt-get install -y -q ./dist/whyfs_*.deb
+          for i in $(seq 1 120); do whyfs status --json | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["collector_ready"] else 1)' && break; sleep 1; done
+      - name: product behaviour (no init; Tests A-H, agents, privacy, file-manager entries and the WhyFS window)
+        run: sudo python3 scripts/product_gate.py --installed --user runner --out results/product-gate
+      - name: shared A-H corpus through the machine collector (no workspace)
+        run: sudo env -u PYTHONPATH python3 scripts/run_corpus.py --installed --machine --user runner --out results/corpus-machine
+      - name: machine-wide performance and resource cost (idle, workloads, loss, CLI latency)
+        run: sudo python3 scripts/machine_perf.py --user runner --out results/machine-perf --pairs 20 --idle-min 10
+      - name: shared A-H corpus (explicit workspace capture, source tree)
         run: sudo python3 scripts/run_corpus.py --user runner --out results/corpus
       - name: live secret-redaction gate
         run: sudo python3 scripts/secret_gate.py --user runner --out results/secret-gate
@@ -112,13 +122,17 @@ jobs:
           Set-Content C:\whyfs-vite-template\package.json '{"name":"whyfs-vite-fixture","private":true,"type":"module"}'
           Push-Location C:\whyfs-vite-template; npm install --no-audit --no-fund vite@5.4.21; Pop-Location
           "WHYFS_VITE_TEMPLATE=C:\whyfs-vite-template" >> $env:GITHUB_ENV
-      - name: install for the gates; shared A-H corpus; live secret gate; functional + 20-pair performance gate
+      - name: install; product gate (incl. Explorer menu and WhyFS window); corpora; secret gate; functional gate; machine performance
         shell: pwsh
         run: |
           Start-Process msiexec.exe -ArgumentList "/i `"$((Get-ChildItem dist\*.msi).FullName)`" /qn /norestart" -Wait
+          for ($i = 0; $i -lt 120; $i++) { try { if ((& "$env:ProgramFiles\whyfs\whyfs.exe" status --json | ConvertFrom-Json).collector_ready) { break } } catch {}; Start-Sleep 1 }
+          python scripts\product_gate.py --installed --out results\product-gate
+          python scripts\run_corpus.py --machine --out results\corpus-machine
           python scripts\run_corpus.py --out results\corpus
           python scripts\secret_gate.py --installed --out results\secret-gate
-          python scripts\win_gate.py --out results\win-gate --pairs 20
+          python scripts\win_gate.py --out results\win-gate --skip-perf
+          python scripts\machine_perf.py --out results\machine-perf --pairs 20 --idle-min 10
       - name: checksums
         if: always()
         shell: pwsh

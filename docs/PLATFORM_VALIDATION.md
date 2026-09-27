@@ -11,13 +11,22 @@ supporting evidence only.
 
 ## Status
 
-| Platform | Status | Evidence |
+The product under validation is the machine-labels product frozen at **3dc9266**:
+- machine-wide labels with no `init`;
+- the local API and agent sessions;
+- the WhyFS window with the Explorer / file-manager entries;
+- impact and observation gaps.
+
+The earlier workspace-mode records (38aa328, 43e69dd) are kept below, in WINDOWS.md and in
+PROJECT_STATUS.md.
+
+| Platform | Status | Evidence on 3dc9266 |
 |---|---|---|
-| Linux x86-64 | **PASS (native)** | WSL2 kernel 6.6 on i5-14400F.  On commit 38aa328 (`results/linux-final-38aa328/`): graduation 46/46, static ×300 +3.29%, make -j8 +1.02%, Vite −0.21% (no measurable slowdown), 0 drops, attribution 44/44, recall 118/118, why CLI 38 ms; tests 191 OK (root and user).  On 43e69dd: corpus 79/79, secret gate 22/22.  `.deb` 15/15 after the packaging fixes |
-| WSL2 | **PASS (native)** | the Linux x86-64 evidence above *is* WSL2 (Ubuntu 24.04, kernel 6.6.87.2-microsoft-standard-WSL2), including the `.deb` with the systemd unit |
-| Windows x64 | **PASS (native)**, frozen at `43e69dd` | [WINDOWS.md](WINDOWS.md) |
-| Linux ARM64 | **pending native run** | emulated supplement (QEMU TCG, Ubuntu 24.04 arm64, kernel 6.8): arm64 .deb 15/15, corpus 79/79 lost 0, secret gate 22/22, user suite 191 OK; three real defects found and fixed (below) |
-| Windows ARM64 | **pending native run** | collector, service and launcher cross-build cleanly (MSVC `x64_arm64`, 0 warnings); **ARM64 MSI built** with the signed CPython 3.13.5 ARM64 runtime, all 26 PE images verified ARM64 (`results/windows-arm64-build/ARTIFACTS.md`); never executed |
+| Linux x86-64 | **PASS (native)** | `results/linux-r4/`.  WSL2 kernel 6.6.87.2, Ubuntu 24.04, i5-14400F.  Suites OK (root and user).  `.deb` **24/24** (machine service, label without init, private store, file-manager entries, purge), SHA-256 `08eaebc17ef9037d0f9a325c7c15455e9895e838c695f831eafaf9faa9f1f849`.  Product gate **46/46**.  Machine and workspace corpus **79/79**, lost 0.  Secret gate **22/22**.  Machine perf: idle **0.29 %** of a core; make -j8 −4.3 %, Vite −1.6 %, static ×300 −1.8 % (no measurable slowdown); lost 0; why/label CLI **21/22 ms** |
+| WSL2 | **PASS (native)** | the Linux x86-64 evidence above *is* WSL2, with systemd running `whyfs.service` |
+| Windows x64 | **PASS (native)**, frozen at `3dc9266` | [WINDOWS.md](WINDOWS.md), `results/win-r5/`.  MSI **32/32**, upgrade **16/16**, product gate **44/44** (incl. Explorer menu and WhyFS window), corpora **79/79**, secret gate **22/22**, functional gate PASS (64/64, 142/142).  Idle **0.068 %** of a core; MSVC +3.40 %, Vite −3.34 %, exe ×300 −0.97 %; lost 0; why/label **82/84 ms** |
+| Linux ARM64 | **pending native run** | emulated supplement on 3dc9266 (below); the earlier emulated runs found 3 real arm64 defects, now fixed |
+| Windows ARM64 | **pending native run** | ARM64 MSI rebuilt from 3dc9266: `whyfs-0.9.0.dev1-arm64.msi`, SHA-256 `4d47731162fddfa10f8a32dee6693b222f66b59e4afe5e2d7883048c14d35e49`.  All 27 PE images are ARM64 (0xAA64), including the windowless `whyfsw.exe` (subsystem 2) and the CPython 3.13.5 ARM64 runtime.  Never executed |
 
 ## Emulated ARM64 supplement (not native evidence)
 

@@ -123,3 +123,29 @@ JSON, one request per line; each reply is one JSON object `{"ok": true, "result"
 
 The CLI (`whyfs label|why|history|impact|agent|status`) is a client of the same service.
 There is no cloud component, account or telemetry.  See [AGENT_PROTOCOL.md](AGENT_PROTOCOL.md).
+
+## Human discovery
+
+People reach labels without a terminal.  Right-click a file in Explorer or the Linux file
+manager and choose **WhyFS**, or open **WhyFS** from the Start or application menu to search.
+Both open the WhyFS window: a per-user page on `127.0.0.1` that asks the service through this
+same API, as the user.  See [HUMAN_INTERFACE.md](HUMAN_INTERFACE.md).
+
+Each label also carries:
+- `impact`: what removing or changing the file would affect, from observed activity only;
+  never "safe to remove";
+- `observation`: whether whyfs was watching, without loss, since the file was created.
+
+## Measured cost (frozen commit 3dc9266)
+
+| | Windows x64 (`results/win-r5/machine-perf`) | Linux x86-64 / WSL2 (`results/linux-r4/machine-perf`) |
+|---|---|---|
+| Idle collector CPU (10 min) | 0.068 % of one core, 73 MB | 0.29 % of one core, 255 MB (BCC's Python/LLVM runtime plus the collector) |
+| Development workloads | MSVC +3.40 %, Vite −3.34 %, exe ×300 −0.97 % | make -j8 −4.33 %, Vite −1.64 %, static ×300 −1.79 % |
+| Events lost | 0 | 0 |
+| `why` / `label` CLI | 82 / 84 ms median | 21 / 22 ms median |
+| Store | 300 MB after the full campaign (hundreds of thousands of events) | 62 MB |
+
+Store growth when idle is small, since idle desktops write few in-scope files.  Growth is
+bounded by retention (365 days for strong records, 30 days for pure reads) and by the
+`max_db_mb` cap (2048 MB by default); pruning runs hourly.

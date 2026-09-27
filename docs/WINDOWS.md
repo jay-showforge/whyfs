@@ -1,14 +1,16 @@
 # whyfs on Windows
 
-Status: **Windows x64 — COMPLETE (validated natively).**  Windows ARM64 — built and packaged
-from the same sources; native runtime validation pending (see
-[PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)).
+Status: **Windows x64: COMPLETE, validated natively.  The machine-labels product is frozen at
+commit 3dc9266.**  Windows ARM64 is built and packaged from the same sources; its native
+runtime validation is pending (see [PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)).
 
 ## How it works
 
 | Piece | What it is |
 |---|---|
 | `whyfs.exe` | launcher on the system PATH; runs the private runtime `runtime\python.exe -B -m whyfs` |
+| `whyfsw.exe` | the same without a console (`runtime\pythonw.exe`), run by the Explorer menu (**WhyFS → Why does this file exist? / What created this file? / What depends on this file? / Show WhyFS history / Search WhyFS...**, folders: *search this folder*) and the Start menu entry **WhyFS**: they open the WhyFS window ([HUMAN_INTERFACE.md](HUMAN_INTERFACE.md)) |
+| machine mode | the service runs `whyfs machine serve` as SYSTEM: one machine-wide collector (`--machine --scope …`) into `%ProgramData%\whyfs\machine` (SYSTEM + Administrators only) and the local API on `\\.\pipe\whyfs-api`; users read labels through the API, seeing only their own processes' evidence ([MACHINE_MODE.md](MACHINE_MODE.md)) |
 | `whyfs-svc.exe` | the `whyfs` service (LocalSystem, auto-start).  Named pipe `\\.\pipe\whyfs-service`, SDDL: SYSTEM and Administrators full, authenticated users read/write.  Impersonates each client, checks that the client owns the workspace, refuses reparse points, canonicalizes with `GetFinalPathNameByHandle`, and starts one collector per workspace.  Only the user who started a collection (or an administrator) may stop it.  Orphaned `whyfs-*` ETW sessions are cleaned up. |
 | `whyfs-collect-win.exe` | the native ETW collector.  Two real-time sessions, each with its own `ProcessTrace` thread, merged in timestamp order: (A) Microsoft-Windows-Kernel-File (keywords 0x1FB0, in-kernel event-ID filter 11,12,13,14,15,16,22,26,27,30) plus Kernel-Process; (B) the system logger (process start with command line and user SID, DCStart rundown; VAMAP for memory-mapped files).  Writes the canonical schema v1 into `<workspace>\.whyfs\whyfs.db` with `System32\winsqlite3.dll`, impersonating the requesting user. |
 
@@ -32,9 +34,62 @@ privileged ETW work on their behalf and writes only into workspaces they own.
 * **Command lines** are the raw Windows command line (cmd.exe and PowerShell parse their own
   line), with secret values replaced by `<redacted>` (see *Privacy*).
 
-## Validation record (x64, frozen)
+## Validation record: the machine-labels product (x64, frozen at 3dc9266)
 
-Frozen at commit **43e69dd**.  Every gate below ran against these exact binaries (hashes of the tested
+Every gate below ran on commit **3dc9266** against the MSI built from it and installed
+(`results/win-r5/`).  Machine: Windows 11 Home 10.0.26200, Intel Core i5-14400F, 32 GB,
+Defender real-time protection **on**.  Runtime bundled: CPython 3.13.5.
+
+```
+675670b9fd7661b96a1c29f8eb575113d72f22a1fae50d22cc2afd8a64645dea  whyfs-0.9.0.dev1-x64.msi
+12d0ece0278cb59ce650a3435fd0d8810d2b8aee26a883825dd5cc481f1ee471  whyfs-collect-win.exe (x64)
+69a2a45d50fbba46741d446fb2f8e8579ede072b1ca6aa7a07dc68c5d37230bf  whyfs-svc.exe (x64)
+13c8eddcdb55100265cf00169f0611a6bb1588df5105d45a072b51fc3cc16461  whyfs.exe (x64 launcher)
+3f38530396620d8f852a13ab16585580d8bc00cf49a207b60cfa1984b6b4e1af  whyfsw.exe (x64 launcher, no console)
+```
+
+| Gate | Result |
+|---|---|
+| Unit / model / query / label / discovery tests | 96 OK (12 Linux-only skipped) |
+| MSI clean install → machine labels without `init` → standard user → Explorer menu, Start menu, windowless launcher → uninstall removes everything but user data | **32/32** |
+| MSI major upgrade, downgrade refusal, data retention | **16/16** |
+| Product gate: Tests A–H (no init; any directory; move keeps identity; normal apps; registered agents; two agents apart; unregistered program; intent only when supplied), privacy (redaction, visibility), and **U**: Explorer entries installed, the WhyFS window opened by the menu command, the same label in window, API and CLI, search by name / session / creator / time, impact without "safe", completeness reported | **44/44** |
+| Shared A–H corpus through the machine collector (no workspace) / explicit workspace capture | **79/79** / **79/79**, lost 0 |
+| Live secret-redaction gate | **22/22** |
+| Functional fixture gate (native exe, PowerShell, Python, Node/Vite, MSVC batch and `/MP`, mmap, renames, parallel writers, foreign file objects) | PASS: attribution **64/64**, recall **142/142**, 0 unlabelled false inputs |
+
+**Performance and resource cost of the machine-wide service** (`results/win-r5/machine-perf/`;
+counterbalanced pairs, median of per-pair differences, bootstrap CI; the whole machine is
+observed, so the workloads' own activity is recorded):
+
+| Measure | Result | Criterion |
+|---|---|---|
+| Idle collector CPU (10 min, desktop idle) | **0.068 % of one core**; 73 MB working set | < 1 % |
+| MSVC, 240 units `/MP8` + link | **+3.40 %** (CI90 −0.29 … +5.86) | median < 5 % |
+| Vite production build | −3.34 % (no measurable slowdown) | < 5 % |
+| Native executable ×300 | −0.97 % (no measurable slowdown) | < 5 % |
+| Events lost (whole campaign) | **0** | 0 |
+| `whyfs why FILE --json` / `whyfs label FILE --json`, end to end through the service | **81.5 / 83.8 ms** median (p95 123 / 104) | median < 100 ms |
+
+Idle store growth is negligible: 0 events were stored in the 10 idle minutes.  Hourly pruning
+keeps the store within its policy ([MACHINE_MODE.md](MACHINE_MODE.md)).
+
+### Found and fixed on the way to this freeze
+
+- **Idle CPU of the machine collector: 7.1 % → 0.07 % of a core.**  Four fixes:
+  - the collector's own events are dropped, which ended a `GetLongPathNameW` feedback loop;
+  - 8.3 names are expanded only for genuine `BASE~N` components, memoized;
+  - the reorder window merges new events instead of re-sorting everything;
+  - out-of-scope Creates and image-section maps (MiscInfo bit 54) are cut at the callback.
+- **False mapped reads.**  A failed Create gets no Close, so a reused FileObject pointer could
+  inherit a probed path.  Out-of-scope Creates now emit a path-less reset record (`R_FO_RESET`).
+  FileKeys are reused too, so a mapping counts only in the lineage that opened the file.
+- **CLI latency: 133 → 82 ms.**  The CLI imports store and query code only when needed.  The API
+  client is its own module.  `why`/`label` of a file outside a workspace takes a fast path.
+
+## Earlier record: workspace mode (x64, frozen at 43e69dd)
+
+This record is kept as written.  It was frozen at commit **43e69dd**.  Every gate below ran against these exact binaries (hashes of the tested
 MSI and of the files it installed):
 
 ```

@@ -1,15 +1,23 @@
 # whyfs project status
 
-## Current (2026-09-26): whyfs 1.0 program, pre-1.0 (0.9.0.dev1), not released
+## Current (2026-09-27): whyfs 1.0 program, pre-1.0 (0.9.0.dev1), not released
+
+**Product:** whyfs automatically labels files with their provenance: where, when, how, and what
+or who caused them to exist.
+- **Machine-wide.**  No `init`; the label is external and files are never modified.
+- **Agents.**  AI agent sessions are first-class, registered or detected.
+- **Why.**  Causal why is kept separate from supplied intent; intent is never inferred.
+- **Interfaces.**  People use the WhyFS window with the Explorer / file-manager menu, agents use
+  the local API, and power users use the CLI.  All three read the same records.
 
 Scope: Linux x86-64, Linux ARM64, Windows x64, Windows ARM64, WSL2.  macOS is not in scope.
 
-| Platform | Status |
+| Platform | Status (commit 3dc9266) |
 |---|---|
-| Linux x86-64 / WSL2 | PASS: graduation 46/46 on 38aa328 (and 43e69dd), corpus 79/79, secret gate 22/22, .deb 15/15, 191 tests |
-| Windows x64 | PASS, frozen at 43e69dd (docs/WINDOWS.md) |
-| Linux ARM64 | native run pending (no native ARM64 host available); emulated supplement passes corpus/secret/.deb and found 3 real arm64 defects, now fixed |
-| Windows ARM64 | native run pending; ARM64 MSI built and verified (all images ARM64), never executed |
+| Linux x86-64 / WSL2 | PASS: product gate 46/46, .deb 24/24, corpora 79/79, secret gate 22/22, machine perf PASS (idle 0.29 % of a core, workloads within noise, lost 0, CLI 21 ms) |
+| Windows x64 | PASS, frozen: MSI 32/32, upgrade 16/16, product gate 44/44, corpora 79/79, secret gate 22/22, functional gate PASS, machine perf PASS (idle 0.068 %, MSVC +3.4 %, lost 0, CLI 82 ms) |
+| Linux ARM64 | native run pending (no native ARM64 host); emulated supplement only |
+| Windows ARM64 | native run pending; ARM64 MSI built from 3dc9266 (all images ARM64), never executed |
 
 Details, exact environments and commands: [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 The history below is the v0.2 record, kept as it was written.
