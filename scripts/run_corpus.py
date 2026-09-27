@@ -57,10 +57,13 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--user", default=os.environ.get("SUDO_USER"))
     ap.add_argument("--installed", action="store_true", help="use the installed whyfs (PATH), not this source tree")
+    ap.add_argument("--machine", action="store_true",
+                    help="no workspace: rely on the running machine service and read its store (as root / elevated admin)")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    base = Path(tempfile.mkdtemp(prefix="whyfs-corpus-", dir=f"/home/{a.user}" if LINUX and a.user else None)).resolve()
+    home = f"/home/{a.user}" if LINUX and a.user else (os.path.expanduser("~") if a.machine else None)  # in scope, not a temp root
+    base = Path(tempfile.mkdtemp(prefix="whyfs-corpus-", dir=home)).resolve()
     if LINUX:
         if os.geteuid() != 0:
             raise SystemExit("run as root on Linux (the eBPF daemon needs it); the workload runs as --user")
@@ -68,25 +71,37 @@ def main() -> int:
     scenarios.prepare(base)
     if LINUX and a.user:
         subprocess.run(["chown", "-R", f"{a.user}:", str(base)], check=True)
-    whyfs("init", ".", cwd=base)
-    whyfs("daemon", "start", "--workspace", str(base), cwd=base)
-    time.sleep(1.0)
+    if not a.machine:
+        whyfs("init", ".", cwd=base)
+        whyfs("daemon", "start", "--workspace", str(base), cwd=base)
+        time.sleep(1.0)
+    t_start = time.time_ns()
     t0 = time.time()
     for sc in scenarios.SCENARIOS:
         for step in sc["steps"]:
             run_step(step, base / sc["dir"], a.user)
     workload_s = time.time() - t0
-    time.sleep(0.5)
-    whyfs("daemon", "stop", "--workspace", str(base), cwd=base)
-    con = connect(base)
+    if a.machine:
+        time.sleep(10.0 if not LINUX else 3.0)  # ETW reorder window / ring drain, then the writer's batch
+        from whyfs.machine import paths
+        con = connect(paths()["root"])
+    else:
+        time.sleep(0.5)
+        whyfs("daemon", "stop", "--workspace", str(base), cwd=base)
+        con = connect(base)
     results = scenarios.evaluate(con, base, why, impact, history)
-    stats = {k: v for k, v in con.execute("SELECT key, SUM(value) FROM collector_stats GROUP BY key")}
+    if a.machine:  # the live counters of the machine collector run(s) covering this workload
+        stats = {k: v for k, v in con.execute(
+            "SELECT s.key, SUM(s.value) FROM collector_stats s JOIN runs r ON r.id=s.run_id "
+            "WHERE r.ended_ns IS NULL OR r.ended_ns>=? GROUP BY s.key", (t_start,))}
+    else:
+        stats = {k: v for k, v in con.execute("SELECT key, SUM(value) FROM collector_stats GROUP BY key")}
     collector = con.execute("SELECT collector FROM runs ORDER BY started_ns DESC LIMIT 1").fetchone()[0]
     con.close()
     lost = sum(int(stats.get(k, 0) or 0) for k in ("kernel_drops", "queue_drops", "user_unresolved", "late_records"))
     failed = [r for r in results if not r["ok"]]
     import whyfs as _w
-    report = {"installed": INSTALLED, "whyfs_module": _w.__file__, "platform": platform.platform(), "machine": platform.machine(), "collector": collector,
+    report = {"installed": INSTALLED, "machine": a.machine, "whyfs_module": _w.__file__, "platform": platform.platform(), "machine": platform.machine(), "collector": collector,
               "checks": len(results), "failed": len(failed), "lost": lost, "workload_s": round(workload_s, 3),
               "results": results, "collector_stats": stats, "workspace": str(base),
               "finished": time.strftime("%Y-%m-%dT%H:%M:%S%z")}

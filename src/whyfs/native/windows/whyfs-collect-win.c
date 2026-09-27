@@ -166,8 +166,36 @@ static char *dos_path(const char *nt) {
     return NULL;
 }
 // Normalize a DOS path: collapse "\\", ".", ".."; expand 8.3 short names when present.
+// A path component in 8.3 form (BASE~N or BASE~N.EXT, BASE up to 6 characters): only these
+// need the file system to recover the long name.  "~$doc.docx" or "file~" do not.
+static int has_short_name(const char *p) {
+    for (const char *c = p; *c; ) {
+        const char *e = c; while (*e && *e != '\\') e++;
+        const char *t = memchr(c, '~', (size_t)(e - c));
+        if (t && t > c && t - c <= 6 && t + 1 < e && t[1] >= '0' && t[1] <= '9') {
+            const char *q = t + 1; while (q < e && *q >= '0' && *q <= '9') q++;
+            if (q == e || (*q == '.' && e - q <= 4)) return 1;
+        }
+        c = *e ? e + 1 : e;
+    }
+    return 0;
+}
+static map_t longnames;  // short path -> long path (bounded)
+static int norm_needed(const char *p) {  // anything norm_path would change beyond the drive letter's case
+    if (strchr(p, '/') || has_short_name(p)) return 1;
+    for (const char *q = p + 2; *q; q++) {
+        if (q[0] == '\\' && (q[1] == '\\' || q[1] == 0)) return 1;
+        if (q[0] == '\\' && q[1] == '.' && (q[2] == '\\' || q[2] == 0 || (q[2] == '.' && (q[3] == '\\' || q[3] == 0)))) return 1;
+    }
+    return 0;
+}
 static char *norm_path(const char *p) {
     if (!p) return NULL;
+    if (p[0] && p[1] == ':' && p[2] == '\\' && !norm_needed(p)) {  // fast path: an already-clean drive path
+        char *r = xstrdup(p);
+        r[0] = (char)toupper((unsigned char)r[0]);
+        return r;
+    }
     size_t n = strlen(p);
     buf_t o = {0};
     size_t i = 0;
@@ -186,11 +214,17 @@ static char *norm_path(const char *p) {
     if (!nc && !is_unc) b_ch(&o, '\\');
     free(comps); free(copy);
     char *r = b_take(&o);
-    if (strchr(r, '~')) {  // 8.3 short name somewhere: ask the file system (works while it exists)
+    if (has_short_name(r)) {  // an 8.3 short name component: ask the file system once (works while it exists)
+        char *hit = map_get(&longnames, 0, r);
+        if (hit) { free(r); return xstrdup(hit); }
         wchar_t *w = w_from_utf8(r), longp[1024];
         DWORD m = GetLongPathNameW(w, longp, 1024);
-        if (m > 0 && m < 1024) { free(r); r = utf8_from_w(longp, -1); }
         free(w);
+        if (m > 0 && m < 1024) {
+            char *l = utf8_from_w(longp, -1);
+            map_put(&longnames, 0, r, xstrdup(l));
+            free(r); r = l;
+        }
     }
     return r;
 }
@@ -388,7 +422,24 @@ typedef struct {
     char *s2;         // command line (redacted)
     char *s3;         // user SID string (process start/info)
 } rec_t;
-static void rec_free(rec_t *r) { free(r->s1); free(r->s2); free(r->s3); free(r); }
+// Records are recycled through a lock-free pool: the ETW callbacks allocate one per kernel event
+// (thousands per second machine-wide), and calloc/free per event was a measurable part of the
+// idle cost.  rec_t allocations are 16-byte aligned (MEMORY_ALLOCATION_ALIGNMENT on x64/ARM64).
+typedef union { SLIST_ENTRY link; rec_t rec; } rec_slot_t;
+static SLIST_HEADER rec_pool;
+#define REC_POOL_MAX 65536
+static rec_t *rec_alloc(void) {
+    rec_slot_t *s = (rec_slot_t *)InterlockedPopEntrySList(&rec_pool);
+    if (!s) s = _aligned_malloc(sizeof *s, MEMORY_ALLOCATION_ALIGNMENT);
+    if (!s) die("out of memory");
+    memset(s, 0, sizeof *s);
+    return &s->rec;
+}
+static void rec_free(rec_t *r) {
+    free(r->s1); free(r->s2); free(r->s3);
+    if (QueryDepthSList(&rec_pool) < REC_POOL_MAX) InterlockedPushEntrySList(&rec_pool, &((rec_slot_t *)r)->link);
+    else _aligned_free(r);
+}
 
 // ---------------------------------------------------------------- model state
 typedef struct { uint64_t submitted, filtered, unresolved_fo, other_user, received, kernel_lost, queue_drops, unmapped_paths,
@@ -819,7 +870,19 @@ static int descends_from(uint64_t k, uint64_t ancestor) {
     }
     return 0;
 }
+// ---- WHYFS_PROF: time spent per record type (diagnostics; off by default)
+static int prof_on;
+static int64_t prof_ticks[16], prof_n[16], prof_cb_ticks[2];
+static void process_rec_inner(rec_t *r);
 static void process_rec(rec_t *r) {
+    if (!prof_on) { process_rec_inner(r); return; }
+    LARGE_INTEGER a, b; QueryPerformanceCounter(&a);
+    uint32_t t = r->type & 15;
+    process_rec_inner(r);
+    QueryPerformanceCounter(&b);
+    prof_ticks[t] += b.QuadPart - a.QuadPart; prof_n[t]++;
+}
+static void process_rec_inner(rec_t *r) {
     st.received++;
     uint32_t pid = r->pid;
     int64_t ts = r->ts;
@@ -890,7 +953,7 @@ static void process_rec(rec_t *r) {
         char *path = r->s1;
         int is_dir = (r->flags & FILE_DIRECTORY_FILE) != 0;
         if (!path) { map_pop(&fobjs, r->fo, NULL); st.unmapped_paths++; return; }
-        if (is_dir || in_ws(path, capture_all) || is_temp(path)) {
+        if ((is_dir && !machine_mode) || in_ws(path, capture_all) || is_temp(path)) {
             fobj_t *f = calloc(1, sizeof *f); f->path = xstrdup(path); f->opts = r->flags; f->creator = key_of(pid, ts);
             map_put(&fobjs, r->fo, NULL, f);
         } else map_pop(&fobjs, r->fo, NULL);
@@ -1196,8 +1259,8 @@ static char *read_str(FILE *f) {
     char *s = xmalloc((size_t)n + 1); if (n && fread(s, 1, n, f) != n) die("truncated replay"); s[n] = 0; return s;
 }
 static rec_t *rec_read(FILE *f) {
-    rec_t *r = calloc(1, sizeof *r);
-    if (fread(&r->ts, 8, 1, f) != 1) { free(r); return NULL; }
+    rec_t *r = rec_alloc();
+    if (fread(&r->ts, 8, 1, f) != 1) { rec_free(r); return NULL; }
     if (fread(&r->type, 4, 1, f) != 1 || fread(&r->pid, 4, 1, f) != 1 || fread(&r->ppid, 4, 1, f) != 1 || fread(&r->flags, 4, 1, f) != 1 ||
         fread(&r->user_ok, 4, 1, f) != 1 || fread(&r->fo, 8, 1, f) != 1 || fread(&r->key, 8, 1, f) != 1) die("truncated replay");
     r->s1 = read_str(f); r->s2 = read_str(f); r->s3 = read_str(f);
@@ -1298,7 +1361,8 @@ static int get_prop(PEVENT_RECORD ev, const wchar_t *name, void *out, ULONG outs
     return 1;
 }
 
-static volatile LONG64 n_cb_file, n_cb_sys;
+static volatile LONG64 n_cb_file, n_cb_sys, early_filtered, image_maps_skipped;
+static uint32_t maplog_pid; static FILE *maplog_fp;
 static ULONG lost_a, lost_b, bufs_lost_a, bufs_lost_b;
 static volatile LONG64 max_lag_file, max_lag_sys;  // delivery lag (arrival - event time), ns
 static void note_lag(volatile LONG64 *m, int64_t ts) {
@@ -1307,9 +1371,19 @@ static void note_lag(volatile LONG64 *m, int64_t ts) {
     while (lag > cur) { LONG64 prev = InterlockedCompareExchange64(m, lag, cur); if (prev == cur) break; cur = prev; }
 }
 static int diag_discard;
+static void on_file_event_inner(PEVENT_RECORD ev);
 static void WINAPI on_file_event(PEVENT_RECORD ev) {
+    if (!prof_on) { on_file_event_inner(ev); return; }
+    LARGE_INTEGER a, b; QueryPerformanceCounter(&a);
+    on_file_event_inner(ev);
+    QueryPerformanceCounter(&b);
+    prof_cb_ticks[0] += b.QuadPart - a.QuadPart;
+}
+static DWORD self_pid;
+static void on_file_event_inner(PEVENT_RECORD ev) {
     InterlockedIncrement64(&n_cb_file);
     if (diag_discard) return;
+    if (ev->EventHeader.ProcessId == self_pid) return;  // our own I/O (e.g. 8.3 name lookups) is never evidence
     const GUID *g = &ev->EventHeader.ProviderId;
     uint32_t pid = ev->EventHeader.ProcessId;
     int64_t ts = qpc_to_wall(ev->EventHeader.TimeStamp.QuadPart);
@@ -1319,7 +1393,7 @@ static void WINAPI on_file_event(PEVENT_RECORD ev) {
         if (id != 1 && id != 2) return;
         ULONG child = 0, parent = 0; ULONG got;
         get_prop(ev, L"ProcessID", &child, 4, &got);
-        rec_t *r = calloc(1, sizeof *r);
+        rec_t *r = rec_alloc();
         r->ts = ts; r->pid = child; r->user_ok = 2;  // 2: unknown here (the system-logger record says)
         if (id == 1) {
             get_prop(ev, L"ParentProcessID", &parent, 4, &got);
@@ -1338,11 +1412,22 @@ static void WINAPI on_file_event(PEVENT_RECORD ev) {
     USHORT id = ev->EventHeader.EventDescriptor.Id;
     layout_t *L = layout_for(ev);
     if (!L || !L->ok) return;
-    rec_t *r = calloc(1, sizeof *r);
+    rec_t *r = rec_alloc();
     r->ts = ts; r->pid = pid;
     r->fo = rd_ptr(ev, L->off_fo); r->key = rd_ptr(ev, L->off_key);
     switch (id) {
-    case 12: case 30: r->type = R_CREATE; r->flags = rd_u32(ev, L->off_opts); r->s1 = rd_path(ev, L->off_str); break;
+    case 12: case 30:
+        r->type = R_CREATE; r->flags = rd_u32(ev, L->off_opts); r->s1 = rd_path(ev, L->off_str);
+        // Machine mode: a Create outside the scope policy can never become evidence, so it is
+        // dropped here, before the reorder queue (most Creates on a machine are OS and cache
+        // paths).  Safe for FileObject reuse: a tracked object is retired by its Close event
+        // before its pointer can be reused, and Close events are always processed.
+        if (machine_mode && r->s1 && sc_classify(r->s1) == SC_OUT) {
+            InterlockedIncrement64(&early_filtered);
+            rec_free(r);
+            return;
+        }
+        break;
     case 13: r->type = R_CLEANUP; break;
     case 14: r->type = R_CLOSE; break;
     case 22: r->type = R_KEYINFO; break;
@@ -1351,24 +1436,42 @@ static void WINAPI on_file_event(PEVENT_RECORD ev) {
     case 26: r->type = R_DELETE_PATH; r->s1 = rd_path(ev, L->off_str); break;
     case 27: r->type = R_RENAME_PATH; r->s1 = rd_path(ev, L->off_str); break;
     case 11: r->type = R_NAME_DELETE; r->key = rd_ptr(ev, 0); break;
-    default: free(r); return;
+    default: rec_free(r); return;
     }
     push_rec(r);
 }
 
+static void on_sys_event_inner(PEVENT_RECORD ev);
 static void WINAPI on_sys_event(PEVENT_RECORD ev) {
+    if (!prof_on) { on_sys_event_inner(ev); return; }
+    LARGE_INTEGER a, b; QueryPerformanceCounter(&a);
+    on_sys_event_inner(ev);
+    QueryPerformanceCounter(&b);
+    prof_cb_ticks[1] += b.QuadPart - a.QuadPart;
+}
+static void on_sys_event_inner(PEVENT_RECORD ev) {
     InterlockedIncrement64(&n_cb_sys);
     if (diag_discard) return;
+    if (ev->EventHeader.ProcessId == self_pid && ev->EventHeader.EventDescriptor.Opcode == 37) return;
     const GUID *g = &ev->EventHeader.ProviderId;
     UCHAR op = ev->EventHeader.EventDescriptor.Opcode;
     int64_t ts = qpc_to_wall(ev->EventHeader.TimeStamp.QuadPart);
     if (op != 3 && op != 4 && op != 39 && op != 40) note_lag(&max_lag_sys, ts);  // rundowns replay old events
     if (IsEqualGUID(g, &SYS_FILEIO) && op == 37 && ev->UserDataLength >= 44) {  // MapFile
         BYTE *d = ev->UserData;
-        rec_t *r = calloc(1, sizeof *r);
+        if (maplog_pid && *(uint32_t *)(d + 40) == maplog_pid && maplog_fp) {  // diagnostics: WHYFS_DIAG_MAPLOG=pid,file
+            fprintf(maplog_fp, "len=%u", ev->UserDataLength);
+            for (unsigned i = 0; i + 8 <= ev->UserDataLength && i < 64; i += 8) fprintf(maplog_fp, " %u:%016llx", i, *(unsigned long long *)(d + i));
+            fprintf(maplog_fp, "\n"); fflush(maplog_fp);
+        }
+        // An image section (MiscInfo bit 54: set for every DLL/EXE the loader maps, clear for data
+        // views -- measured, see docs/WINDOWS.md) is code being loaded, not a data input or output;
+        // the process's own image is recorded by its start event.  Most MapFile events are these.
+        if ((*(uint64_t *)(d + 16) >> 54) & 1) { InterlockedIncrement64(&image_maps_skipped); return; }
+        rec_t *r = rec_alloc();
         r->ts = ts; r->type = R_MAP; r->key = *(uint64_t *)(d + 8);
         r->flags = (uint32_t)((*(uint64_t *)(d + 16) >> 48) & 0xFF); r->pid = *(uint32_t *)(d + 40);
-        if (r->pid == 4 || r->pid == 0) { free(r); return; }
+        if (r->pid == 4 || r->pid == 0) { rec_free(r); return; }
         push_rec(r);
         return;
     }
@@ -1376,7 +1479,7 @@ static void WINAPI on_sys_event(PEVENT_RECORD ev) {
     if (op != 1 && op != 3 && op != 2) return;  // Start, DCStart (rundown of existing processes), End
     ULONG pid = 0, parent = 0, got;
     get_prop(ev, L"ProcessId", &pid, 4, &got);
-    rec_t *r = calloc(1, sizeof *r);
+    rec_t *r = rec_alloc();
     r->ts = ts; r->pid = pid;
     if (op == 2) { r->type = R_PROC_END; push_rec(r); return; }
     get_prop(ev, L"ParentId", &parent, 4, &got);
@@ -1456,9 +1559,29 @@ static void merge_step(int64_t upto) {
     EnterCriticalSection(&qlock);
     if (nheld + ninq > capheld) { capheld = (nheld + ninq) * 2 + 1024; held = xrealloc(held, capheld * sizeof *held); }
     for (size_t j = 0; j < ninq; j++) if (inq[j]->ts < last_processed_ts) late_records++;
-    memcpy(held + nheld, inq, ninq * sizeof *inq); nheld += ninq; ninq = 0;
+    // The held window is already sorted: sort only the new batch, then merge it in linearly
+    // (re-sorting the whole ~5 s window ten times a second dominated the idle cost).
+    size_t nb = ninq;
+    rec_t **batch = nb ? xmalloc(nb * sizeof *batch) : NULL;
+    if (nb) memcpy(batch, inq, nb * sizeof *inq);
+    ninq = 0;
     LeaveCriticalSection(&qlock);
-    qsort(held, nheld, sizeof *held, cmp_rec);
+    if (nb) {
+        qsort(batch, nb, sizeof *batch, cmp_rec);
+        if (nheld && cmp_rec(&held[nheld - 1], &batch[0]) <= 0) {  // common case: all newer
+            memcpy(held + nheld, batch, nb * sizeof *batch);
+        } else {
+            rec_t **m = xmalloc((nheld + nb) * sizeof *m);
+            size_t x = 0, y = 0, z = 0;
+            while (x < nheld && y < nb) m[z++] = cmp_rec(&held[x], &batch[y]) <= 0 ? held[x++] : batch[y++];
+            while (x < nheld) m[z++] = held[x++];
+            while (y < nb) m[z++] = batch[y++];
+            memcpy(held, m, z * sizeof *m);
+            free(m);
+        }
+        nheld += nb;
+        free(batch);
+    }
     size_t i = 0;
     while (i < nheld && held[i]->ts <= upto) { if (held[i]->ts > last_processed_ts) last_processed_ts = held[i]->ts; process_rec(held[i]); rec_free(held[i]); i++; }
     sweep_held(upto == INT64_MAX ? INT64_MAX : upto);
@@ -1486,15 +1609,26 @@ static DWORD WINAPI stdin_watch(LPVOID arg) {  // a "stats" line: live counters;
     return 0;
 }
 
+static void print_prof(void) {
+    if (!prof_on) return;
+    LARGE_INTEGER f; QueryPerformanceFrequency(&f);
+    fprintf(stderr, "{\"prof\":true,\"cb_file_ms\":%.1f,\"cb_sys_ms\":%.1f", prof_cb_ticks[0] * 1e3 / f.QuadPart, prof_cb_ticks[1] * 1e3 / f.QuadPart);
+    for (int t = 0; t < 16; t++) if (prof_n[t]) fprintf(stderr, ",\"t%d_ms\":%.1f,\"t%d_n\":%lld", t, prof_ticks[t] * 1e3 / f.QuadPart, t, (long long)prof_n[t]);
+    fprintf(stderr, ",\"fobjs\":%zu,\"fkeys\":%zu,\"proc_rows\":%zu,\"pkey\":%zu,\"image\":%zu,\"users_sid\":%zu}\n",
+            fobjs.count, fkeys.count, proc_rows.count, pkey.count, image.count, users_sid.count);
+    fflush(stderr);
+}
 static void print_stats(void) {
+    print_prof();
+    uint64_t filtered_total = st.filtered + (uint64_t)early_filtered;
     printf("{\"received\":%llu,\"submitted\":%llu,\"filtered\":%llu,\"other_user\":%llu,\"unmapped_paths\":%llu,"
            "\"kernel_drops\":%llu,\"queue_drops\":%llu,\"proc_fallbacks\":%llu,\"writer_rows\":%llu,\"writer_batches\":%llu,"
            "\"writer_max_batch\":%llu,\"writer_failed\":%d,\"pending_exec\":%zu,\"user_unresolved\":%llu,\"foreign_file_object\":%llu,\"cb_file\":%lld,\"cb_sys\":%lld,"
-           "\"lost_file\":%lu,\"lost_sys\":%lu,\"buffers_lost_file\":%lu,\"buffers_lost_sys\":%lu,\"max_lag_file_ms\":%.1f,\"max_lag_sys_ms\":%.1f,\"late_records\":%llu,\"excluded_image\":%llu,\"user_late\":%llu}\n",
-           st.received, st.submitted, st.filtered, st.other_user, st.unmapped_paths, st.kernel_lost, st.queue_drops, st.proc_fallbacks,
+           "\"lost_file\":%lu,\"lost_sys\":%lu,\"buffers_lost_file\":%lu,\"buffers_lost_sys\":%lu,\"max_lag_file_ms\":%.1f,\"max_lag_sys_ms\":%.1f,\"late_records\":%llu,\"excluded_image\":%llu,\"user_late\":%llu,\"image_maps_skipped\":%lld}\n",
+           st.received + (uint64_t)early_filtered, st.submitted, filtered_total, st.other_user, st.unmapped_paths, st.kernel_lost, st.queue_drops, st.proc_fallbacks,
            w_rows, w_batches, w_max, writer_failed, pending_exec.count, st.user_unresolved, st.foreign_fo, (long long)n_cb_file, (long long)n_cb_sys,
            lost_a, lost_b, bufs_lost_a, bufs_lost_b, max_lag_file / 1e6, max_lag_sys / 1e6, late_records,
-           st.excluded_image, st.user_late);
+           st.excluded_image, st.user_late, (long long)image_maps_skipped);
     fflush(stdout);
 }
 
@@ -1523,6 +1657,15 @@ static LONG WINAPI crash_filter(EXCEPTION_POINTERS *e) {
 #endif
 
 int main(int argc, char **argv) {
+    InitializeSListHead(&rec_pool);
+    self_pid = GetCurrentProcessId();
+    map_init(&longnames, 1, 4096, free);
+    prof_on = getenv("WHYFS_PROF") != NULL;
+    if (getenv("WHYFS_DIAG_MAPLOG")) {
+        char *spec = xstrdup(getenv("WHYFS_DIAG_MAPLOG")), *comma = strchr(spec, ',');
+        if (comma) { *comma = 0; maplog_pid = (uint32_t)atoi(spec); maplog_fp = fopen(comma + 1, "a"); }
+        free(spec);
+    }
 #ifdef WHYFS_DEBUG_CRASH
     SetUnhandledExceptionFilter(crash_filter);
 #endif

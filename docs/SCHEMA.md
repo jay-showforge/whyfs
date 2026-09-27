@@ -1,4 +1,4 @@
-# whyfs canonical provenance schema (version 1)
+# whyfs canonical provenance schema (version 2)
 
 Every platform collector writes the same records into the same SQLite store, and
 `why`, `impact` and `history` read only these fields. They never see which backend
@@ -31,6 +31,26 @@ platform-native collector ──► canonical records ──► store (SQLite) �
 - Windows: `seq << 32 | pid`, assigned at process start.
 
 `parent_key` links a process to its parent instance.
+
+## Version 2 additions (machine-wide labels)
+
+Version 2 only adds optional fields; every version-1 record is still valid.
+
+| Where | Field | Meaning |
+|---|---|---|
+| `process` record / `processes.user` | `user` | the process's user: `uid:N` (Linux, taken at fork/exec from the kernel) or a SID string (Windows, from the process start event) |
+| `io` record / `events.file_id` | `file_id` | the file's native identity when the I/O happened.  Linux: `lnx:MAJOR:MINOR:INODE:GENERATION`, read from the kernel `struct file` at open.  Windows: `win:VOLUMESERIAL:FILEID128`, read at the file's first observed write |
+| `rename` record | `file_id` | Windows: the moved file's identity at its destination |
+| `agent_sessions` table | session rows | `session_id, agent_name, agent_version, user, root_os_pid, root_start_ns, workspace, task, started_ns, ended_ns, source (registered), confidence, evidence`.  Written only by the service API (docs/AGENT_PROTOCOL.md) |
+
+Records made by a machine collector (`--machine`) differ in three ways:
+- they come from every in-scope path (the scope policy, docs/MACHINE_MODE.md), not one
+  workspace;
+- Linux machine records contain no plain `open` events (as on Windows);
+- a process that predates the collector gets its OS start time as `first_seen_ns`.
+
+Detected agents are not stored.  They are computed at query time from `exe` and `command`
+(`src/whyfs/agents.py`).
 
 ## Record kinds
 

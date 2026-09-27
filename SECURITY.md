@@ -19,6 +19,38 @@ whyfs observes process/file metadata. That is useful precisely because it can al
   are refused, and each store is written as the requesting user (see docs/WINDOWS.md)
 - the state directory is created `0700` and the database `0600` (SQLite gives its `-wal`/`-shm` files the same mode)
 
+## Machine-wide labels (the default product mode)
+
+- **What is recorded.**  The collector sees the whole machine, and a scope policy decides
+  what is stored: user-meaningful files anywhere, not OS internals, caches or browser
+  profiles (`whyfs status --scope`).  File contents are never read.
+- **Where.**  One machine store:
+  - Linux: `/var/lib/whyfs/machine`, root-owned `0700`;
+  - Windows: `%ProgramData%\whyfs\machine`, a protected DACL of SYSTEM and Administrators only.
+
+  No user can read it directly, and no user can forge its records.
+- **Who sees what.**  Queries go through the local API; the requester is identified by the
+  OS (`SO_PEERCRED`; Windows impersonation of the pipe client), never by the request.
+  - A normal user sees only the evidence of their own processes.  This is enforced by views
+    that shadow every table.
+  - root, or an *elevated* administrator, sees everything.  A file written by another
+    account reads as having no record.
+- **No squatting.**
+  - Linux: the socket lives in a root-owned directory.
+  - Windows: the service creates the pipe first (`FILE_FLAG_FIRST_PIPE_INSTANCE`) with an
+    explicit DACL.  Clients refuse a pipe that is not owned by SYSTEM or Administrators, which
+    an ordinary user cannot fake.
+- **Agent sessions.**  A session is accepted only for a root process that the requesting user
+  owns, and it is bound to that process instance's start time (PID reuse cannot inherit it).
+  Task text is stored as agent-supplied context: it is never verified, and secrets in it are
+  redacted.
+- **Retention and deletion.**
+  - Retention is configurable in `config.json`: `retention_days`, `weak_retention_days`,
+    `max_db_mb`.
+  - `whyfs forget` deletes records: a user's own, or anyone's for an administrator.
+  - Linux `apt purge` deletes the store.  On Windows, delete `%ProgramData%\whyfs` after
+    uninstalling.
+
 ## eBPF backend privileges
 
 The v0.2 BCC backend loads kernel programs and therefore runs as root (`sudo whyfs daemon start`). Treat that as a real security boundary. v0.2 limits what the root process does in the user-controlled workspace:

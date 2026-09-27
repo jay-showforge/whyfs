@@ -86,15 +86,12 @@ def compare_ids(recorded: str | None, current: str | None) -> str:
 def _stale(con: sqlite3.Connection, path: str, since_ns: int) -> sqlite3.Row | None:
     """The content observed at ``path`` was removed after ``since_ns`` (deleted or moved
     away) and nothing observed put content back: the file there now is not that one."""
-    p = normalize(path)
-    gone = con.execute(
-        "SELECT * FROM events WHERE ts_ns>? AND ((kind='unlink' AND path=?) OR (kind='rename' AND path=?))"
-        " ORDER BY ts_ns DESC LIMIT 1", (since_ns, p, p)).fetchone()
+    p = normalize(path)  # each query on one indexed column (path / path2, ts_ns)
+    gone = con.execute("SELECT * FROM events WHERE path=? AND ts_ns>? AND kind IN ('unlink','rename')"
+                       " ORDER BY ts_ns DESC LIMIT 1", (p, since_ns)).fetchone()
     if not gone:
         return None
-    back = con.execute(
-        "SELECT 1 FROM events WHERE ts_ns>? AND ((is_write=1 AND path=?) OR (kind='rename' AND path2=?)) LIMIT 1",
-        (gone["ts_ns"], p, p)).fetchone()
+    back = con.execute("SELECT 1 FROM events WHERE path=? AND ts_ns>? AND is_write=1 LIMIT 1", (p, gone["ts_ns"])).fetchone()         or con.execute("SELECT 1 FROM events WHERE path2=? AND ts_ns>? AND kind='rename' LIMIT 1", (p, gone["ts_ns"])).fetchone()
     return None if back else gone
 
 
@@ -140,7 +137,8 @@ def file_history(con: sqlite3.Connection, path: str, limit: int = 50) -> list[di
         """SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key,
                   COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.user
            FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
-           WHERE (e.path=? AND (e.is_write=1 OR e.is_read=1 OR e.kind='unlink' OR e.kind='rename')) OR (e.kind='rename' AND e.path2=?)
+           WHERE e.id IN (SELECT id FROM events WHERE path=? AND (is_write=1 OR is_read=1 OR kind IN ('unlink','rename'))
+                          UNION ALL SELECT id FROM events WHERE path2=? AND kind='rename')
            ORDER BY e.ts_ns DESC LIMIT ?""", (p, p, limit * 4)).fetchall()
     out, readers = [], set()
     for r in rows:

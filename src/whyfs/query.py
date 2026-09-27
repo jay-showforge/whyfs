@@ -38,6 +38,11 @@ else:
 def _is_noise(path: str, workspace: str) -> bool:
     if _in_workspace(path, workspace):
         return False
+    return _noise_path(path)
+
+
+def _noise_path(path: str) -> bool:
+    """System/runtime locations, whatever the workspace (the machine store has none)."""
     if os.path.basename(path) in NOISE_BASENAMES:
         return True
     return path.startswith(NOISE_PREFIXES) or (bool(NOISE_PREFIXES_NT) and pkey(path).startswith(NOISE_PREFIXES_NT))
@@ -170,10 +175,35 @@ def _in_workspace(path: str, workspace: str) -> bool:
     return p == w or p.startswith(w.rstrip(os.sep) + os.sep)
 
 
-def _through_temporaries(con: sqlite3.Connection, inputs: list[str], workspace: str, before_ns: int, depth: int = 3):
+_MACHINE_ROOT: list = []
+
+
+def _is_machine_store(workspace: str) -> bool:
+    """A run of the machine collector (docs/MACHINE_MODE.md): its 'workspace' is the machine
+    store's own directory, and nothing is "inside" it.  There, a temporary is what the
+    evidence says it is (a derived-temporary read), never "a path outside the workspace"."""
+    if not _MACHINE_ROOT:
+        try:
+            from .machine import paths
+            _MACHINE_ROOT.append(pkey(normalize(str(paths()["root"]))))
+        except Exception:
+            _MACHINE_ROOT.append(None)
+    return bool(workspace) and pkey(normalize(workspace)) == _MACHINE_ROOT[0]
+
+
+def _derived_temp_reads(con: sqlite3.Connection, run_id: str, pid: int, before_ns: int) -> set[str]:
+    return {r[0] for r in con.execute(
+        "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND api LIKE '%derived-temp'",
+        (run_id, pid, before_ns))}
+
+
+def _through_temporaries(con: sqlite3.Connection, inputs: list[str], workspace: str, before_ns: int, depth: int = 3,
+                         run_id: str | None = None, pid: int | None = None):
     """Expand observed out-of-workspace temporaries (e.g. gcc's /tmp/ccXXXX.s)
     to the workspace inputs of the process that wrote them.  Every hop is an
     observed write followed by an observed read; nothing is inferred."""
+    if run_id is not None and _is_machine_store(workspace):
+        return _through_temporaries_machine(con, inputs, run_id, pid, before_ns, depth)
     via: list[dict] = []
     found: list[str] = []
     frontier = [(p, before_ns) for p in inputs if not _in_workspace(p, workspace)]
@@ -194,6 +224,35 @@ def _through_temporaries(con: sqlite3.Connection, inputs: list[str], workspace: 
                 elif (p, w["ts_ns"]) not in seen:
                     seen.add((p, w["ts_ns"]))
                     nxt.append((p, w["ts_ns"]))
+        frontier = nxt
+        if not frontier:
+            break
+    return found, via
+
+
+def _through_temporaries_machine(con, inputs, run_id, pid, before_ns, depth=3):
+    via: list[dict] = []
+    found: list[str] = []
+    temps = _derived_temp_reads(con, run_id, pid, before_ns)
+    frontier = [(p, before_ns) for p in inputs if p in temps]
+    seen = set(frontier)
+    for _ in range(depth):
+        nxt = []
+        for tmp, bound in frontier:
+            w, _r = _content_origin(con, tmp, before=bound)
+            if not w or w["kind"] == "rename":
+                continue
+            ins = [r["path"] for r in _input_rows(con, w["run_id"], w["pid"], w["ts_ns"]) if r["path"] != tmp]
+            wtemps = _derived_temp_reads(con, w["run_id"], w["pid"], w["ts_ns"])
+            via.append({"temporary": tmp, "written_by": w["exe"],
+                        "pid": w["os_pid"] if w["os_pid"] is not None else w["pid"], "inputs": ins})
+            for p in ins:
+                if p in wtemps:
+                    if (p, w["ts_ns"]) not in seen:
+                        seen.add((p, w["ts_ns"]))
+                        nxt.append((p, w["ts_ns"]))
+                elif not (_noise_path(p) or _is_dependency(p)) and p not in found:
+                    found.append(p)
         frontier = nxt
         if not frontier:
             break
@@ -266,7 +325,7 @@ def why(con: sqlite3.Connection, path: str, include_noise=False):
         self_names.add(pkey(w["exe"]))
     inputs = [p for p in inputs if pkey(p) not in self_names]
     shared = _shared_inputs(con, w["run_id"], w["pid"], target, self_names, inputs, before)
-    via_inputs, via_temps = _through_temporaries(con, inputs, w["workspace"], w["ts_ns"])
+    via_inputs, via_temps = _through_temporaries(con, inputs, w["workspace"], w["ts_ns"], run_id=w["run_id"], pid=w["pid"])
     return {
         "path": target,
         "run_id": w["run_id"],

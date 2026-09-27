@@ -194,3 +194,61 @@ def proc_start_ns(pid: int) -> int | None:
         return btime * 1_000_000_000 + ticks * 1_000_000_000 // hz
     except (OSError, ValueError, IndexError, StopIteration):
         return None
+
+
+# ---------------------------------------------------------------- live process ancestry (clients)
+def _live_parent_and_image(pid: int) -> tuple[int | None, str | None, str | None]:
+    """(parent pid, image path, command line) of a live process (command line: Linux only)."""
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        class PE(ctypes.Structure):
+            _fields_ = [("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD), ("th32ProcessID", wintypes.DWORD),
+                        ("th32DefaultHeapID", ctypes.c_void_p), ("th32ModuleID", wintypes.DWORD),
+                        ("cntThreads", wintypes.DWORD), ("th32ParentProcessID", wintypes.DWORD),
+                        ("pcPriClassBase", ctypes.c_long), ("dwFlags", wintypes.DWORD), ("szExeFile", ctypes.c_wchar * 260)]
+        k32 = ctypes.windll.kernel32
+        k32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+        snap = k32.CreateToolhelp32Snapshot(2, 0)
+        parent = None
+        try:
+            e = PE(); e.dwSize = ctypes.sizeof(e)
+            ok = k32.Process32FirstW(wintypes.HANDLE(snap), ctypes.byref(e))
+            while ok:
+                if e.th32ProcessID == pid:
+                    parent = e.th32ParentProcessID
+                    break
+                ok = k32.Process32NextW(wintypes.HANDLE(snap), ctypes.byref(e))
+        finally:
+            k32.CloseHandle(wintypes.HANDLE(snap))
+        from .winsecurity import process_image
+        return parent, process_image(pid), None
+    try:
+        stat = open(f"/proc/{pid}/stat").read().rsplit(")", 1)[1].split()
+        parent = int(stat[1])
+    except (OSError, IndexError, ValueError):
+        return None, None, None
+    try:
+        exe = os.readlink(f"/proc/{pid}/exe")
+    except OSError:
+        exe = None
+    try:
+        cmd = " ".join(open(f"/proc/{pid}/cmdline", "rb").read().decode("utf-8", "replace").split("\0")).strip()
+    except OSError:
+        cmd = None
+    return parent, exe, cmd
+
+
+def find_agent_root(start_pid: int, max_hops: int = 32) -> int | None:
+    """The nearest live ancestor of ``start_pid`` whose image (and, where readable, command
+    line) matches a known agent: the process an agent hook should register as its root."""
+    pid, hops = start_pid, 0
+    while pid and hops < max_hops:
+        parent, exe, cmd = _live_parent_and_image(pid)
+        if exe and detect(exe, cmd or exe):
+            return pid
+        if not parent or parent == pid:
+            return None
+        pid, hops = parent, hops + 1
+    return None

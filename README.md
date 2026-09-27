@@ -1,163 +1,162 @@
 # whyfs
 
-**Ask your filesystem why a file exists.**
+**whyfs automatically labels files with their provenance: where, when, how, and what or who
+caused them to exist. People and software agents can then understand the files they
+encounter.**
 
-`whyfs` records local process→file provenance in the workspaces you choose and answers three
-questions:
+Install it once.  From then on, whenever a file is created or changed anywhere you work,
+whyfs attaches an external provenance label to it.  It records:
+- when the file was created;
+- by which user;
+- which process wrote it, and the chain of programs that led to that process;
+- which files went into it;
+- what happened to it afterwards;
+- when a known AI agent session caused it, which session.
 
-```bash
-whyfs why dist/app          # which process wrote it, with what command, from which inputs
-whyfs impact src/parser.c   # everything downstream that consumed it
-whyfs history dist/app      # every observed write, rename and delete
-```
+The file itself is never touched.  No metadata is embedded, and no sidecar files, extended
+attributes or Git changes are added.  The label lives in whyfs's own local store.  There is
+nothing to initialize and no folder to register.
 
-It observes what the operating system already sees: eBPF on Linux, ETW on Windows.  You work
-normally, and there is no wrapper command.  Everything stays local.
-
-> **Status: pre-1.0 (0.9.0.dev1), not yet released.**  The platform matrix below shows
-> exactly what has been validated.
+> **Status: pre-1.0 (0.9.0.dev1), not yet released.**  Validated platforms are listed below.
 
 ```text
-/work/app/dist/app
-└── created by /usr/bin/ld  (pid 4217)
-    run: ld -o dist/app main.o util.o
-    parent: /usr/bin/make  (pid 4190)  · make -j8
-    evidence: ebpf-native
-    inputs:
-      ├── /work/app/main.o
-      ├── /work/app/util.o
+$ whyfs label dist/app.js
+File:     C:\Projects\App\dist\app.js
+Created:  2026-09-27T14:43:10-07:00
+User:     HOST\jay
+Created by: C:\Program Files\nodejs\node.exe  (pid 4121)
+  command: node node_modules/vite/bin/vite.js build
+Process chain: explorer.exe → claude.exe → powershell.exe → npm → node.exe
+Agent:    Claude Code 2.1.281   (registered: the local service verified the session's root process)
+Session:  7f3c…
+Task:     Build checkout redesign   [supplied by the agent session when it registered (not verified by whyfs)]
+Why:      app.js exists because node.exe wrote it after reading main.ts, api.ts, vite.config.ts.
+Inputs:
+  C:\Projects\App\src\main.ts
+  C:\Projects\App\src\api.ts
+  C:\Projects\App\vite.config.ts
+History:
+  2026-09-27T14:43:10-07:00  written    by node.exe
+  2026-09-27T14:45:02-07:00  read       by deploy.exe
+Evidence: OS-observed + registered agent context; identity match
 ```
+
+Two kinds of *why* are kept apart:
+- **Causal why** is what whyfs observed: this process wrote the file after reading those files.
+- **Intent** ("the user asked the agent to fix the checkout page") appears only when an agent
+  session supplied it, and says so.  whyfs never infers intent.
+
+## How it works
+
+The collector, in the OS kernel's event stream, runs as a service from boot:
+- Linux: eBPF programs with a native C collector;
+- Windows: ETW with a native collector behind the `whyfs` service.
+
+It sees which processes read, write, map, rename and delete files, and how processes descend
+from each other.  A **scope policy** decides what gets a label:
+- everything a user works with, wherever it is;
+- *not* OS internals, application caches or browser profiles;
+- temp files, only when they carry data into real files.
+
+Each label is keyed to the file's **native identity** (Linux inode/device/generation, NTFS
+file ID) as well as its path.  So it follows renames and moves, and an old record is never
+attached to a new file that happens to reuse a path.
+
+**Agents.**  whyfs distinguishes what the OS proves (process A started process B, which
+wrote the file) from agent context:
+- **Registered session:** an AI agent registers its session with the local service.  Every
+  descendant process and every file they produce carries that session.
+- **Detected agent:** Claude Code, Codex CLI and Gemini CLI are also recognized from their
+  installed program layout and command line.  A file name alone is never enough.
+- The real process chain is always kept; "the agent created it" never replaces "vite.exe
+  wrote it".
+
+See [docs/MACHINE_MODE.md](docs/MACHINE_MODE.md) and [docs/AGENT_PROTOCOL.md](docs/AGENT_PROTOCOL.md).
+
+## Asking
+
+```bash
+whyfs label FILE [--json]     # the provenance label (human or JSON)
+whyfs why FILE                # creator and inputs      whyfs history FILE   # what happened to it
+whyfs impact FILE             # what was built from it  whyfs recent         # recent changes and their causes
+whyfs agent files --session-id S                        # everything an agent session changed
+whyfs status [--scope]        # what whyfs records, store size, loss counters, retention
+```
+
+Agents do not need to scrape text.  A local API speaks one JSON request/reply per line:
+- Linux: `/run/whyfs/api.sock`;
+- Windows: `\\.\pipe\whyfs-api`.
+
+It offers `get_file_provenance`, `explain_file`, `get_file_history`, `get_file_inputs`,
+`get_file_dependents`, `get_recent_changes`, `get_agent_session`, `get_files_by_agent`,
+`session_start` and `session_end`.  From any language, `whyfs api OP '{"path": "..."}'` returns
+the same JSON.
 
 ## Platforms
 
 | Platform | Collector | Package | Status |
 |---|---|---|---|
-| Linux x86-64 | eBPF (native C collector + BCC programs) | `.deb` (prebuilt collector) | **Validated natively** |
-| Linux ARM64 | same sources, built natively for arm64 | `.deb` (arm64) | **Native validation pending** |
-| Windows x64 | ETW (native collector + `whyfs` service) | MSI | **Validated natively** ([docs/WINDOWS.md](docs/WINDOWS.md)) |
-| Windows ARM64 | same sources, built for ARM64 | MSI (ARM64) | MSI built and verified ARM64; **native validation pending** |
-| WSL2 | the Linux collector inside WSL2 | `.deb` | **Validated** (the Linux x86-64 host above is WSL2) |
+| Linux x86-64 | eBPF + native collector, `whyfs.service` | `.deb` | **Validated natively** |
+| Linux ARM64 | the same, built for arm64 | `.deb` (arm64) | **Native validation pending** |
+| Windows x64 | ETW + native collector, `whyfs` service | MSI | **Validated natively** |
+| Windows ARM64 | the same, built for ARM64 | MSI (ARM64) | MSI built and verified ARM64; **native validation pending** |
+| WSL2 | the Linux collector inside WSL2 | `.deb` | **Validated** |
 
-Not currently supported: **macOS**.  macOS is a future/community target; contributions are
-welcome.
+Not currently supported: **macOS** (a future/community target; contributions are welcome).
 
-"Validated natively" means real runtime evidence on that platform: installer, collector, the
-shared A–H behavioural corpus, why/impact/history, zero event loss, privacy and performance
-gates.  Cross-compilation alone is never counted as support.  For the current evidence and
-what is still needed, see [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+Evidence and what remains: [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 
 ## Install
 
-### Linux (Debian/Ubuntu, x86-64 or arm64)
+- **Linux (Debian/Ubuntu):** `sudo apt install ./whyfs_<version>_<arch>.deb`.  The labelling
+  service (`whyfs.service`) starts immediately and at every boot.  Check the kernel with
+  `whyfs doctor`.
+- **WSL2:** the same package inside the distribution.
+  - With `systemd=true` in `/etc/wsl.conf` the service starts by itself.  Otherwise, run
+    `sudo whyfs machine run` in the background.
+  - Linux-side tools are labelled.  For Windows-side tools, install the MSI on Windows.
+- **Windows:** run `whyfs-<version>-<arch>.msi` once as an administrator.  The `whyfs`
+  service starts labelling immediately; everything after that runs as a normal user.
 
-```bash
-sudo apt install ./whyfs_<version>_<arch>.deb
-whyfs doctor                      # kernel BTF / BPF / ring buffer checks
-```
+Upgrades keep the store.
+- **Windows:** uninstalling removes the program; the provenance store stays in
+  `%ProgramData%\whyfs` until you delete it.
+- **Linux:** `apt remove` keeps it; `apt purge` deletes it.
 
-The package ships a prebuilt collector (`/usr/lib/whyfs/whyfs-collect`) for its architecture.
-Nothing is compiled on the normal path.  The collector is used only if it matches the
-package's recorded source hash and only root can modify it; otherwise it is refused.
+## Privacy and storage
 
-```bash
-cd ~/project && whyfs init
-sudo whyfs daemon start --workspace ~/project      # or, always on, with systemd:
-sudo systemctl enable --now "whyfs@$(systemd-escape --path ~/project).service"
-```
+- **Local only.**  No cloud, account or telemetry, and no network listener.  File contents
+  are never read.
+- **Per-user visibility.**  The store is readable only by the service.  Through the API each
+  user sees the records of their own processes; only root or an elevated administrator sees
+  everyone's.
+- **Secrets on command lines are redacted before storage**, including inside shell wrappers
+  (`--token x`, `/password:x`, `API_KEY=x`, `sh -c '…'`, `cmd /c "…"`, PowerShell
+  `$env:KEY=…`, `Authorization: Bearer x`).  Agent task text goes through the same redaction.
+- **Scope, retention and reset:**
+  - exclude paths or programs in `scope.conf`;
+  - retention defaults to 365 days for creation records and 30 days for pure reads, with a
+    store cap of 2 GiB;
+  - `whyfs forget PATH | --everything` deletes records;
+  - `whyfs status` shows what is recorded.
 
-The eBPF programs need root.  The daemon writes each store as the workspace owner
-(privilege-separated).
+See [SECURITY.md](SECURITY.md) and [docs/MACHINE_MODE.md](docs/MACHINE_MODE.md).
 
-### WSL2
+## Explicit workspace captures
 
-Install the Linux `.deb` inside the WSL2 distribution; check the kernel with `whyfs doctor`.
-Watch workspaces on the Linux filesystem (`/home/...`).  Files under `/mnt/c` are served by
-the Windows file bridge, and Windows programs that write them are invisible to the Linux
-kernel.  For Windows-side tools, install the Windows MSI.  With `systemd=true` in
-`/etc/wsl.conf` the `whyfs@` unit works; without it, use `sudo whyfs daemon start`.
-
-### Windows (x64, ARM64)
-
-Run `whyfs-<version>-<arch>.msi` once as an administrator.  It installs the `whyfs` service
-and puts `whyfs` on PATH.  After that, everything runs as a normal user:
-
-```powershell
-cd C:\src\project
-whyfs init
-whyfs daemon start
-# ... build, test, edit as usual ...
-whyfs why dist\app.exe
-whyfs daemon stop
-```
-
-Upgrades replace the older version in place.  Uninstalling removes the program, service and
-PATH entry.  Workspace histories (`<workspace>\.whyfs`) belong to their users and are kept.
-
-## Raw evidence vs. human view
-
-`whyfs` never deletes evidence because it looks noisy.  The default view hides
-system/runtime reads (`/usr/lib`, `C:\Windows`, …) and dependency trees (`node_modules`,
-`site-packages`), and says how many inputs it hid:
-
-```bash
-whyfs why FILE --all      # include system/library reads
-whyfs why FILE --raw      # unfiltered inputs plus the creator's raw stored events
-whyfs impact FILE --all   # include system/runtime outputs
-whyfs why FILE --json     # machine-readable
-```
-
-When one compiler process builds many files (e.g. `cl.exe a.c b.c c.c`), its outputs are
-labelled **shared** instead of being given a lineage that was never observed.  Every lost event
-is counted (`whyfs stats`), never hidden.
-
-## Privacy
-
-- Local only: `<workspace>/.whyfs/whyfs.db`.  Nothing is uploaded.  File contents are never
-  captured.
-- Only files inside the workspace (and derived temporaries) are stored.  Only processes that
-  touched the workspace, and a bounded chain of their ancestors, are stored.
-- **Secret values on command lines are redacted before storage** on every platform, including
-  inside shell wrappers: `--token x`, `--password=x`, `/token:x`, `-Password x`,
-  `API_KEY=x`, `ACCESS_TOKEN=x`, `sh -c '… --api-key x'`, `cmd /c "… PRIVATE_KEY=x"`,
-  PowerShell `$env:API_KEY='x'`, `Authorization: Bearer x`.  There is one policy and one set
-  of shared test vectors, with three implementations (`src/whyfs/redact.py` is the reference).
-- See [SECURITY.md](SECURITY.md).
-
-## What is recorded
-
-| | Linux (eBPF) | Windows (ETW) |
-|---|---|---|
-| process start/exit, parent, command line | yes | yes |
-| opens | every successful open | not recorded (Windows reports probes as creates) |
-| first read / first write per file and process | yes (incl. io_uring, sendfile, splice) | yes |
-| memory-mapped files | yes | yes |
-| rename, delete | yes | yes (incl. delete-on-close) |
-| path comparison | case-sensitive | case-insensitive |
-
-Not covered: metadata-only operations (chmod, timestamps, links), and files already open before
-collection started.  The canonical record format is in [docs/SCHEMA.md](docs/SCHEMA.md).
+`whyfs init` plus `whyfs daemon start|stop` still record one directory into its own
+`.whyfs` store: an isolated capture for CI or for tests, e.g. of a single build.  It is
+optional; labels never require it.
 
 ## Development
 
 ```bash
-make test                                  # Linux (as root it also runs the live eBPF tests)
-python -m unittest discover -s tests       # Windows (PYTHONPATH=src;tests)
-python scripts/run_corpus.py --out DIR     # shared A–H corpus (Linux: sudo … --user USER)
-python scripts/secret_gate.py --out DIR    # live redaction gate
+make test                                        # Linux (as root it also runs the live eBPF tests)
+python -m unittest discover -s tests             # Windows (PYTHONPATH=src;tests)
+sudo python3 scripts/product_gate.py --user $USER --out DIR   # install-once product behaviour (Tests A-H)
+python scripts/run_corpus.py --out DIR           # shared A–H behavioural corpus
+python scripts/machine_perf.py --out DIR         # machine-wide performance and resource cost
 ```
-
-Windows binaries and the MSI: `native\windows\build.ps1`, `native\windows\make_msi.py`.  Linux
-package: `packaging/linux/build_deb.sh`.
-
-## Positioning
-
-File provenance is not new.  PASS/CamFlow, security provenance systems, build provenance, data
-lineage, ReproZip-style capture and language-specific lineage tools all cover parts of the
-space.  The bet here is narrower: make host-observed process→file causality feel like an
-ordinary filesystem query.
-
-Non-goals: storing file contents, replacing Git, claiming an inferred dependency was observed,
-uploading provenance anywhere, hiding dropped-evidence counters.
 
 ## License
 

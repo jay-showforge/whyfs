@@ -349,22 +349,35 @@ def cmd_label(a):
 
 def cmd_agent(a):
     """Register an agent session with the local service (docs/AGENT_PROTOCOL.md)."""
+    hook = {}
+    if a.from_hook:  # an agent hook: JSON on stdin (Claude Code: session_id, cwd, ...)
+        try:
+            hook = json.loads(sys.stdin.read() or "{}")
+        except ValueError:
+            hook = {}
+    sid = a.session_id or hook.get("session_id")
     if a.action == "start":
         if not a.name:
             raise SystemExit("whyfs agent start needs --name")
-        root = a.root_pid if a.root_pid is not None else os.getppid()
-        r = _service("session_start", agent_name=a.name, agent_version=a.agent_version, session_id=a.session_id,
-                     root_pid=root, workspace=a.workspace or os.getcwd(), task=a.task)
+        from . import agents
+        if a.root_pid in (None, "parent"):
+            root = os.getppid()
+        elif a.root_pid == "auto":  # the nearest live ancestor that is a known agent process, else the parent
+            root = agents.find_agent_root(os.getpid()) or os.getppid()
+        else:
+            root = int(a.root_pid)
+        r = _service("session_start", agent_name=a.name, agent_version=a.agent_version, session_id=sid,
+                     root_pid=root, workspace=a.workspace or hook.get("cwd") or os.getcwd(), task=a.task)
         print(json.dumps(r) if a.json else r["session_id"])
         return 0
-    if not a.session_id:
-        raise SystemExit(f"whyfs agent {a.action} needs --session-id")
+    if not sid:
+        raise SystemExit(f"whyfs agent {a.action} needs --session-id (or --from-hook)")
     if a.action == "end":
-        r = _service("session_end", session_id=a.session_id)
+        r = _service("session_end", session_id=sid)
     elif a.action == "show":
-        r = _service("get_agent_session", session_id=a.session_id)
+        r = _service("get_agent_session", session_id=sid)
     else:
-        r = _service("get_files_by_agent", session_id=a.session_id, limit=a.limit)
+        r = _service("get_files_by_agent", session_id=sid, limit=a.limit)
     if a.json or a.action != "files":
         print(json.dumps(r, indent=2, default=str))
     else:
@@ -461,7 +474,9 @@ def parser():
     q.add_argument("--name", help="agent name (start)")
     q.add_argument("--agent-version")
     q.add_argument("--session-id")
-    q.add_argument("--root-pid", type=int, help="the agent's own process (default: this command's parent)")
+    q.add_argument("--root-pid", help="the agent's own process: a PID, 'parent' (default) or 'auto' "
+                                      "(the nearest ancestor that is a known agent process)")
+    q.add_argument("--from-hook", action="store_true", help="read session_id/cwd from an agent hook's JSON on stdin")
     q.add_argument("--workspace")
     q.add_argument("--task", help="task/context text, stored as supplied by the agent (never inferred)")
     q.add_argument("--limit", type=int, default=500)
