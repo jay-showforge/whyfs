@@ -235,7 +235,11 @@ def start_background(root: Path, *, capture_all: bool = False) -> dict:
     raise SystemExit(f"whyfs daemon did not become ready; see {log_path}")
 
 
-def stop_background(root: Path, timeout: float = 5.0) -> bool:
+def stop_background(root: Path, timeout: float | None = None) -> bool:
+    # SIGTERM makes the worker drain the ring buffer and commit every pending record before it
+    # exits; that can take longer than a few seconds on slow machines or after bursts.
+    if timeout is None:
+        timeout = float(os.environ.get("WHYFS_STOP_TIMEOUT", "60"))
     if os.name == "nt":
         from . import winsvc
         try:
