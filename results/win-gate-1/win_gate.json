@@ -1,0 +1,3576 @@
+{
+  "started": "2026-09-26T16:10:55-0700",
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "python": "3.13.5",
+    "cpu": "Intel(R) Core(TM) i5-14400F",
+    "memory_gb": 31.8,
+    "node": "v22.17.1",
+    "service": "STATE              : 4  RUNNING"
+  },
+  "functional": {
+    "checks": {
+      "creator_attribution_ge_99pct": true,
+      "useful_input_recall_ge_95pct": true,
+      "no_unlabelled_false_lineage": true,
+      "msvc_header_impact_reaches_all_includers_and_app": true,
+      "msvc_header_impact_excludes_non_includer": true,
+      "msvc_source_impact_reaches_its_object_and_app": true,
+      "msvc_source_impact_other_objects_only_as_labelled_shared": true,
+      "incremental_rebuild_history": true,
+      "rename_chain_steps_recorded": true,
+      "rename_impact_reaches_final_name": true,
+      "recreate_history_two_writes": true,
+      "parent_child_parent_is_cmd": true,
+      "vite_human_view_hides_node_modules": true,
+      "vite_raw_view_retains_dependency_reads": true,
+      "vite_transitive_impact_to_postbuild": true,
+      "paths_absolute_dos_and_in_scope": true,
+      "no_state_dir_evidence": true,
+      "zero_loss": true,
+      "no_foreign_file_object_attribution": true
+    },
+    "accuracy": {
+      "tested_outputs": 64,
+      "creator_attribution": 1.0,
+      "expected_inputs": 142,
+      "found_inputs": 142,
+      "useful_input_recall": 1.0,
+      "unlabelled_false_inputs": 0,
+      "foreign_file_objects_rejected": 5
+    },
+    "outputs": [
+      {
+        "fixture": "native exe",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\native\\out.txt",
+        "creator": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\native\\copy.exe",
+        "creator_ok": true,
+        "inputs": [
+          "raw.txt"
+        ],
+        "expected_inputs": [
+          "raw.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": ".\\copy.exe  raw.txt out.txt"
+      },
+      {
+        "fixture": "powershell pipeline",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\ps\\up.txt",
+        "creator": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in.txt"
+        ],
+        "expected_inputs": [
+          "in.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "powershell  -NoProfile -Command \"Get-Content in.txt | ForEach-Object { $_.ToUpper() } | Set-Content up.txt\""
+      },
+      {
+        "fixture": "python",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\py\\summary.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "gen.py",
+          "data.csv"
+        ],
+        "expected_inputs": [
+          "data.csv",
+          "gen.py"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\Python313\\python.exe\"  gen.py"
+      },
+      {
+        "fixture": "rename/move",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\mv\\final.dat",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "src.txt"
+        ],
+        "expected_inputs": [
+          "src.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\Python313\\python.exe\"  -c \"open('tmp.dat','w').write(open('src.txt').read())\""
+      },
+      {
+        "fixture": "delete/recreate",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\recreate\\out.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "b.txt"
+        ],
+        "expected_inputs": [
+          "b.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\Python313\\python.exe\"  -c \"open('out.txt','w').write(open('b.txt').read())\""
+      },
+      {
+        "fixture": "parent/child",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\multi\\gen.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "child.py",
+          "cfg.txt"
+        ],
+        "expected_inputs": [
+          "cfg.txt",
+          "child.py"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\Python313\\python.exe\"  child.py"
+      },
+      {
+        "fixture": "reopen",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\reopen\\out.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in.txt"
+        ],
+        "expected_inputs": [
+          "in.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\Python313\\python.exe\"  -c \"d=[open('in.txt').read() for _ in range(3)]; open('out.txt','w').write(''.join(d))\""
+      },
+      {
+        "fixture": "msvc link",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\app.exe",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\link.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.obj",
+          "u00.obj",
+          "u01.obj",
+          "u02.obj",
+          "u03.obj",
+          "u04.obj",
+          "u05.obj",
+          "u06.obj",
+          "u07.obj",
+          "u08.obj",
+          "u09.obj",
+          "u10.obj",
+          "u11.obj",
+          "u12.obj",
+          "u13.obj",
+          "u14.obj",
+          "u15.obj",
+          "u16.obj",
+          "u17.obj",
+          "u18.obj",
+          "u19.obj",
+          "u20.obj",
+          "u21.obj",
+          "u22.obj",
+          "u23.obj",
+          "u24.obj",
+          "u25.obj",
+          "u26.obj",
+          "u27.obj",
+          "u28.obj",
+          "u29.obj",
+          "u30.obj",
+          "u31.obj",
+          "u32.obj",
+          "u33.obj",
+          "u34.obj",
+          "u35.obj"
+        ],
+        "expected_inputs": [
+          "u00.obj",
+          "u01.obj",
+          "u02.obj",
+          "u03.obj",
+          "u04.obj",
+          "u05.obj",
+          "u06.obj",
+          "u07.obj",
+          "u08.obj",
+          "u09.obj",
+          "u10.obj",
+          "u11.obj",
+          "u12.obj",
+          "u13.obj",
+          "u14.obj",
+          "u15.obj",
+          "u16.obj",
+          "u17.obj",
+          "u18.obj",
+          "u19.obj",
+          "u20.obj",
+          "u21.obj",
+          "u22.obj",
+          "u23.obj",
+          "u24.obj",
+          "u25.obj",
+          "u26.obj",
+          "u27.obj",
+          "u28.obj",
+          "u29.obj",
+          "u30.obj",
+          "u31.obj",
+          "u32.obj",
+          "u33.obj",
+          "u34.obj",
+          "u35.obj",
+          "main.obj"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 1,
+        "command": "link  /nologo *.obj /OUT:app.exe "
+      },
+      {
+        "fixture": "msvc u00",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u00.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u00.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u01",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u01.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u01.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u02",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u02.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u02.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u03",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u03.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u03.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u04",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u04.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u04.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u05",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u05.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u05.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /O2 /c u05.c  "
+      },
+      {
+        "fixture": "msvc u06",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u06.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u06.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u07",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u07.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u07.c"
+        ],
+        "expected_inputs": [
+          "u07.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u08",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u08.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u08.c"
+        ],
+        "expected_inputs": [
+          "u08.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u09",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u09.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u09.c"
+        ],
+        "expected_inputs": [
+          "u09.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u10",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u10.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h",
+          "u10.c"
+        ],
+        "expected_inputs": [
+          "u10.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u03.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u11",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u11.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h",
+          "u11.c"
+        ],
+        "expected_inputs": [
+          "u11.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u04.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u12",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u12.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h",
+          "u12.c"
+        ],
+        "expected_inputs": [
+          "u12.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u00.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u13",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u13.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u13.c"
+        ],
+        "expected_inputs": [
+          "u13.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u14",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u14.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u13.c",
+          "u14.c"
+        ],
+        "expected_inputs": [
+          "u14.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c",
+          "u13.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u15",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u15.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u09.c",
+          "u15.c"
+        ],
+        "expected_inputs": [
+          "u15.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c",
+          "u09.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u16",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u16.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u08.c",
+          "u16.c"
+        ],
+        "expected_inputs": [
+          "u16.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c",
+          "u08.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u17",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u17.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h",
+          "u12.c",
+          "u17.c"
+        ],
+        "expected_inputs": [
+          "u17.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u00.c",
+          "u12.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u18",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u18.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h",
+          "u10.c",
+          "u18.c"
+        ],
+        "expected_inputs": [
+          "u18.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u03.c",
+          "u10.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u19",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u19.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.c",
+          "u19.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u19.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "main.c"
+        ],
+        "shared_by_outputs": 2,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u20",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u20.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u07.c",
+          "u20.c"
+        ],
+        "expected_inputs": [
+          "u20.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c",
+          "u07.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u21",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u21.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h",
+          "u11.c",
+          "u21.c"
+        ],
+        "expected_inputs": [
+          "u21.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u04.c",
+          "u11.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u22",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u22.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u13.c",
+          "u14.c",
+          "u22.c"
+        ],
+        "expected_inputs": [
+          "u22.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c",
+          "u13.c",
+          "u14.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u23",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u23.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u08.c",
+          "u16.c",
+          "u23.c"
+        ],
+        "expected_inputs": [
+          "u23.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c",
+          "u08.c",
+          "u16.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u24",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u24.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h",
+          "u10.c",
+          "u18.c",
+          "u24.c"
+        ],
+        "expected_inputs": [
+          "u24.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u03.c",
+          "u10.c",
+          "u18.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u25",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u25.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h",
+          "u12.c",
+          "u17.c",
+          "u25.c"
+        ],
+        "expected_inputs": [
+          "u25.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u00.c",
+          "u12.c",
+          "u17.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u26",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u26.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u09.c",
+          "u15.c",
+          "u26.c"
+        ],
+        "expected_inputs": [
+          "u26.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c",
+          "u09.c",
+          "u15.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u27",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u27.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u07.c",
+          "u20.c",
+          "u27.c"
+        ],
+        "expected_inputs": [
+          "u27.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c",
+          "u07.c",
+          "u20.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u28",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u28.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.c",
+          "u19.c",
+          "common.h",
+          "u28.c"
+        ],
+        "expected_inputs": [
+          "u28.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "main.c",
+          "u19.c"
+        ],
+        "shared_by_outputs": 2,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u29",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u29.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h",
+          "u11.c",
+          "u21.c",
+          "u29.c"
+        ],
+        "expected_inputs": [
+          "u29.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u04.c",
+          "u11.c",
+          "u21.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u30",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u30.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u09.c",
+          "u15.c",
+          "u26.c",
+          "u30.c"
+        ],
+        "expected_inputs": [
+          "u30.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c",
+          "u09.c",
+          "u15.c",
+          "u26.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u31",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u31.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u13.c",
+          "u14.c",
+          "u22.c",
+          "u31.c"
+        ],
+        "expected_inputs": [
+          "u31.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c",
+          "u13.c",
+          "u14.c",
+          "u22.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u32",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u32.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h",
+          "u12.c",
+          "u17.c",
+          "u25.c",
+          "u32.c"
+        ],
+        "expected_inputs": [
+          "u32.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u00.c",
+          "u12.c",
+          "u17.c",
+          "u25.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u33",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u33.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h",
+          "u10.c",
+          "u18.c",
+          "u24.c",
+          "u33.c"
+        ],
+        "expected_inputs": [
+          "u33.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u03.c",
+          "u10.c",
+          "u18.c",
+          "u24.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u34",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u34.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u08.c",
+          "u16.c",
+          "u23.c",
+          "u34.c"
+        ],
+        "expected_inputs": [
+          "u34.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c",
+          "u08.c",
+          "u16.c",
+          "u23.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u35",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u35.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u07.c",
+          "u20.c",
+          "u27.c",
+          "u35.c"
+        ],
+        "expected_inputs": [
+          "u35.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c",
+          "u07.c",
+          "u20.c",
+          "u27.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc main",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\main.obj",
+        "creator": "C:\\BuildTools2022\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.c"
+        ],
+        "expected_inputs": [
+          "main.c"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "parallel 0",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_0.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_0.txt"
+        ],
+        "expected_inputs": [
+          "in_0.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_0.txt','w').write(open('in_0.txt').read())"
+      },
+      {
+        "fixture": "parallel 1",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_1.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_1.txt"
+        ],
+        "expected_inputs": [
+          "in_1.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_1.txt','w').write(open('in_1.txt').read())"
+      },
+      {
+        "fixture": "parallel 2",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_2.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_2.txt"
+        ],
+        "expected_inputs": [
+          "in_2.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_2.txt','w').write(open('in_2.txt').read())"
+      },
+      {
+        "fixture": "parallel 3",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_3.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_3.txt"
+        ],
+        "expected_inputs": [
+          "in_3.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_3.txt','w').write(open('in_3.txt').read())"
+      },
+      {
+        "fixture": "parallel 4",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_4.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_4.txt"
+        ],
+        "expected_inputs": [
+          "in_4.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_4.txt','w').write(open('in_4.txt').read())"
+      },
+      {
+        "fixture": "parallel 5",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_5.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_5.txt"
+        ],
+        "expected_inputs": [
+          "in_5.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_5.txt','w').write(open('in_5.txt').read())"
+      },
+      {
+        "fixture": "parallel 6",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_6.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_6.txt"
+        ],
+        "expected_inputs": [
+          "in_6.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_6.txt','w').write(open('in_6.txt').read())"
+      },
+      {
+        "fixture": "parallel 7",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_7.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_7.txt"
+        ],
+        "expected_inputs": [
+          "in_7.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_7.txt','w').write(open('in_7.txt').read())"
+      },
+      {
+        "fixture": "parallel 8",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_8.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_8.txt"
+        ],
+        "expected_inputs": [
+          "in_8.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_8.txt','w').write(open('in_8.txt').read())"
+      },
+      {
+        "fixture": "parallel 9",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_9.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_9.txt"
+        ],
+        "expected_inputs": [
+          "in_9.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_9.txt','w').write(open('in_9.txt').read())"
+      },
+      {
+        "fixture": "parallel 10",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_10.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_10.txt"
+        ],
+        "expected_inputs": [
+          "in_10.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_10.txt','w').write(open('in_10.txt').read())"
+      },
+      {
+        "fixture": "parallel 11",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_11.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_11.txt"
+        ],
+        "expected_inputs": [
+          "in_11.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_11.txt','w').write(open('in_11.txt').read())"
+      },
+      {
+        "fixture": "parallel 12",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_12.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_12.txt"
+        ],
+        "expected_inputs": [
+          "in_12.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_12.txt','w').write(open('in_12.txt').read())"
+      },
+      {
+        "fixture": "parallel 13",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_13.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_13.txt"
+        ],
+        "expected_inputs": [
+          "in_13.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_13.txt','w').write(open('in_13.txt').read())"
+      },
+      {
+        "fixture": "parallel 14",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_14.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_14.txt"
+        ],
+        "expected_inputs": [
+          "in_14.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_14.txt','w').write(open('in_14.txt').read())"
+      },
+      {
+        "fixture": "parallel 15",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_15.txt",
+        "creator": "C:\\Python313\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_15.txt"
+        ],
+        "expected_inputs": [
+          "in_15.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\Python313\\python.exe -c open('out_15.txt','w').write(open('in_15.txt').read())"
+      },
+      {
+        "fixture": "vite js",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\web\\dist\\assets\\index-C42TDZxa.js",
+        "creator": "C:\\Program Files\\nodejs\\node.exe",
+        "creator_ok": true,
+        "inputs": [
+          "package.json",
+          "vite.config.js",
+          "index.html",
+          "src/main.js",
+          "src/style.css",
+          "src/data.json",
+          "src/util.js"
+        ],
+        "expected_inputs": [
+          "src/main.js",
+          "src/util.js",
+          "src/data.json",
+          "index.html"
+        ],
+        "missing": [],
+        "extra": [
+          "package.json",
+          "vite.config.js",
+          "src/style.css"
+        ],
+        "shared_by_outputs": 3,
+        "command": "node  node_modules/vite/bin/vite.js build --logLevel warn"
+      },
+      {
+        "fixture": "vite css",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\web\\dist\\assets\\index-BrLSULct.css",
+        "creator": "C:\\Program Files\\nodejs\\node.exe",
+        "creator_ok": true,
+        "inputs": [
+          "package.json",
+          "vite.config.js",
+          "index.html",
+          "src/main.js",
+          "src/style.css",
+          "src/data.json",
+          "src/util.js"
+        ],
+        "expected_inputs": [
+          "src/style.css"
+        ],
+        "missing": [],
+        "extra": [
+          "package.json",
+          "vite.config.js",
+          "index.html",
+          "src/main.js",
+          "src/data.json",
+          "src/util.js"
+        ],
+        "shared_by_outputs": 3,
+        "command": "node  node_modules/vite/bin/vite.js build --logLevel warn"
+      },
+      {
+        "fixture": "vite postbuild",
+        "output": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func\\web\\dist\\report.json",
+        "creator": "C:\\Program Files\\nodejs\\node.exe",
+        "creator_ok": true,
+        "inputs": [
+          "postbuild.mjs",
+          "dist/assets/index-C42TDZxa.js"
+        ],
+        "expected_inputs": [
+          "postbuild.mjs",
+          "dist/assets/index-C42TDZxa.js"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "node  postbuild.mjs"
+      }
+    ],
+    "collector_stats": {
+      "buffers_lost_file": 0,
+      "buffers_lost_sys": 0,
+      "cb_file": 51295,
+      "cb_sys": 115902,
+      "filtered": 21359,
+      "foreign_file_object": 5,
+      "kernel_drops": 0,
+      "late_records": 0,
+      "lost_file": 0,
+      "lost_sys": 0,
+      "max_lag_file_ms": 2005,
+      "max_lag_sys_ms": 2138,
+      "other_user": 120,
+      "pending_exec": 371,
+      "proc_fallbacks": 0,
+      "queue_drops": 0,
+      "received": 68093,
+      "submitted": 469,
+      "unmapped_paths": 0,
+      "user_unresolved": 0,
+      "writer_batches": 1,
+      "writer_failed": 0,
+      "writer_max_batch": 469,
+      "writer_rows": 469,
+      "stored_events": 405,
+      "stored_processes": 64
+    },
+    "workspace": "C:\\Users\\ftmon\\AppData\\Local\\Temp\\whyfs-wingate\\func"
+  },
+  "performance": {
+    "msvc_36_units_mp8": {
+      "command": "cl /nologo /MP8 /O2 /c *.c >nul && link /nologo *.obj /OUT:app.exe >nul",
+      "pairs": 20,
+      "warmup_pairs": 2,
+      "runs": [
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.5553991000633687
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.4637638999847695,
+          "seconds": 0.42727619991637766,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 21371,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1231,
+          "max_lag_sys_ms": 1232,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 163840
+        },
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.4373362000333145
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.42953880003187805,
+          "seconds": 0.4098766999086365,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 18724,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1135,
+          "max_lag_sys_ms": 1205,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 159744
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.4088331999955699
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.48415920010302216,
+          "seconds": 0.4108273999299854,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 20374,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1186,
+          "max_lag_sys_ms": 1205,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 204800
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4009329000255093,
+          "seconds": 0.21817870007362217,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 19801,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1024,
+          "max_lag_sys_ms": 1206,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 151552
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.40464670001529157
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.365912500070408
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4169359999941662,
+          "seconds": 0.20863550005014986,
+          "collector_cpu_s_during_workload": 0.046875,
+          "received": 35031,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1026,
+          "max_lag_sys_ms": 1169,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 180224
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.38505170005373657,
+          "seconds": 0.2070411000167951,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 23378,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1015,
+          "max_lag_sys_ms": 1174,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 167936
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.39986969996243715
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.40491310006473213
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4488533000694588,
+          "seconds": 0.19765989994630218,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 18258,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1020,
+          "max_lag_sys_ms": 1176,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 163840
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4580026000039652,
+          "seconds": 0.42149920004885644,
+          "collector_cpu_s_during_workload": 0.046875,
+          "received": 36334,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1204,
+          "max_lag_sys_ms": 1206,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 155648
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.4039454000303522
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.366950900061056
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4794539000140503,
+          "seconds": 0.22671219997573644,
+          "collector_cpu_s_during_workload": 0.046875,
+          "received": 25532,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1109,
+          "max_lag_sys_ms": 1133,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 192512
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.42907740001101047,
+          "seconds": 0.34699880005791783,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 19971,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1107,
+          "max_lag_sys_ms": 1150,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 163840
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3896674000425264
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.20331010001245886
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.432395700016059,
+          "seconds": 0.39183129998855293,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 18345,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1159,
+          "max_lag_sys_ms": 1199,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 176128
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.48352070001419634,
+          "seconds": 0.22153829992748797,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 18561,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1011,
+          "max_lag_sys_ms": 1131,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 167936
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.4111512000672519
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.28443339990917593
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.44365200004540384,
+          "seconds": 0.21705310000106692,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 29833,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1023,
+          "max_lag_sys_ms": 1137,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 163840
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4248192999511957,
+          "seconds": 0.21186820010188967,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 28517,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1023,
+          "max_lag_sys_ms": 1159,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 172032
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.40083159995265305
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.410586400073953
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4794154000701383,
+          "seconds": 0.2665405999869108,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 51470,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1114,
+          "max_lag_sys_ms": 1135,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 167936
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4555246999952942,
+          "seconds": 0.38801790005527437,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 20858,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1232,
+          "max_lag_sys_ms": 1233,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 167936
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.4232712999219075
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.44467470003291965
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4313251000130549,
+          "seconds": 0.20612329989671707,
+          "collector_cpu_s_during_workload": 0.046875,
+          "received": 18829,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1010,
+          "max_lag_sys_ms": 1162,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 196608
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4693180000176653,
+          "seconds": 0.47352500003762543,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 18026,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1279,
+          "max_lag_sys_ms": 1260,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 184320
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.4426166999619454
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.42343299998901784
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.41336619993671775,
+          "seconds": 0.22299350006505847,
+          "collector_cpu_s_during_workload": 0.046875,
+          "received": 21558,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1014,
+          "max_lag_sys_ms": 1192,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 155648
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4506736999610439,
+          "seconds": 0.41416489996481687,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 19805,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1213,
+          "max_lag_sys_ms": 1215,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 180224
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.44612770003732294
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.23193620005622506
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4435140999266878,
+          "seconds": 0.45363759994506836,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 81174,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1223,
+          "max_lag_sys_ms": 1221,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 163840
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.45348020002711564,
+          "seconds": 0.21812930004671216,
+          "collector_cpu_s_during_workload": 0.046875,
+          "received": 33151,
+          "submitted": 476,
+          "stored_events": 447,
+          "stored_processes": 29,
+          "writer_rows": 476,
+          "max_lag_file_ms": 1003,
+          "max_lag_sys_ms": 1142,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 184320
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.39405800006352365
+        }
+      ],
+      "baseline_median_s": 0.4042960500228219,
+      "monitored_median_s": 0.22485285002039745,
+      "paired_overheads_percent": [
+        0.48777837378106703,
+        -46.08168062030972,
+        -42.982133704094636,
+        -48.22285858712374,
+        -51.18461222551136,
+        4.34558730392407,
+        -38.21729284816732,
+        -10.950005050448652,
+        92.7259393234972,
+        -46.1175596979284,
+        -23.689306505362808,
+        -47.14284000390291,
+        -35.082944798244,
+        -8.328795236799014,
+        -53.64627223418432,
+        6.983084930671923,
+        -47.33676872826585,
+        -7.164495741876609,
+        95.58723469432513,
+        -44.64538214893521
+      ],
+      "median_paired_overhead_percent": -36.65011882320566,
+      "median_of_medians_overhead_percent": -44.38410911813141,
+      "collector_cpu_s_median": 0.03125,
+      "stored_events_median": 447.0,
+      "db_growth_bytes_median": 167936.0,
+      "lost_total": 0,
+      "max_lag_ms_max": 1279
+    },
+    "vite_build": {
+      "command": "node node_modules/vite/bin/vite.js build --logLevel warn",
+      "pairs": 20,
+      "warmup_pairs": 2,
+      "runs": [
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 1.3714746000478044
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.39742710010614246,
+          "seconds": 0.37950140004977584,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9346,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1852,
+          "max_lag_sys_ms": 1976,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 53248
+        },
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.3806996999774128
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.37921459996141493,
+          "seconds": 0.3931852000532672,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 12227,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1849,
+          "max_lag_sys_ms": 1939,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 57344
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.37697209999896586
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3823002999415621,
+          "seconds": 0.37965330004226416,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 10643,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1157,
+          "max_lag_sys_ms": 1966,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 40960
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3837111999746412,
+          "seconds": 0.37897189997602254,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 10483,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1845,
+          "max_lag_sys_ms": 1988,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 49152
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.4043178000720218
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.39084809995256364
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.37771689996588975,
+          "seconds": 0.3924366000574082,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 25978,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1844,
+          "max_lag_sys_ms": 1972,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 40960
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.38330930005759,
+          "seconds": 0.3918137999717146,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 11028,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1857,
+          "max_lag_sys_ms": 1992,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 57344
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.39425050001591444
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3715620000148192
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.41390160005539656,
+          "seconds": 0.3951187999919057,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9376,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1844,
+          "max_lag_sys_ms": 1968,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 57344
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3961216000607237,
+          "seconds": 0.3735250000609085,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 12162,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1857,
+          "max_lag_sys_ms": 1987,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 57344
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.4078305000439286
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3853543000295758
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3873291000491008,
+          "seconds": 0.39555539994034916,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 12393,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1373,
+          "max_lag_sys_ms": 1987,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 57344
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3976148000219837,
+          "seconds": 0.3711312999948859,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 10703,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1843,
+          "max_lag_sys_ms": 1976,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 49152
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.38167180004529655
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3830576000036672
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.40205899998545647,
+          "seconds": 0.40237869997508824,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9368,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1840,
+          "max_lag_sys_ms": 1959,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 45056
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.38200620003044605,
+          "seconds": 0.3849968999857083,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9725,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1168,
+          "max_lag_sys_ms": 1990,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 65536
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3888939000898972
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.37785570009145886
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4063888000091538,
+          "seconds": 0.39164150005672127,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 10160,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1853,
+          "max_lag_sys_ms": 1995,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 40960
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3976197000592947,
+          "seconds": 0.39681549998931587,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9473,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1850,
+          "max_lag_sys_ms": 1974,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 53248
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.381104200030677
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.40166709991171956
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.42967700003646314,
+          "seconds": 0.37612139992415905,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 12832,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1216,
+          "max_lag_sys_ms": 1995,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 53248
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.4043268000241369,
+          "seconds": 0.38136300002224743,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 13001,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1855,
+          "max_lag_sys_ms": 2001,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 57344
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3956442999187857
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.39439729996956885
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.40869939990807325,
+          "seconds": 0.3727469000732526,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 11462,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1856,
+          "max_lag_sys_ms": 1987,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 49152
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3954220999730751,
+          "seconds": 0.39425400004256517,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 48145,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1170,
+          "max_lag_sys_ms": 1963,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 53248
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3868584999581799
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.39281170000322163
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.3932871000142768,
+          "seconds": 0.3866316999774426,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 24556,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1846,
+          "max_lag_sys_ms": 1976,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 45056
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.41811450000386685,
+          "seconds": 0.3842719999374822,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 22366,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1752,
+          "max_lag_sys_ms": 1965,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 57344
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.38427960011176765
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.3881578999571502
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.41694140003528446,
+          "seconds": 0.40552030003163964,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 53774,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1135,
+          "max_lag_sys_ms": 1964,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 36864
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.39608770003542304,
+          "seconds": 0.41622589994221926,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 84448,
+          "submitted": 119,
+          "stored_events": 106,
+          "stored_processes": 13,
+          "writer_rows": 119,
+          "max_lag_file_ms": 1848,
+          "max_lag_sys_ms": 1982,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 53248
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.39256680000107735
+        }
+      ],
+      "baseline_median_s": 0.3885259000235237,
+      "monitored_median_s": 0.38913660001708195,
+      "paired_overheads_percent": [
+        0.7112462814371723,
+        -6.268806392269733,
+        0.406423903566977,
+        -0.6180588341933579,
+        6.339937877432833,
+        -8.411705348012221,
+        2.6472002284625873,
+        -2.7616659258451026,
+        5.0439150590501525,
+        -1.002072828421352,
+        3.6484298005629245,
+        4.122573290290199,
+        -6.359918448181356,
+        -3.609631150877135,
+        -5.489489886971022,
+        1.9116809079249286,
+        -1.5732729004070745,
+        -0.0019777719877045463,
+        4.473025043778867,
+        6.026770460741204
+      ],
+      "median_paired_overhead_percent": 0.20222306578963622,
+      "median_of_medians_overhead_percent": 0.1571838566029271,
+      "collector_cpu_s_median": 0.0,
+      "stored_events_median": 106.0,
+      "db_growth_bytes_median": 53248.0,
+      "lost_total": 0,
+      "max_lag_ms_max": 2001
+    },
+    "native_exe_x300": {
+      "command": "for /L %i in (1,1,300) do @.\\copy.exe raw.txt out-%i.txt",
+      "pairs": 20,
+      "warmup_pairs": 2,
+      "runs": [
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 2.4539761999621987
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 2.3942618999863043,
+          "seconds": 2.2988081000512466,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 80446,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2030,
+          "max_lag_sys_ms": 2133,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 983040
+        },
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 2.338590999948792
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 2.3433665999909863,
+          "seconds": 2.443048999994062,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 105177,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2036,
+          "max_lag_sys_ms": 2126,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 950272
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.5207833000458777
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.3667403999716043,
+          "seconds": 2.3511398000409827,
+          "collector_cpu_s_during_workload": 0.125,
+          "received": 94521,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2025,
+          "max_lag_sys_ms": 2134,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 950272
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.398160600103438,
+          "seconds": 2.4008571000304073,
+          "collector_cpu_s_during_workload": 0.09375,
+          "received": 70211,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2059,
+          "max_lag_sys_ms": 2132,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 950272
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.330003199982457
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3854124000063166
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.410180499893613,
+          "seconds": 2.3877226000186056,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 69300,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2027,
+          "max_lag_sys_ms": 2144,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 937984
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.365025999955833,
+          "seconds": 2.4493402999360114,
+          "collector_cpu_s_during_workload": 0.125,
+          "received": 81361,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2063,
+          "max_lag_sys_ms": 2130,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 937984
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.4555665999650955
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.392509900033474
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.4368145999033004,
+          "seconds": 2.4425560000818223,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 139361,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2813,
+          "max_lag_sys_ms": 2840,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 978944
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.3461756999604404,
+          "seconds": 2.3730205999454483,
+          "collector_cpu_s_during_workload": 0.15625,
+          "received": 70890,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2605,
+          "max_lag_sys_ms": 2589,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 970752
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.317343099974096
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3098876000149176
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.38181439996697,
+          "seconds": 2.403010300011374,
+          "collector_cpu_s_during_workload": 0.109375,
+          "received": 67270,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2629,
+          "max_lag_sys_ms": 2657,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 946176
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.3530674000503495,
+          "seconds": 2.3200121000409126,
+          "collector_cpu_s_during_workload": 0.1875,
+          "received": 94317,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2487,
+          "max_lag_sys_ms": 2706,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 950272
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3403549999929965
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3358025000197813
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.378594500012696,
+          "seconds": 2.423740300000645,
+          "collector_cpu_s_during_workload": 0.078125,
+          "received": 66401,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2090,
+          "max_lag_sys_ms": 2125,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 950272
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.416386600001715,
+          "seconds": 2.410520000034012,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 70707,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2042,
+          "max_lag_sys_ms": 2126,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 974848
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.327015500050038
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3430569000774994
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.4799948999425396,
+          "seconds": 2.3649070999817923,
+          "collector_cpu_s_during_workload": 0.0625,
+          "received": 84757,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2034,
+          "max_lag_sys_ms": 2127,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 962560
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.538131700013764,
+          "seconds": 2.373753299936652,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 78117,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2041,
+          "max_lag_sys_ms": 2141,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 966656
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.4446847999934107
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.2665680999634787
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.363736000028439,
+          "seconds": 2.3540813999716192,
+          "collector_cpu_s_during_workload": 0.015625,
+          "received": 69865,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2062,
+          "max_lag_sys_ms": 2125,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 937984
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.4184316999744624,
+          "seconds": 2.4113554999930784,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 69985,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2044,
+          "max_lag_sys_ms": 2134,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 974848
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.564101199968718
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3810224999906495
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.3173036000225693,
+          "seconds": 2.327710499987006,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 65543,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2107,
+          "max_lag_sys_ms": 2134,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 950272
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.415966600063257,
+          "seconds": 2.3901711999205872,
+          "collector_cpu_s_during_workload": 0.109375,
+          "received": 67788,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2023,
+          "max_lag_sys_ms": 2131,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 978944
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3460782000329345
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.3324224000098184
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.3679239000193775,
+          "seconds": 2.356834000092931,
+          "collector_cpu_s_during_workload": 0.046875,
+          "received": 66355,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2049,
+          "max_lag_sys_ms": 2127,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 995328
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.4988054999848828,
+          "seconds": 2.364888699958101,
+          "collector_cpu_s_during_workload": 0.03125,
+          "received": 82430,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2025,
+          "max_lag_sys_ms": 2135,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 970752
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.35597539995797
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.2914752999786288
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.352231699973345,
+          "seconds": 2.4982403999892995,
+          "collector_cpu_s_during_workload": 0.0625,
+          "received": 129008,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2039,
+          "max_lag_sys_ms": 2125,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 946176
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 2.362225199933164,
+          "seconds": 2.3403724000090733,
+          "collector_cpu_s_during_workload": 0.078125,
+          "received": 72547,
+          "submitted": 2719,
+          "stored_events": 2109,
+          "stored_processes": 610,
+          "writer_rows": 2719,
+          "max_lag_file_ms": 2034,
+          "max_lag_sys_ms": 2145,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "user_unresolved": 0,
+          "late_records": 0,
+          "lost_file": 0,
+          "lost_sys": 0,
+          "buffers_lost_file": 0,
+          "buffers_lost_sys": 0,
+          "writer_failed": 0,
+          "lost": 0,
+          "db_growth_bytes": 978944
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 2.351055799983442
+        }
+      ],
+      "baseline_median_s": 2.344567550055217,
+      "monitored_median_s": 2.380737949977629,
+      "paired_overheads_percent": [
+        -6.729793076691982,
+        3.0409357398515136,
+        0.09684698596699182,
+        -0.2535585892548209,
+        2.091782359924532,
+        2.402643785116454,
+        4.031481877986409,
+        -0.8692228295341775,
+        3.7647789134620524,
+        3.5884806088390064,
+        0.9325509723459913,
+        -2.901457891706516,
+        3.861048781616172,
+        -5.957085468292089,
+        -2.2390380604909277,
+        1.879434363570387,
+        1.046620032589729,
+        0.37832737983130027,
+        9.023230580429953,
+        -0.4544086097166944
+      ],
+      "median_paired_overhead_percent": 0.9895855024678601,
+      "median_of_medians_overhead_percent": 1.542732258729762,
+      "collector_cpu_s_median": 0.0625,
+      "stored_events_median": 2109.0,
+      "db_growth_bytes_median": 956416.0,
+      "lost_total": 0,
+      "max_lag_ms_max": 2840
+    },
+    "query_latency_ms": {
+      "why_in_process_median": 0.8820000221021473,
+      "why_in_process_p95": 1.4420999214053154,
+      "why_cli_end_to_end_median": 73.8826000597328,
+      "db_events_at_measurement": 58564,
+      "db_bytes_at_measurement": 26112000
+    }
+  },
+  "checks": {
+    "functional.creator_attribution_ge_99pct": true,
+    "functional.useful_input_recall_ge_95pct": true,
+    "functional.no_unlabelled_false_lineage": true,
+    "functional.msvc_header_impact_reaches_all_includers_and_app": true,
+    "functional.msvc_header_impact_excludes_non_includer": true,
+    "functional.msvc_source_impact_reaches_its_object_and_app": true,
+    "functional.msvc_source_impact_other_objects_only_as_labelled_shared": true,
+    "functional.incremental_rebuild_history": true,
+    "functional.rename_chain_steps_recorded": true,
+    "functional.rename_impact_reaches_final_name": true,
+    "functional.recreate_history_two_writes": true,
+    "functional.parent_child_parent_is_cmd": true,
+    "functional.vite_human_view_hides_node_modules": true,
+    "functional.vite_raw_view_retains_dependency_reads": true,
+    "functional.vite_transitive_impact_to_postbuild": true,
+    "functional.paths_absolute_dos_and_in_scope": true,
+    "functional.no_state_dir_evidence": true,
+    "functional.zero_loss": true,
+    "functional.no_foreign_file_object_attribution": true,
+    "perf.msvc_36_units_mp8.median_overhead_lt_5pct": true,
+    "perf.msvc_36_units_mp8.zero_loss": true,
+    "perf.vite_build.median_overhead_lt_5pct": true,
+    "perf.vite_build.zero_loss": true,
+    "perf.native_exe_x300.median_overhead_lt_5pct": true,
+    "perf.native_exe_x300.zero_loss": true,
+    "perf.why_cli_median_lt_100ms": true
+  },
+  "failed_checks": [],
+  "verdict": "PASS",
+  "finished": "2026-09-26T16:16:38-0700"
+}

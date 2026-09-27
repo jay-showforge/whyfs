@@ -122,12 +122,25 @@ int main(int argc,char **argv){ if(argc!=3) return 2; FILE *in=fopen(argv[1],"rb
 """
 
 
-def write_c_project(d: Path) -> list[str]:
+PAUSE_S = 1.0
+PERF_UNITS = 240
+
+
+def write_c_project(d: Path, units: int = UNITS, heavy: bool = False) -> list[str]:
+    """units x tiny functions (correctness fixture), or with heavy=True a realistic-size build:
+    every unit has several functions with loops, switches and a lookup table."""
     d.mkdir(parents=True)
     (d / "common.h").write_text("#pragma once\n#define WHYFS_BIAS 7\n")
-    names = [f"u{i:02d}" for i in range(UNITS)]
+    names = [f"u{i:02d}" for i in range(units)]
     for i, n in enumerate(names):
-        (d / f"{n}.c").write_text(f'#include "common.h"\nint {n}(int x){{return x+WHYFS_BIAS+{i};}}\n')
+        body = f'#include "common.h"\nint {n}(int x){{return x+WHYFS_BIAS+{i};}}\n'
+        if heavy:
+            for k in range(12):
+                body += (f"static int {n}_t{k}[64] = {{{','.join(str((i * 31 + k * 7 + j) % 97) for j in range(64))}}};\n"
+                         f"int {n}_f{k}(int a, int b) {{ int s = 0; for (int j = 0; j < a; j++) {{ switch ((j + b) % 5) {{"
+                         f" case 0: s += {n}_t{k}[j & 63]; break; case 1: s ^= j * {k + 3}; break; case 2: s -= b; break;"
+                         f" case 3: s += (s >> 2) + {i}; break; default: s *= 3; }} }} return s; }}\n")
+        (d / f"{n}.c").write_text(body)
     decls = "".join(f"int {n}(int);\n" for n in names)
     calls = "+".join(f"{n}(1)" for n in names)
     (d / "main.c").write_text('#include <stdio.h>\n' + decls + 'int main(void){printf("%d\\n",' + calls + ');return 0;}\n')
@@ -203,6 +216,11 @@ def functional(base: Path, menv: dict) -> dict:
         run("del out.txt", fx["recreate"])
         run(f'"{PY}" -c "open(\'out.txt\',\'w\').write(open(\'b.txt\').read())"', fx["recreate"])
         run(f'"{PY}" parent.py', fx["multi"])
+        # secret-shaped arguments on a workspace writer; a write outside the workspace
+        run(f'"{PY}" -c "import sys; open(\'secret-out.txt\',\'w\').write(\'s\')" --password hunter2 API_KEY=abc123 /token:zz9',
+            fx["reopen"])
+        outside = Path(os.environ["USERPROFILE"]) / "whyfs-gate-outside.txt"  # not the workspace, not a temp root
+        run(f'"{PY}" -c "open(r\'{outside}\',\'w\').write(open(\'in.txt\').read())"', fx["reopen"])
         run(f'"{PY}" -c "d=[open(\'in.txt\').read() for _ in range(3)]; open(\'out.txt\',\'w\').write(\'\'.join(d))"', fx["reopen"])
         procs = [subprocess.Popen([PY, "-c", f"open('out_{i}.txt','w').write(open('in_{i}.txt').read())"], cwd=fx["par"])
                  for i in range(16)]
@@ -301,6 +319,20 @@ def functional(base: Path, menv: dict) -> dict:
     checks["paths_absolute_dos_and_in_scope"] = not bad
     checks["no_state_dir_evidence"] = con.execute("SELECT COUNT(*) FROM events WHERE path LIKE ?", (str(ws / ".whyfs") + "%",)).fetchone()[0] == 0
     checks["zero_loss"] = lost(stats) == 0
+    # secret redaction: the writer's command line is stored, its secret values are not
+    ws_cmd = (why(con, str(fx["reopen"] / "secret-out.txt")) or {}).get("command") or ""
+    dump = " ".join(str(r[0]) for r in con.execute("SELECT command FROM processes WHERE command IS NOT NULL"))
+    checks["secret_arguments_redacted"] = "<redacted>" in ws_cmd and not any(s in dump for s in ("hunter2", "abc123", "zz9"))
+    # case-insensitive paths: a differently cased query finds the same evidence
+    alt = str(fx["native"] / "OUT.TXT").upper()
+    checks["case_insensitive_query"] = (why(con, alt) or {}).get("exe") == (why(con, str(fx["native"] / "out.txt")) or {}).get("exe") != None
+    # workspace scoping: the write outside the workspace is not stored as evidence
+    checks["outside_workspace_not_stored"] = con.execute("SELECT COUNT(*) FROM events WHERE path LIKE ?",
+                                                         ("%whyfs-gate-outside.txt",)).fetchone()[0] == 0
+    # mapped-file semantics: the linker's object inputs are memory-mapped reads
+    checks["mmap_reads_attributed_to_link"] = con.execute(
+        "SELECT COUNT(*) FROM events e JOIN processes p ON p.run_id=e.run_id AND p.pid=e.pid "
+        "WHERE e.api='etw:mmap' AND e.is_read=1 AND p.exe LIKE '%link.exe' AND e.path LIKE '%.obj'").fetchone()[0] >= len(units)
     checks["no_foreign_file_object_attribution"] = True  # enforced by the collector; count reported below
     acc["foreign_file_objects_rejected"] = int(stats.get("foreign_file_object", 0) or 0)
     con.close()
@@ -311,7 +343,7 @@ def functional(base: Path, menv: dict) -> dict:
 def performance(base: Path, menv: dict, pairs: int, warmups: int) -> dict:
     ws = base / "perf"
     ws.mkdir(parents=True)
-    write_c_project(ws / "msvc")
+    write_c_project(ws / "msvc", PERF_UNITS, heavy=True)
     write_vite_project(ws / "web")
     (ws / "native").mkdir()
     (ws / "native" / "copy.c").write_text(COPY_C)
@@ -319,7 +351,7 @@ def performance(base: Path, menv: dict, pairs: int, warmups: int) -> dict:
     run("cl /nologo /O2 copy.c >nul", ws / "native", env=menv)
     whyfs("init", str(ws), cwd=ws)
     workloads = {
-        "msvc_36_units_mp8": (MSVC_CLEAN, MSVC_BUILD, ws / "msvc", menv),
+        "msvc_240_units_mp8": (MSVC_CLEAN, MSVC_BUILD, ws / "msvc", menv),
         "vite_build": ("echo.", VITE, ws / "web", None),
         "native_exe_x300": ("del /q out-*.txt 2>nul", r"for /L %i in (1,1,300) do @.\copy.exe raw.txt out-%i.txt", ws / "native", None),
     }
@@ -333,12 +365,20 @@ def performance(base: Path, menv: dict, pairs: int, warmups: int) -> dict:
             run(prep, cwd, env=env, check=False)
             row = {"mode": mode, "warmup": warm}
             if mode == "off":
+                # Symmetric protocol: both modes run one warm-up build, then pause a fixed
+                # PAUSE_S before the measured build.  On this machine a build started ~0.1 s after
+                # the previous one runs ~2x faster than one started after ~1 s idle (CPU power
+                # states; measured without whyfs), so gaps must be identical in both modes.
+                row["first_build_seconds"] = run(cmd, cwd, env=env)[0]
+                run(prep, cwd, env=env, check=False)
+                time.sleep(PAUSE_S)
                 row["seconds"] = run(cmd, cwd, env=env)[0]
             else:
                 size0 = db.stat().st_size if db.exists() else 0
                 with Daemon(ws) as d:
-                    row["first_build_after_start_seconds"] = run(cmd, cwd, env=env)[0]
+                    row["first_build_seconds"] = run(cmd, cwd, env=env)[0]
                     run(prep, cwd, env=env, check=False)
+                    time.sleep(PAUSE_S)
                     c0 = d.cpu_s()
                     row["seconds"] = run(cmd, cwd, env=env)[0]
                     row["collector_cpu_s_during_workload"] = d.cpu_s() - c0
@@ -430,7 +470,7 @@ def main() -> int:
     if not a.skip_perf:
         report["performance"] = performance(base, menv, a.pairs, a.warmups)
         perf = report["performance"]
-        for w in ("msvc_36_units_mp8", "vite_build", "native_exe_x300"):
+        for w in ("msvc_240_units_mp8", "vite_build", "native_exe_x300"):
             checks[f"perf.{w}.median_overhead_lt_5pct"] = perf[w]["median_paired_overhead_percent"] < 5.0
             checks[f"perf.{w}.zero_loss"] = perf[w]["lost_total"] == 0
         checks["perf.why_cli_median_lt_100ms"] = perf["query_latency_ms"]["why_cli_end_to_end_median"] < 100

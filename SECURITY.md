@@ -8,7 +8,15 @@ whyfs observes process/file metadata. That is useful precisely because it can al
 - no file contents are captured, by either backend
 - workspace-only path evidence by default
 - `--all-files` is explicit opt-in
-- common secret-looking command-line values are redacted before storage
+- secret values on command lines are redacted before storage, on Linux and Windows alike: switch
+  values (`--token x`, `/password:x`, `-Password x`), `KEY=value` with a sensitive key, and the
+  same forms inside shell wrappers (`sh -c '…'`, `cmd /c "…"`, PowerShell `-Command`, `$env:KEY=…`)
+  and `Authorization:` header text.  Reference implementation `src/whyfs/redact.py`; both native
+  collectors are tested against its shared vectors (`tests/redaction_vectors.json`), and
+  `scripts/secret_gate.py` checks live that no secret reaches the store, the logs or any output
+- Windows: the collector runs behind the `whyfs` service (LocalSystem); every request is
+  served impersonating the client, only workspaces the client owns are accepted, reparse points
+  are refused, and each store is written as the requesting user (see docs/WINDOWS.md)
 - the state directory is created `0700` and the database `0600` (SQLite gives its `-wal`/`-shm` files the same mode)
 
 ## eBPF backend privileges

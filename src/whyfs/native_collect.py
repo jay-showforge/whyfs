@@ -1,8 +1,9 @@
 """Locate, build and run the native ingestion helper (native/whyfs-collect.c).
 
 The eBPF daemon's per-event path runs in this helper; Python keeps BPF loading
-(BCC), daemon control, and every query.  Like BCC itself, the helper is compiled
-on the target at first use (needs cc, libbpf-dev and libsqlite3-dev).
+(BCC), daemon control, and every query.  Installed packages ship it prebuilt
+(/usr/lib/whyfs/whyfs-collect); a source checkout compiles it at first use
+(needs cc, libbpf-dev and libsqlite3-dev), like BCC compiles its programs.
 
 The binary is cached by source hash.  A root daemon executes it, so a root
 build lives only in a root-owned directory that no other user can write
@@ -54,13 +55,43 @@ def _flags() -> list[str]:
     return ["-lbpf", "-lelf", "-lz", "-lsqlite3"]
 
 
+PACKAGED = Path("/usr/lib/whyfs/whyfs-collect")  # installed by the whyfs .deb (prebuilt per architecture)
+
+
+def _packaged(digest: str) -> Path | None:
+    """The prebuilt collector shipped by the distribution package, if it was built from
+    exactly this source (recorded next to it at package build time) and sits in a location
+    no one but root can modify (a root daemon executes it)."""
+    stamp = PACKAGED.with_name("whyfs-collect.source-sha256")
+    try:
+        if not PACKAGED.is_file() or stamp.read_text().split()[0][:16] != digest:
+            return None
+        if os.geteuid() == 0:
+            _require_private_to_root(PACKAGED.parent)
+            st = os.lstat(PACKAGED)
+            if st.st_uid != 0 or st.st_mode & 0o022:
+                return None
+        return PACKAGED
+    except (OSError, IndexError, NativeUnavailable):
+        return None
+
+
 def binary() -> Path:
-    """Path of the compiled helper, building it if needed."""
+    """Path of the collector helper: the packaged prebuilt one, else a cached local build."""
     override = os.environ.get("WHYFS_COLLECT")
-    if override:
-        return Path(override)
+    if override:  # developer override; a root daemon still runs only a root-controlled file
+        o = Path(override).resolve()
+        if os.geteuid() == 0:
+            _require_private_to_root(o.parent)
+            st = os.lstat(o)
+            if not stat.S_ISREG(st.st_mode) or st.st_uid != 0 or st.st_mode & 0o022:
+                raise NativeUnavailable(f"refusing WHYFS_COLLECT={override}: not a root-owned, root-only-writable file")
+        return o
     src = SOURCE.read_bytes()
     digest = hashlib.sha256(src).hexdigest()[:16]
+    pkg = _packaged(digest)
+    if pkg:
+        return pkg
     d = _cache_dir()
     out = d / f"whyfs-collect-{digest}"
     if out.exists():

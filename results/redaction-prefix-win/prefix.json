@@ -1,0 +1,56 @@
+{
+ "python_argv": [
+  {
+   "leak": true,
+   "shown": "sh -c 'deploy --token <LEAKED> --api-key=<redacted>'"
+  },
+  {
+   "leak": false,
+   "shown": "bash -c 'export API_KEY=<redacted>'"
+  },
+  {
+   "leak": false,
+   "shown": "bash -lc 'ACCESS_TOKEN=<redacted>'"
+  },
+  {
+   "leak": true,
+   "shown": "cmd.exe /c '\"C:\\Python313\\python.exe\" -c \"print(1)\" --password <LEAKED> API_KEY=<redacted>'"
+  },
+  {
+   "leak": false,
+   "shown": "powershell -NoProfile -Command '$env:API_KEY=<redacted>'"
+  },
+  {
+   "leak": true,
+   "shown": "sh -c 'deploy --token '\"'\"'<LEAKED> with space'\"'\"''"
+  },
+  {
+   "leak": true,
+   "shown": "prog --auth-token <LEAKED> --verbose"
+  },
+  {
+   "leak": true,
+   "shown": "curl -H 'Authorization: Bearer <LEAKED>' https://example.test/x"
+  }
+ ],
+ "windows_raw": [
+  {
+   "leak": true,
+   "shown": "C:\\WINDOWS\\system32\\cmd.exe /c \"\"C:\\Python313\\python.exe\" -c \"import sys; open('secret-out.txt','w').write('s')\" --password <LEAKED> API_KEY=<redacted>\""
+  },
+  {
+   "leak": true,
+   "shown": "cmd /c \"set \"ACCESS_TOKEN=<LEAKED>\" && tool.exe /token:<LEAKED> /v\""
+  },
+  {
+   "leak": true,
+   "shown": "powershell.exe -NoProfile -Command \"& tool -Password <LEAKED>; $Secret = \\\"<LEAKED>\\\"\""
+  },
+  {
+   "leak": true,
+   "shown": "pwsh -c \"Connect-Thing -ApiKey <LEAKED> -Credential:<redacted>\""
+  }
+ ],
+ "python_leaks": 5,
+ "windows_leaks": 4
+}

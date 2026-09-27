@@ -22,18 +22,21 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "src"))
+INSTALLED = "--installed" in sys.argv  # exercise an installed package: `whyfs` on PATH, no source tree
+if not INSTALLED:
+    sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "tests" / "corpus"))
 import scenarios  # noqa: E402
 from whyfs.query import history, impact, why  # noqa: E402
 from whyfs.store import connect  # noqa: E402
 
 LINUX = sys.platform.startswith("linux")
-ENV = dict(os.environ, PYTHONPATH=str(REPO / "src"))
+ENV = dict(os.environ) if INSTALLED else dict(os.environ, PYTHONPATH=str(REPO / "src"))
+WHYFS = [shutil.which("whyfs") or "whyfs"] if INSTALLED else [sys.executable, "-m", "whyfs"]
 
 
 def whyfs(*args, cwd, check=True):
-    p = subprocess.run([sys.executable, "-m", "whyfs", *args], cwd=cwd, env=ENV, capture_output=True, text=True,
+    p = subprocess.run([*WHYFS, *args], cwd=cwd, env=ENV, capture_output=True, text=True,
                        encoding="utf-8", errors="replace")
     if check and p.returncode != 0:
         raise SystemExit(f"whyfs {' '.join(args)} failed: {p.stdout}{p.stderr}")
@@ -53,6 +56,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--user", default=os.environ.get("SUDO_USER"))
+    ap.add_argument("--installed", action="store_true", help="use the installed whyfs (PATH), not this source tree")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -81,7 +85,8 @@ def main() -> int:
     con.close()
     lost = sum(int(stats.get(k, 0) or 0) for k in ("kernel_drops", "queue_drops", "user_unresolved", "late_records"))
     failed = [r for r in results if not r["ok"]]
-    report = {"platform": platform.platform(), "machine": platform.machine(), "collector": collector,
+    import whyfs as _w
+    report = {"installed": INSTALLED, "whyfs_module": _w.__file__, "platform": platform.platform(), "machine": platform.machine(), "collector": collector,
               "checks": len(results), "failed": len(failed), "lost": lost, "workload_s": round(workload_s, 3),
               "results": results, "collector_stats": stats, "workspace": str(base),
               "finished": time.strftime("%Y-%m-%dT%H:%M:%S%z")}

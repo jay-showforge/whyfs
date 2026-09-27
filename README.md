@@ -2,197 +2,172 @@
 
 **Ask your filesystem why a file exists.**
 
-`whyfs` records local process→file provenance and answers three questions:
+`whyfs` records local process→file provenance in the workspaces you choose and answers three
+questions:
 
 ```bash
-whyfs why dist/app
-whyfs impact src/parser.c
-whyfs history dist/app
+whyfs why dist/app          # which process wrote it, with what command, from which inputs
+whyfs impact src/parser.c   # everything downstream that consumed it
+whyfs history dist/app      # every observed write, rename and delete
 ```
 
-The goal is deliberately smaller than a security SIEM and more general than a language-specific build graph: preserve the causal file/process evidence the operating system already sees, locally, then make it usable.
+It observes what the operating system already sees: eBPF on Linux, ETW on Windows.  You work
+normally, and there is no wrapper command.  Everything stays local.
 
-> **v0.2 is an alpha and has not graduated.** The eBPF backend was validated on a real WSL2 kernel. It passed every lineage, accuracy (100% creator attribution, 100% useful-input recall), zero-drop and query-latency check, and build overhead was 0.4–3.1%. It **failed the <5% overhead target on an exec-heavy loop** (5.6–7.9% in 3 of 4 runs). See [PROJECT_STATUS.md](PROJECT_STATUS.md) and [BENCHMARK.md](BENCHMARK.md). The v0.1 `LD_PRELOAD` backend remains available as `whyfs trace`.
-
-## The experience
-
-Explicit fallback capture works today:
-
-```bash
-whyfs init
-whyfs trace -- bash -c 'tr a-z A-Z < raw.txt > upper.txt'
-whyfs why upper.txt
-```
-
-Example:
+> **Status: pre-1.0 (0.9.0.dev1), not yet released.**  The platform matrix below shows
+> exactly what has been validated.
 
 ```text
-/path/upper.txt
-└── created by /usr/bin/tr  (pid 4217)
-    run: bash -c 'tr a-z A-Z < raw.txt > upper.txt'
-    evidence: preload
+/work/app/dist/app
+└── created by /usr/bin/ld  (pid 4217)
+    run: ld -o dist/app main.o util.o
+    parent: /usr/bin/make  (pid 4190)  · make -j8
+    evidence: ebpf-native
     inputs:
-      ├── /path/raw.txt
+      ├── /work/app/main.o
+      ├── /work/app/util.o
 ```
 
-Then:
+## Platforms
+
+| Platform | Collector | Package | Status |
+|---|---|---|---|
+| Linux x86-64 | eBPF (native C collector + BCC programs) | `.deb` (prebuilt collector) | **Validated natively** |
+| Linux ARM64 | same sources, built natively for arm64 | `.deb` (arm64) | **Native validation pending** |
+| Windows x64 | ETW (native collector + `whyfs` service) | MSI | **Validated natively** ([docs/WINDOWS.md](docs/WINDOWS.md)) |
+| Windows ARM64 | same sources, built for ARM64 | MSI (ARM64) | Binaries cross-built; **native validation pending** |
+| WSL2 | the Linux collector inside WSL2 | `.deb` | **Validated** (the Linux x86-64 host above is WSL2) |
+
+Not currently supported: **macOS**.  macOS is a future/community target; contributions are
+welcome.
+
+"Validated natively" means real runtime evidence on that platform: installer, collector, the
+shared A–H behavioural corpus, why/impact/history, zero event loss, privacy and performance
+gates.  Cross-compilation alone is never counted as support.  For the current evidence and
+what is still needed, see [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+
+## Install
+
+### Linux (Debian/Ubuntu, x86-64 or arm64)
 
 ```bash
-whyfs impact raw.txt
+sudo apt install ./whyfs_<version>_<arch>.deb
+whyfs doctor                      # kernel BTF / BPF / ring buffer checks
 ```
 
-can follow downstream lineage across later recorded commands.
-
-## v0.2: always-on Linux capture
-
-First check the host:
+The package ships a prebuilt collector (`/usr/lib/whyfs/whyfs-collect`) for its architecture.
+Nothing is compiled on the normal path.  The collector is used only if it matches the
+package's recorded source hash and only root can modify it; otherwise it is refused.
 
 ```bash
-whyfs doctor
+cd ~/project && whyfs init
+sudo whyfs daemon start --workspace ~/project      # or, always on, with systemd:
+sudo systemctl enable --now "whyfs@$(systemd-escape --path ~/project).service"
 ```
 
-The alpha eBPF backend currently uses BCC. On Debian/Ubuntu/WSL you typically need BCC, Clang, and kernel BPF support (package names vary by distro; commonly `bpfcc-tools` and `python3-bpfcc`). During alpha testing the daemon is normally run with sufficient BPF/perf privileges.
+The eBPF programs need root.  The daemon writes each store as the workspace owner
+(privilege-separated).
 
-Foreground:
+### WSL2
 
-```bash
-sudo whyfs daemon run --workspace /path/to/project
+Install the Linux `.deb` inside the WSL2 distribution; check the kernel with `whyfs doctor`.
+Watch workspaces on the Linux filesystem (`/home/...`).  Files under `/mnt/c` are served by
+the Windows file bridge, and Windows programs that write them are invisible to the Linux
+kernel.  For Windows-side tools, install the Windows MSI.  With `systemd=true` in
+`/etc/wsl.conf` the `whyfs@` unit works; without it, use `sudo whyfs daemon start`.
+
+### Windows (x64, ARM64)
+
+Run `whyfs-<version>-<arch>.msi` once as an administrator.  It installs the `whyfs` service
+and puts `whyfs` on PATH.  After that, everything runs as a normal user:
+
+```powershell
+cd C:\src\project
+whyfs init
+whyfs daemon start
+# ... build, test, edit as usual ...
+whyfs why dist\app.exe
+whyfs daemon stop
 ```
 
-Background:
-
-```bash
-sudo whyfs daemon start --workspace /path/to/project
-whyfs daemon status --workspace /path/to/project
-sudo whyfs daemon stop --workspace /path/to/project
-```
-
-Once the daemon is running, work normally. No `whyfs trace -- ...` wrapper is required.
-
-### Why eBPF matters
-
-`LD_PRELOAD` cannot see everything. It misses statically linked programs, secure-exec/setuid programs, direct syscalls, and some internal libc/runtime paths. The test suite includes a statically linked C program specifically to prove the fallback **does not** claim evidence it never observed.
-
-The v0.2 collector instead observes the kernel's VFS/LSM layer and process lifecycle. That also covers io_uring, which Node's libuv uses for async file I/O and which syscall tracepoints never see. It sends compact evidence to user space through a BPF ring buffer. The kernel resolves open paths (`bpf_d_path`), and user space maps later reads and writes by kernel file object. SQLite writes are batched on a dedicated writer. Under a root daemon, they run in a child process that has dropped to the workspace owner.
-
-```text
-Linux process/file events
-        ↓
-      eBPF
-        ↓
-   BPF ring buffer
-        ↓
- userspace resolver
-        ↓
- batch SQLite writer
-        ↓
- why / impact / history
-```
-
-The monitored workload is never synchronously blocked on a SQLite commit. If evidence is dropped because buffers fill, `whyfs` counts and reports the loss instead of silently pretending the graph is complete.
+Upgrades replace the older version in place.  Uninstalling removes the program, service and
+PATH entry.  Workspace histories (`<workspace>\.whyfs`) belong to their users and are kept.
 
 ## Raw evidence vs. human view
 
-`whyfs` does **not** delete evidence just because it looks noisy.
-
-The SQLite store retains observed events. The default human view hides system/runtime reads (for example `/usr/lib`, `/etc`) and dependency trees (`node_modules`, `site-packages`), and says how many inputs it hid. Use:
+`whyfs` never deletes evidence because it looks noisy.  The default view hides
+system/runtime reads (`/usr/lib`, `C:\Windows`, …) and dependency trees (`node_modules`,
+`site-packages`), and says how many inputs it hid:
 
 ```bash
 whyfs why FILE --all      # include system/library reads
 whyfs why FILE --raw      # unfiltered inputs plus the creator's raw stored events
-whyfs impact FILE --raw   # include system/runtime outputs
+whyfs impact FILE --all   # include system/runtime outputs
+whyfs why FILE --json     # machine-readable
 ```
 
-to see the unpruned view.
+When one compiler process builds many files (e.g. `cl.exe a.c b.c c.c`), its outputs are
+labelled **shared** instead of being given a lineage that was never observed.  Every lost event
+is counted (`whyfs stats`), never hidden.
 
-This distinction matters: relevance is an interpretation; the underlying observation should remain auditable.
+## Privacy
 
-## Privacy defaults
+- Local only: `<workspace>/.whyfs/whyfs.db`.  Nothing is uploaded.  File contents are never
+  captured.
+- Only files inside the workspace (and derived temporaries) are stored.  Only processes that
+  touched the workspace, and a bounded chain of their ancestors, are stored.
+- **Secret values on command lines are redacted before storage** on every platform, including
+  inside shell wrappers: `--token x`, `--password=x`, `/token:x`, `-Password x`,
+  `API_KEY=x`, `ACCESS_TOKEN=x`, `sh -c '… --api-key x'`, `cmd /c "… PRIVATE_KEY=x"`,
+  PowerShell `$env:API_KEY='x'`, `Authorization: Bearer x`.  There is one policy and one set
+  of shared test vectors, with three implementations (`src/whyfs/redact.py` is the reference).
+- See [SECURITY.md](SECURITY.md).
 
-- local-only SQLite database at `.whyfs/whyfs.db`
-- workspace paths only by default
-- file contents are never captured
-- common secret-looking top-level CLI arguments are redacted
-- eBPF process command lines use the same redaction policy, and are stored only for processes that touched the workspace (plus up to 8 ancestors)
-- a root daemon writes its store as the workspace owner (privilege-separated); symlinked state is refused
-- `--all-files` is explicit opt-in
+## What is recorded
 
-See [SECURITY.md](SECURITY.md).
+| | Linux (eBPF) | Windows (ETW) |
+|---|---|---|
+| process start/exit, parent, command line | yes | yes |
+| opens | every successful open | not recorded (Windows reports probes as creates) |
+| first read / first write per file and process | yes (incl. io_uring, sendfile, splice) | yes |
+| memory-mapped files | yes | yes |
+| rename, delete | yes | yes (incl. delete-on-close) |
+| path comparison | case-sensitive | case-insensitive |
 
-## What v0.2 records
-
-The eBPF backend needs a kernel with BTF and fentry (BPF trampoline) support; it was validated on 6.6 (WSL2). `whyfs doctor` checks the host. It covers:
-
-- process fork / exec / exit, with PIDs translated to the daemon's PID namespace and per-run process keys that survive PID reuse
-- every successful file open (`security_file_open`), whatever the syscall: `open`, `openat`, `openat2`, or io_uring
-- the first read and first write of each open file by each process (`security_file_permission`), including through `sendfile`, `splice`, `copy_file_range` and io_uring; fds are resolved by kernel file object, so dup, redirection, inheritance and fd reuse are handled
-- file-backed `mmap` (a shared writable mapping counts as a write)
-- `rename` and `unlink` in every syscall form (`do_renameat2`, `do_unlinkat`), plus `chdir`/`fchdir` for the cwd model
-- exec boundaries: `why` attributes a write to the program image that performed it
-
-Not covered: metadata-only operations (`chmod`, `chown`, `utimes`, `link`, `symlink`, `truncate`), files already open before the daemon started, and paths longer than 512 bytes. Paths the kernel cannot render are counted, never guessed. The project does not claim complete system provenance.
-
-## Graduation gate
-
-Two gates live in `scripts/`, and neither substitutes the preload backend when BPF is unavailable:
-
-```bash
-sudo -E python scripts/v02_gate.py                                              # shipped gate
-sudo python scripts/v02_graduation.py --user $USER --out results --pairs 10     # full graduation harness
-```
-
-The full harness tests:
-
-- a static binary
-- a `make -j8` build with parentage, compiler and linker subprocesses, header and source rebuilds, and transitive impact
-- a Vite build plus a post-build script
-- rename/move chains
-- default versus raw query views
-- creator attribution (≥99%) and useful-input recall (≥95%)
-- zero drops
-- `why` latency under 100 ms
-- paired, alternating performance runs on three workloads with a <5% median slowdown target
-
-**Current status:** the shipped gate passes. The full harness passes 45 of 46 checks and fails the <5% target on its exec-heavy workload, so v0.2 **does not graduate** (see [PROJECT_STATUS.md](PROJECT_STATUS.md)).
+Not covered: metadata-only operations (chmod, timestamps, links), and files already open before
+collection started.  The canonical record format is in [docs/SCHEMA.md](docs/SCHEMA.md).
 
 ## Development
 
 ```bash
-make test
-make demo
+make test                                  # Linux (as root it also runs the live eBPF tests)
+python -m unittest discover -s tests       # Windows (PYTHONPATH=src;tests)
+python scripts/run_corpus.py --out DIR     # shared A–H corpus (Linux: sudo … --user USER)
+python scripts/secret_gate.py --out DIR    # live redaction gate
 ```
 
-The suite has 54 tests. They cover:
-
-- the v0.1 end-to-end path and v0.1's static-binary blind spot
-- v0.2 resolver regressions: PID reuse, fd reuse, redirection, renames, exec boundaries and derived temporaries
-- privacy, meaning which process rows are persisted
-- state-directory hardening
-- static checks of the BPF source
-- live kernel and daemon tests
-
-The live tests need root and BCC and are skipped otherwise.
+Windows binaries and the MSI: `native\windows\build.ps1`, `native\windows\make_msi.py`.  Linux
+package: `packaging/linux/build_deb.sh`.
 
 ## Positioning
 
-`whyfs` is not claiming that file provenance is new.
+File provenance is not new.  PASS/CamFlow, security provenance systems, build provenance, data
+lineage, ReproZip-style capture and language-specific lineage tools all cover parts of the
+space.  The bet here is narrower: make host-observed process→file causality feel like an
+ordinary filesystem query.
 
-Research systems such as PASS/CamFlow, security provenance systems, build provenance, data lineage, ReproZip-style execution capture, AgentFS, and language-specific lineage tools all demonstrate parts of the space.
-
-The product bet is narrower:
-
-> make host-observed process→file causality feel like an ordinary filesystem query.
-
-Install it, work normally, then ask **why is this file here?**
-
-## Non-goals
-
-- storing file contents
-- replacing Git
-- claiming an inferred dependency was directly observed
-- uploading provenance to a cloud by default
-- hiding dropped-evidence counters
+Non-goals: storing file contents, replacing Git, claiming an inferred dependency was observed,
+uploading provenance anywhere, hiding dropped-evidence counters.
 
 ## License
 
-MIT
+whyfs is **source available under the Business Source License 1.1** (see [LICENSE](LICENSE)).
+It is not OSI-approved open source.
+
+- Non-production use (testing, evaluation, personal, educational, research) is permitted.
+- Production use is free for individuals and organizations (together with their affiliates)
+  whose aggregate annual gross revenue is below US$100,000.
+- Other production use, and commercial embedding, bundling or distribution, require a
+  commercial license: licensing@tenzorpipe.org.
+- Each version converts to the Apache License 2.0 on its Change Date, four years after its
+  first public release.

@@ -1,0 +1,153 @@
+{
+ "_about": "Shared command-text redaction vectors. whyfs.redact.redact_text (reference), the Linux collector (whyfs-collect --redact-text) and the Windows collector (whyfs-collect-win --redact) must map every input to exactly its expected output. Secret values contain the marker SECRETVAL so any leak is easy to scan for.",
+ "text": [
+  [
+   "cmd.exe /c \"\"C:\\Python313\\python.exe\" -c \"import sys; open('secret-out.txt','w').write('s')\" --password SECRETVAL1 API_KEY=SECRETVAL2\"",
+   "cmd.exe /c \"\"C:\\Python313\\python.exe\" -c \"import sys; open('secret-out.txt','w').write('s')\" --password <redacted> API_KEY=<redacted>\""
+  ],
+  [
+   "tool --token SECRETVAL1 build",
+   "tool --token <redacted> build"
+  ],
+  [
+   "tool --api-key SECRETVAL1 build",
+   "tool --api-key <redacted> build"
+  ],
+  [
+   "tool --password=SECRETVAL1 --verbose",
+   "tool --password=<redacted> --verbose"
+  ],
+  [
+   "deploy /token:SECRETVAL1 /v",
+   "deploy /token:<redacted> /v"
+  ],
+  [
+   "deploy /PASSWORD:SECRETVAL1 /Q",
+   "deploy /PASSWORD:<redacted> /Q"
+  ],
+  [
+   "deploy -Password SECRETVAL1 -Force",
+   "deploy -Password <redacted> -Force"
+  ],
+  [
+   "deploy -Token:SECRETVAL1 -Force",
+   "deploy -Token:<redacted> -Force"
+  ],
+  [
+   "env API_KEY=SECRETVAL1 ACCESS_TOKEN=SECRETVAL2 PRIVATE_KEY=SECRETVAL3 make all",
+   "env API_KEY=<redacted> ACCESS_TOKEN=<redacted> PRIVATE_KEY=<redacted> make all"
+  ],
+  [
+   "run GITHUB_TOKEN=SECRETVAL1 db_credential=SECRETVAL2 AWS_SECRET_ACCESS_KEY=SECRETVAL3 x",
+   "run GITHUB_TOKEN=<redacted> db_credential=<redacted> AWS_SECRET_ACCESS_KEY=<redacted> x"
+  ],
+  [
+   "tool --password \"SECRETVAL1 with spaces\" next",
+   "tool --password \"<redacted>\" next"
+  ],
+  [
+   "tool --password 'SECRETVAL1 with spaces' next",
+   "tool --password '<redacted>' next"
+  ],
+  [
+   "tool API_KEY=\"SECRETVAL1 two\" API_SECRET='SECRETVAL2 three' next",
+   "tool API_KEY=\"<redacted>\" API_SECRET='<redacted>' next"
+  ],
+  [
+   "tool --token=\"SECRETVAL1 x\" keep",
+   "tool --token=\"<redacted>\" keep"
+  ],
+  [
+   "tool --auth-token SECRETVAL1 --db_password SECRETVAL2 --app.secret SECRETVAL3 keep",
+   "tool --auth-token <redacted> --db_password <redacted> --app.secret <redacted> keep"
+  ],
+  [
+   "sh -c 'deploy --token SECRETVAL1 && echo done'",
+   "sh -c 'deploy --token <redacted> && echo done'"
+  ],
+  [
+   "sh -c 'deploy --token SECRETVAL1'",
+   "sh -c 'deploy --token <redacted>'"
+  ],
+  [
+   "bash -c \"export API_KEY=SECRETVAL1; ./run --password=SECRETVAL2|tee log\"",
+   "bash -c \"export API_KEY=<redacted>; ./run --password=<redacted>|tee log\""
+  ],
+  [
+   "powershell -NoProfile -Command \"$env:API_KEY='SECRETVAL1'; $Token = 'SECRETVAL2'; run -Password SECRETVAL3\"",
+   "powershell -NoProfile -Command \"$env:API_KEY='<redacted>'; $Token = '<redacted>'; run -Password <redacted>\""
+  ],
+  [
+   "pwsh -c \"Invoke-Thing -ApiKey SECRETVAL1 -Credential:SECRETVAL2 -Name ok\"",
+   "pwsh -c \"Invoke-Thing -ApiKey <redacted> -Credential:<redacted> -Name ok\""
+  ],
+  [
+   "curl -H \"Authorization: Bearer SECRETVAL1\" -H \"X-Api-Key: SECRETVAL2\" https://example.test/token",
+   "curl -H \"Authorization: Bearer <redacted>\" -H \"X-Api-Key: <redacted>\" https://example.test/token"
+  ],
+  [
+   "set \"API_KEY=SECRETVAL1\" && run.cmd",
+   "set \"API_KEY=<redacted>\" && run.cmd"
+  ],
+  [
+   "TOOL --TOKEN SECRETVAL1 --Api-Key=SECRETVAL2 Password=SECRETVAL3",
+   "TOOL --TOKEN <redacted> --Api-Key=<redacted> Password=<redacted>"
+  ],
+  [
+   "tool ab --secret SECRETVAL1 cd --passwd SECRETVAL2 ef",
+   "tool ab --secret <redacted> cd --passwd <redacted> ef"
+  ],
+  [
+   "tool --token \"SECRETVAL1",
+   "tool --token <redacted>"
+  ],
+  [
+   "tool --token SECRETVAL1\tnext",
+   "tool --token <redacted>\tnext"
+  ],
+  [
+   "run --password Päss-SECRETVAL1-ü next",
+   "run --password <redacted> next"
+  ],
+  [
+   "tool --password-file /etc/pw --no-color secret.txt token.txt /usr/token build",
+   "tool --password-file /etc/pw --no-color secret.txt token.txt /usr/token build"
+  ],
+  [
+   "cc -o out/token.o src/secret_store.c -DUSE_TOKENS",
+   "cc -o out/token.o src/secret_store.c -DUSE_TOKENS"
+  ],
+  [
+   "C:\\tools\\tokenizer.exe C:\\data\\passwords.txt /v",
+   "C:\\tools\\tokenizer.exe C:\\data\\passwords.txt /v"
+  ],
+  [
+   "https://example.test/api?x=1 --tokenizer bert --password-hint ok",
+   "https://example.test/api?x=1 --tokenizer bert --password-hint ok"
+  ],
+  [
+   "python -c \"print('password manager')\" ",
+   "python -c \"print('password manager')\" "
+  ],
+  [
+   "tool --password",
+   "tool --password"
+  ],
+  [
+   "tool API_KEY= next",
+   "tool API_KEY= next"
+  ],
+  [
+   "tool --password <redacted> API_KEY=<redacted>",
+   "tool --password <redacted> API_KEY=<redacted>"
+  ],
+  [
+   "echo tokens: 5 secrets",
+   "echo tokens: 5 secrets"
+  ],
+  [
+   "",
+   ""
+  ]
+ ]
+}

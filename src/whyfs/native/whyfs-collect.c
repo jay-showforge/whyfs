@@ -377,7 +377,132 @@ static void shlex_quote(buf_t *o, const char *s) {
     b_ch(o, '\'');
 }
 static const char *SENSITIVE[] = {"password", "passwd", "token", "secret", "api-key", "apikey", "api_key", "access-key", "access_key", "private-key", "private_key", "credential", "authorization"};
-static char *redact_cmdline(char **argv, size_t argc) {  // ebpf_bcc._redact_cmdline
+// Command-text pass: whyfs/redact.py redact_text, rule for rule (both collectors carry this
+// same block; tests/redaction_vectors.json holds the shared expected outputs).  Finds secrets
+// that argv tokenization cannot isolate -- `sh -c '... --token x'`, `cmd /c ""tool" --password x
+// API_KEY=y"`, PowerShell `$env:API_KEY='x'` -- and replaces only their values.
+#define RX_MARK "<redacted>"
+static int rx_ws(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f'; }
+static int rx_quote(char c) { return c == '"' || c == '\''; }
+static int rx_sep(char c) { return c == ';' || c == '&' || c == '|'; }
+static int rx_boundary(char c) { return rx_ws(c) || rx_quote(c) || rx_sep(c) || c == '(' || c == '`'; }
+static int rx_keych(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '.';
+}
+static char rx_low(char c) { return (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c; }
+static int rx_ieq(const char *a, const char *lower, size_t n) {
+    for (size_t i = 0; i < n; i++) if (rx_low(a[i]) != lower[i]) return 0;
+    return 1;
+}
+static int rx_key_sensitive(const char *k, size_t n) {  // redact.key_is_sensitive: contains a name
+    for (size_t s = 0; s < sizeof SENSITIVE / sizeof *SENSITIVE; s++) {
+        size_t sl = strlen(SENSITIVE[s]);
+        for (size_t i = 0; i + sl <= n; i++) if (rx_ieq(k + i, SENSITIVE[s], sl)) return 1;
+    }
+    return 0;
+}
+static int rx_switch_sensitive(const char *k, size_t n) {  // redact.switch_is_sensitive: is, or ends in -/_/. + name
+    for (size_t s = 0; s < sizeof SENSITIVE / sizeof *SENSITIVE; s++) {
+        size_t sl = strlen(SENSITIVE[s]);
+        if (n < sl || !rx_ieq(k + n - sl, SENSITIVE[s], sl)) continue;
+        if (n == sl || k[n - sl - 1] == '-' || k[n - sl - 1] == '_' || k[n - sl - 1] == '.') return 1;
+    }
+    return 0;
+}
+static size_t rx_value_end(const char *t, size_t n, size_t j) {
+    size_t k = j;
+    while (k < n && !rx_ws(t[k]) && !rx_sep(t[k])) {
+        char c = t[k];
+        if (rx_quote(c)) {
+            if (k > j && (k + 1 == n || rx_ws(t[k + 1]) || rx_sep(t[k + 1]))) return k;  // closes an outer quoting
+            const char *close = memchr(t + k + 1, c, n - k - 1);
+            if (!close) return k == j ? n : k;
+            k = (size_t)(close - t) + 1;
+        } else k++;
+    }
+    return k;
+}
+static size_t rx_skip_ws(const char *t, size_t n, size_t k) { while (k < n && rx_ws(t[k])) k++; return k; }
+static int rx_match(const char *t, size_t n, size_t i, size_t *vs, size_t *ve) {
+    static const char *SCHEMES[] = {"bearer", "basic", "token", "digest"};
+    size_t p = i, prefix = 0;
+    int dollar = 0;
+    if (t[p] == '$') {
+        dollar = 1; p++;
+        if (p + 4 <= n && rx_ieq(t + p, "env:", 4)) p += 4;
+    } else if (p + 1 < n && t[p] == '-' && t[p + 1] == '-') prefix = 2;
+    else if (t[p] == '-' || t[p] == '/') prefix = 1;
+    size_t ks = p + prefix, ke = ks;
+    while (ke < n && rx_keych(t[ke])) ke++;
+    if (ke == ks) return 0;
+    const char *key = t + ks;
+    size_t kl = ke - ks;
+    char sep = ke < n ? t[ke] : 0;
+    if (sep == '=') {
+        if (!rx_key_sensitive(key, kl)) return 0;
+        *vs = ke + 1; *ve = rx_value_end(t, n, *vs); return 1;
+    }
+    if (dollar) {  // PowerShell: $name = value
+        size_t q = rx_skip_ws(t, n, ke);
+        if (q < n && t[q] == '=' && rx_key_sensitive(key, kl)) { *vs = rx_skip_ws(t, n, q + 1); *ve = rx_value_end(t, n, *vs); return 1; }
+        return 0;
+    }
+    if (sep == ':') {
+        if (prefix) {
+            if (!rx_key_sensitive(key, kl)) return 0;
+            *vs = ke + 1; *ve = rx_value_end(t, n, *vs); return 1;
+        }
+        if (ke + 1 < n && rx_ws(t[ke + 1]) && rx_switch_sensitive(key, kl)) {  // header text
+            *vs = rx_skip_ws(t, n, ke + 1); *ve = rx_value_end(t, n, *vs);
+            for (size_t s = 0; s < sizeof SCHEMES / sizeof *SCHEMES; s++) {
+                if (*ve - *vs == strlen(SCHEMES[s]) && rx_ieq(t + *vs, SCHEMES[s], *ve - *vs)) {
+                    *vs = rx_skip_ws(t, n, *ve); *ve = rx_value_end(t, n, *vs); break;
+                }
+            }
+            return 1;
+        }
+        return 0;
+    }
+    if (prefix && (sep == 0 || rx_ws(sep)) && rx_switch_sensitive(key, kl)) {
+        *vs = rx_skip_ws(t, n, ke);
+        if (*vs >= n) return 0;
+        *ve = rx_value_end(t, n, *vs); return 1;
+    }
+    return 0;
+}
+static char *redact_text(const char *t) {
+    size_t n = strlen(t), i = 0, lit = 0, vs, ve;
+    buf_t o = {0};
+    while (i < n) {
+        if ((i == 0 || rx_boundary(t[i - 1])) && rx_match(t, n, i, &vs, &ve) && ve > vs) {
+            int whole = ve - vs >= 2 && rx_quote(t[vs]) && t[ve - 1] == t[vs] && memchr(t + vs + 1, t[vs], ve - vs - 1) == t + ve - 1;
+            b_add(&o, t + lit, vs - lit);
+            if (whole) b_ch(&o, t[vs]);
+            b_str(&o, RX_MARK);
+            if (whole) b_ch(&o, t[vs]);
+            i = lit = ve;
+            continue;
+        }
+        i++;
+    }
+    b_add(&o, t + lit, n - lit);
+    return b_take(&o);
+}
+static int rx_is_switch(const char *a) {  // redact._is_switch: -name / --name with a sensitive name
+    const char *name = a[0] == '-' ? (a[1] == '-' ? a + 2 : a + 1) : NULL;
+    if (!name || !*name) return 0;
+    for (const char *p = name; *p; p++) if (!rx_keych(*p)) return 0;
+    return rx_switch_sensitive(name, strlen(name));
+}
+static int rx_is_script_flag(const char *a) {  // redact._is_script_flag: -c -lc ... /c /k -Command
+    size_t n = strlen(a);
+    if ((n == 2 && (a[0] == '/') && (rx_low(a[1]) == 'c' || rx_low(a[1]) == 'k')) || (n == 8 && rx_ieq(a, "-command", 8))
+        || (n == 9 && rx_ieq(a, "--command", 9))) return 1;
+    if (n < 2 || n > 5 || a[0] != '-' || rx_low(a[n - 1]) != 'c') return 0;
+    for (size_t i = 1; i < n; i++) { char c = rx_low(a[i]); if (c < 'a' || c > 'z') return 0; }
+    return 1;
+}
+static char *redact_cmdline(char **argv, size_t argc) {  // whyfs/redact.py redact_argv
     buf_t o = {0};
     int secret_next = 0;
     for (size_t i = 0; i < argc; i++) {
@@ -385,11 +510,13 @@ static char *redact_cmdline(char **argv, size_t argc) {  // ebpf_bcc._redact_cmd
         char *low = lower_for_match(a);
         char *item = NULL;
         if (secret_next) { item = xstrdup("<redacted>"); secret_next = 0; }
+        else if (i && rx_is_script_flag(argv[i - 1])) item = redact_text(a);  // a shell script is command text
         else {
             int exact = 0;
             for (size_t s = 0; s < sizeof SENSITIVE / sizeof *SENSITIVE; s++) {
                 if (!strcmp(low, SENSITIVE[s]) || (!strncmp(low, "--", 2) && !strcmp(low + 2, SENSITIVE[s]))) exact = 1;
             }
+            if (!exact) exact = rx_is_switch(a);
             if (exact) { item = xstrdup(a); secret_next = 1; }
             else if (strchr(a, '=')) {
                 char *key = xstrndup(low, strchr(low, '=') - low);
@@ -401,14 +528,14 @@ static char *redact_cmdline(char **argv, size_t argc) {  // ebpf_bcc._redact_cmd
                     b_add(&r, a, strchr(a, '=') - a);
                     b_str(&r, "=<redacted>");
                     item = b_take(&r);
-                } else item = xstrdup(a);
-            } else item = xstrdup(a);
+                } else item = redact_text(a);
+            } else item = redact_text(a);
         }
         if (i) b_ch(&o, ' ');
         shlex_quote(&o, item);
         free(item); free(low);
     }
-    return b_take(&o);
+    return b_take(&o);  // whyfs's own quoting: not rescanned (redact.redact_argv)
 }
 
 // ---------------------------------------------------------------- /proc helpers
@@ -1149,6 +1276,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--diag-discard")) diag_discard = 1;
         else if (!strcmp(a, "--diag-no-store")) diag_nostore = 1;
         else if (!strcmp(a, "--flush-immediate")) flush_immediate = 1;
+        else if (!strcmp(a, "--redact-text") && v) { char *r = redact_text(v); fputs(r, stdout); free(r); return 0; }  // test hooks
+        else if (!strcmp(a, "--redact-argv")) { char *r = redact_cmdline(argv + i + 1, (size_t)(argc - i - 1)); fputs(r, stdout); free(r); return 0; }
         else die("unknown argument %s", a);
 #undef ARG
     }

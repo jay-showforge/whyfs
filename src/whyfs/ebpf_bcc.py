@@ -676,27 +676,9 @@ def _safe_proc_link(pid: int, item: str) -> str | None:
 
 
 def _redact_cmdline(argv: list[str]) -> str:
-    # Duplicated lightly here to keep the collector independent of argparse/CLI.
-    import shlex
+    from whyfs.redact import redact_argv as _r  # the one shared policy (argv pass + command-text pass)
 
-    sensitive = ("password", "passwd", "token", "secret", "api-key", "apikey", "api_key", "access-key", "access_key", "private-key", "private_key", "credential", "authorization")
-    out: list[str] = []
-    secret_next = False
-    for a in argv:
-        low = a.lower()
-        if secret_next:
-            out.append("<redacted>")
-            secret_next = False
-            continue
-        if any(low == "--" + s or low == s for s in sensitive):
-            out.append(a)
-            secret_next = True
-            continue
-        if "=" in a and any(s in low.split("=", 1)[0] for s in sensitive):
-            out.append(a.split("=", 1)[0] + "=<redacted>")
-        else:
-            out.append(a)
-    return shlex.join(out)
+    return _r(argv)
 
 
 def _clean_link(p: str | None) -> str | None:

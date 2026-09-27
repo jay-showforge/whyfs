@@ -1,0 +1,74 @@
+# Native runtime validation on real hardware of every supported whyfs 1.0 platform.
+# Not yet run: the repository has not been pushed anywhere (release policy).  Every step is
+# the same command used for the local x86-64 validation; see docs/PLATFORM_VALIDATION.md.
+name: native-validation
+on: [workflow_dispatch]
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]      # x86-64 and native ARM64 (Arm-hosted runner)
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: toolchain and BPF prerequisites
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q bpfcc-tools python3-bpfcc libbpf-dev libsqlite3-dev libelf-dev zlib1g-dev \
+            pkg-config gcc make clang nodejs rsync file linux-headers-$(uname -r)
+          uname -a; dpkg --print-architecture
+      - name: unit, resolver, differential and live eBPF tests (root and user)
+        run: |
+          sudo env PYTHONPATH=src python3 -m unittest discover -s tests
+          PYTHONPATH=src python3 -m unittest discover -s tests
+      - name: build the .deb for this architecture
+        run: bash packaging/linux/build_deb.sh dist
+      - name: clean install / corpus / systemd / uninstall
+        run: sudo bash packaging/linux/test_deb.sh dist/whyfs_*.deb runner results/deb-test
+      - name: shared A-H corpus from the source tree
+        run: sudo python3 scripts/run_corpus.py --user runner --out results/corpus
+      - name: graduation gate (functional, accuracy, performance; 20 pairs)
+        run: sudo python3 scripts/v02_graduation.py --user runner --out results/graduation --pairs 20
+      - name: unmodified shipped gate
+        run: sudo python3 scripts/v02_gate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "linux-${{ matrix.runner }}", path: "results/\ndist/" }
+
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: windows-2022, arch: x64 }
+          - { runner: windows-11-arm, arch: arm64 }   # native Windows on Arm runner
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13", architecture: "${{ matrix.arch }}" }
+      - name: build collector, service and launcher (MSVC, native arch)
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File native\windows\build.ps1 -Arch ${{ matrix.arch }} -VsRoot (& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath)
+      - name: MSI (bundles this architecture's Python runtime)
+        shell: pwsh
+        run: |
+          py -3.12 -m pip --version  # msilib host
+          py -3.12 native\windows\make_msi.py --arch ${{ matrix.arch }} --runtime "$env:pythonLocation" --out dist
+      - name: Windows model and query tests
+        run: python -m unittest discover -s tests
+        env: { PYTHONPATH: "src;tests" }
+      - name: MSI clean install, standard-user flow, uninstall
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File native\windows\test_msi.ps1 -Msi (Get-ChildItem dist\*.msi).FullName -Out results\msi-test
+      - name: install for the gates, shared A-H corpus, Windows gate (20 pairs)
+        shell: pwsh
+        run: |
+          msiexec /i (Get-ChildItem dist\*.msi).FullName /qn | Out-Null
+          python scripts\run_corpus.py --out results\corpus
+          python scripts\win_gate.py --out results\win-gate --pairs 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "windows-${{ matrix.arch }}", path: "results/\ndist/" }

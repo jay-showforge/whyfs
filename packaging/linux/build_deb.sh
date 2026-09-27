@@ -1,0 +1,101 @@
+#!/bin/bash
+# Build the whyfs Debian/Ubuntu package for the machine's architecture (amd64 or arm64).
+#   packaging/linux/build_deb.sh [OUTDIR]
+# The native collector is compiled here, natively for this architecture, and shipped prebuilt
+# (/usr/lib/whyfs/whyfs-collect) with the SHA-256 of the source it was built from.
+set -euo pipefail
+REPO=$(cd "$(dirname "$0")/../.." && pwd)
+OUT=${1:-$REPO/dist}
+ARCH=$(dpkg --print-architecture)
+PYVER=$(grep '^version' "$REPO/pyproject.toml" | cut -d'"' -f2)
+DEBVER=$(echo "$PYVER" | sed -E 's/\.?(dev|a|b|rc)([0-9]+)$/~\1\2/')   # 0.9.0.dev1 -> 0.9.0~dev1
+STAGE=$(mktemp -d)
+PKG=$STAGE/whyfs_${DEBVER}_${ARCH}
+mkdir -p "$PKG/DEBIAN" "$PKG/usr/bin" "$PKG/usr/lib/whyfs" "$PKG/usr/lib/python3/dist-packages" \
+         "$PKG/lib/systemd/system" "$PKG/usr/share/doc/whyfs"
+
+# Python package (Linux collector, store, queries; Windows-only native sources left out)
+rsync -a --exclude __pycache__ --exclude _bin --exclude 'native/windows' "$REPO/src/whyfs" "$PKG/usr/lib/python3/dist-packages/"
+
+# prebuilt native collector for this architecture
+gcc -O2 -Wall -Wextra -o "$PKG/usr/lib/whyfs/whyfs-collect" "$REPO/src/whyfs/native/whyfs-collect.c" \
+    $(pkg-config --cflags --libs libbpf sqlite3)
+sha256sum "$REPO/src/whyfs/native/whyfs-collect.c" | cut -d' ' -f1 > "$PKG/usr/lib/whyfs/whyfs-collect.source-sha256"
+file "$PKG/usr/lib/whyfs/whyfs-collect" | grep -q -E "ELF 64-bit.*($( [ "$ARCH" = arm64 ] && echo aarch64 || echo x86-64))" \
+    || { echo "collector architecture mismatch"; exit 1; }
+
+cat > "$PKG/usr/bin/whyfs" <<'EOF'
+#!/usr/bin/python3
+from whyfs.cli import main
+main()
+EOF
+chmod 755 "$PKG/usr/bin/whyfs"
+
+cat > "$PKG/lib/systemd/system/whyfs@.service" <<'EOF'
+[Unit]
+Description=whyfs provenance collector for %f
+Documentation=file:/usr/share/doc/whyfs/README.md
+After=local-fs.target
+
+# One always-on collector per workspace:
+#   sudo systemctl enable --now "whyfs@$(systemd-escape --path /home/me/project).service"
+[Service]
+Type=simple
+ExecStart=/usr/bin/whyfs daemon run --workspace %f
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cp "$REPO/LICENSE" "$PKG/usr/share/doc/whyfs/copyright"
+cp "$REPO/README.md" "$PKG/usr/share/doc/whyfs/README.md"
+
+cat > "$PKG/DEBIAN/control" <<EOF
+Package: whyfs
+Version: $DEBVER
+Architecture: $ARCH
+Maintainer: Jonathan Tyler Montgomery <licensing@tenzorpipe.org>
+Depends: python3 (>= 3.10), python3-bpfcc, libbpf1, libsqlite3-0, libelf1
+Recommends: bpfcc-tools
+Section: devel
+Priority: optional
+Description: file provenance: why does this file exist, what made it, what depends on it
+ whyfs records which processes create, read, rename and delete files in the
+ workspaces you choose (Linux: eBPF), and answers "whyfs why FILE",
+ "whyfs impact FILE" and "whyfs history FILE".
+ .
+ Source available under the Business Source License 1.1 (see copyright).
+EOF
+cat > "$PKG/DEBIAN/prerm" <<'EOF'
+#!/bin/sh
+set -e
+# bytecode Python wrote at run time is not in the package manifest (py3clean's job)
+find /usr/lib/python3/dist-packages/whyfs -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
+if [ -d /run/systemd/system ]; then
+  for u in $(systemctl list-units --plain --no-legend 'whyfs@*.service' 2>/dev/null | awk '{print $1}'); do
+    systemctl stop "$u" || true
+  done
+fi
+EOF
+cat > "$PKG/DEBIAN/postrm" <<'EOF'
+#!/bin/sh
+set -e
+# collectors built from source by earlier installs; workspace stores (<workspace>/.whyfs) are the users' data and stay
+if [ "$1" = remove ] || [ "$1" = purge ]; then rm -rf /var/cache/whyfs; fi
+if [ -d /run/systemd/system ]; then systemctl daemon-reload || true; fi
+EOF
+cat > "$PKG/DEBIAN/postinst" <<'EOF'
+#!/bin/sh
+set -e
+if [ -d /run/systemd/system ]; then systemctl daemon-reload || true; fi
+EOF
+chmod 755 "$PKG/DEBIAN/prerm" "$PKG/DEBIAN/postrm" "$PKG/DEBIAN/postinst"
+find "$PKG/usr/lib/python3/dist-packages" -name '*.c' ! -name 'whyfs-collect.c' ! -name 'libwhyfs.c' -delete
+find "$PKG/usr/lib/python3/dist-packages" "$PKG/usr/share" "$PKG/lib" -type f -exec chmod 644 {} +   # source trees on
+find "$PKG" -type d -exec chmod 755 {} +                                                                # /mnt/c are 0777
+mkdir -p "$OUT"
+dpkg-deb --root-owner-group --build "$PKG" "$OUT/whyfs_${DEBVER}_${ARCH}.deb" >/dev/null
+ls -la "$OUT/whyfs_${DEBVER}_${ARCH}.deb"
+rm -rf "$STAGE"

@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shlex
 import shutil
 import subprocess
 import sys
@@ -11,7 +10,8 @@ import time
 import uuid
 from pathlib import Path
 
-from .daemon import capability_report, run_foreground, start_background, status as daemon_status, stop_background
+# The collector modules (eBPF, privilege separation, services) are imported only by the
+# commands that use them: `why` / `impact` / `history` start fast on every platform.
 from .query import history as qhistory
 from .query import impact_details
 from .query import raw_process_events
@@ -19,7 +19,7 @@ from .query import why as qwhy
 from .store import connect, import_log, normalize
 
 ROOT_MARKER = ".whyfs"
-VERSION = "0.2.0a1"
+VERSION = "0.9.0.dev1"
 
 
 def project_root(start: Path | None = None) -> Path:
@@ -51,24 +51,9 @@ def native_lib(root: Path) -> Path:
 
 
 def redact_argv(argv: list[str]) -> str:
-    out = []
-    secret_next = False
-    sensitive = ("password", "passwd", "token", "secret", "api-key", "apikey", "api_key", "access-key", "access_key", "private-key", "private_key", "credential", "authorization")
-    for a in argv:
-        low = a.lower()
-        if secret_next:
-            out.append("<redacted>")
-            secret_next = False
-            continue
-        if any(low == "--" + s or low == s for s in sensitive):
-            out.append(a)
-            secret_next = True
-            continue
-        if "=" in a and any(s in low.split("=", 1)[0] for s in sensitive):
-            out.append(a.split("=", 1)[0] + "=<redacted>")
-        else:
-            out.append(a)
-    return shlex.join(out)
+    from whyfs.redact import redact_argv as _r  # the one shared policy (argv pass + command-text pass)
+
+    return _r(argv)
 
 
 def cmd_init(a):
@@ -247,6 +232,7 @@ def cmd_stats(a):
 
 
 def cmd_doctor(a):
+    from .daemon import capability_report
     report = capability_report()
     if a.json:
         print(json.dumps(report, indent=2))
@@ -272,6 +258,7 @@ def cmd_doctor(a):
 
 
 def cmd_daemon(a):
+    from .daemon import run_foreground, start_background, status as daemon_status, stop_background
     root = Path(a.workspace or project_root()).resolve()
     if a.action == "run":
         return run_foreground(root, capture_all=a.all_files)
@@ -308,6 +295,7 @@ def cmd_service(a):
 
 
 def cmd_daemon_worker(a):
+    from .daemon import run_foreground
     return run_foreground(Path(a.workspace), capture_all=a.all_files, quiet=True)
 
 
