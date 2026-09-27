@@ -301,9 +301,13 @@ def capability_report() -> dict:
         "cap_bpf": None,
         "cap_perfmon": None,
     }
+    report["bpf_fentry"] = None  # BTF fentry (BPF trampoline); checkable only with kernel symbol addresses (root)
     try:
         import bcc  # type: ignore  # noqa:F401
         report["bcc_importable"] = True
+        if report["euid"] == 0:
+            from .ebpf_bcc import kfunc_supported
+            report["bpf_fentry"] = kfunc_supported(bcc.BPF)
     except Exception:
         pass
 
@@ -325,5 +329,6 @@ def capability_report() -> dict:
         and report["bcc_importable"]
         and report["kernel_headers"]
         and (report["euid"] == 0 or (report["cap_bpf"] and report["cap_perfmon"]))
+        and report["bpf_fentry"] is not False
     )
     return report

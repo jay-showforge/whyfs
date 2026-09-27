@@ -675,6 +675,22 @@ def _safe_proc_link(pid: int, item: str) -> str | None:
         return None
 
 
+def kfunc_supported(BPF) -> bool:
+    """BTF fentry (BPF trampoline) support.  BCC's own BPF.support_kfunc() (0.29) returns
+    False on every architecture except x86_64, but arm64 kernels have had trampolines since
+    6.0 and BCC's attach path is architecture-neutral; ask the kernel instead: BTF plus the
+    trampoline link symbol and an architecture trampoline implementation."""
+    if BPF.support_kfunc():
+        return True
+    try:
+        from bcc import libbcc  # type: ignore
+        if not libbcc.lib.bpf_has_kernel_btf():
+            return False
+    except Exception:
+        return False
+    return all(BPF.ksymname(s) != -1 for s in ("bpf_trampoline_link_prog", "arch_prepare_bpf_trampoline"))
+
+
 def _redact_cmdline(argv: list[str]) -> str:
     from whyfs.redact import redact_argv as _r  # the one shared policy (argv pass + command-text pass)
 
@@ -1171,7 +1187,7 @@ class BCCCollector:
                 "BCC is not installed. On Debian/Ubuntu install bpfcc-tools, "
                 "python3-bpfcc, clang and matching kernel headers."
             ) from exc
-        if not BPF.support_kfunc():
+        if not kfunc_supported(BPF):
             raise BCCUnavailable(
                 "this kernel/BCC lacks BTF fentry (kfunc) support, which whyfs needs to observe "
                 "file I/O at the VFS layer (including io_uring)."
@@ -1191,7 +1207,7 @@ class BCCCollector:
         (native_collect.NativeIngest) consumes the ring buffer instead of Python."""
         from bcc import BPF  # type: ignore
 
-        if not BPF.support_kfunc():
+        if not kfunc_supported(BPF):
             raise BCCUnavailable(
                 "this kernel/BCC lacks BTF fentry (kfunc) support, which whyfs needs to observe "
                 "file I/O at the VFS layer (including io_uring)."

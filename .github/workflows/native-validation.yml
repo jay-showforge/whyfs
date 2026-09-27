@@ -19,8 +19,7 @@ jobs:
       - name: platform identity (must be native, not emulated)
         run: |
           uname -a; dpkg --print-architecture; lscpu | head -20
-          grep -E 'CONFIG_DEBUG_INFO_BTF=|CONFIG_BPF_LSM=|CONFIG_BPF_SYSCALL=' /boot/config-$(uname -r) || true
-          cat /sys/kernel/security/lsm || true
+          grep -E 'CONFIG_DEBUG_INFO_BTF=|CONFIG_BPF_SYSCALL=|CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS=' /boot/config-$(uname -r) || true
       - name: toolchain and BPF prerequisites
         run: |
           sudo apt-get update -q

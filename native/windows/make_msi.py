@@ -54,6 +54,12 @@ def msi_version(v: str) -> str:  # MSI ProductVersion: major.minor.build (number
     return f"{major}.{minor}.{patch * 1000 + dev}"
 
 
+def pe_machine(path: Path) -> int:
+    b = path.read_bytes()[:4096]
+    pe = int.from_bytes(b[0x3C:0x40], "little")
+    return int.from_bytes(b[pe + 4:pe + 6], "little")
+
+
 def host_arch() -> str:
     """The machine's native architecture, also from an emulated x64 process on ARM64."""
     import ctypes
@@ -65,7 +71,8 @@ def host_arch() -> str:
     return "x64"
 
 
-def stage(arch: str, runtime: Path, stage_dir: Path, vcvars: str) -> None:
+def stage(arch: str, runtime: Path, stage_dir: Path, vcvars: str, build_python: str | None = None) -> None:
+    pyc = bytecode_python(runtime, arch, build_python)
     binsrc = REPO / "src" / "whyfs" / "_bin" / f"win-{arch}"
     for b in ("whyfs-svc.exe", "whyfs-collect-win.exe"):
         if not (binsrc / b).exists():
@@ -80,7 +87,14 @@ def stage(arch: str, runtime: Path, stage_dir: Path, vcvars: str) -> None:
     # --- private runtime
     rt = stage_dir / "runtime"
     rt.mkdir()
+    want = {"x64": 0x8664, "arm64": 0xAA64}[arch]
     for f in ("python.exe", "pythonw.exe", "python3.dll", f"python{ver_tag(runtime)}.dll", "vcruntime140.dll", "vcruntime140_1.dll"):
+        if pe_machine(runtime / f) != want:
+            # the ARM64 CPython package carries an x64 vcruntime140_1.dll that no ARM64 image imports
+            if f == "vcruntime140_1.dll":
+                print(f"skipping {f}: not a {arch} image")
+                continue
+            raise SystemExit(f"{runtime / f} is not a {arch} image")
         shutil.copy2(runtime / f, rt / f)
     shutil.copy2(runtime / "LICENSE.txt", rt / "PYTHON_LICENSE.txt")
     for f in (runtime / "DLLs").iterdir():
@@ -99,12 +113,12 @@ def stage(arch: str, runtime: Path, stage_dir: Path, vcvars: str) -> None:
         "    if os.path.isdir(p) and os.path.exists(os.path.join(p, '__init__.py')): z.writepy(p)\n"
         "    elif name.endswith('.py'): z.writepy(p)\n"
         "z.close()\n")
-    subprocess.run([str(runtime / "python.exe"), "-I", str(helper), str(runtime / "Lib"), str(rt / f"python{tag}.zip")], check=True)
+    subprocess.run([pyc, "-I", str(helper), str(runtime / "Lib"), str(rt / f"python{tag}.zip")], check=True)
     (rt / f"python{tag}._pth").write_text(f"python{tag}.zip\n.\n..\\lib\n")
     # --- whyfs package
     pkg = stage_dir / "lib" / "whyfs"
     shutil.copytree(REPO / "src" / "whyfs", pkg, ignore=shutil.ignore_patterns("__pycache__", "_bin", "native", "*.so", "*.c"))
-    subprocess.run([str(runtime / "python.exe"), "-I", "-m", "compileall", "-q", str(pkg)], check=True)  # the bytecode the launcher loads
+    subprocess.run([pyc, "-I", "-m", "compileall", "-q", str(pkg)], check=True)  # the bytecode the launcher loads
     shutil.copy2(REPO / "LICENSE", stage_dir / "LICENSE")
     (stage_dir / "THIRD_PARTY_NOTICES.txt").write_text(
         "whyfs for Windows bundles third-party components that are not part of the Licensed Work:\n\n"
@@ -121,8 +135,38 @@ def ver_tag(runtime: Path) -> str:
 
 
 def runtime_version(runtime: Path) -> str:
-    return subprocess.run([str(runtime / "python.exe"), "-c", "import sys;print(sys.version.split()[0])"],
-                          capture_output=True, text=True).stdout.strip()
+    """ProductVersion of the runtime's python3XY.dll (read from the PE resource: the runtime
+    may be for another architecture and cannot always be executed here)."""
+    import ctypes
+    from ctypes import wintypes
+    dll = str(runtime / f"python{ver_tag(runtime)}.dll")
+    ver = ctypes.windll.version
+    size = ver.GetFileVersionInfoSizeW(dll, None)
+    buf = ctypes.create_string_buffer(size)
+    ver.GetFileVersionInfoW(dll, 0, size, buf)
+    val, n = ctypes.c_wchar_p(), wintypes.UINT()
+    trans, tn = ctypes.c_void_p(), wintypes.UINT()
+    ver.VerQueryValueW(buf, "\\VarFileInfo\\Translation", ctypes.byref(trans), ctypes.byref(tn))
+    lang, cp = ctypes.cast(trans, ctypes.POINTER(wintypes.WORD * 2)).contents
+    ver.VerQueryValueW(buf, f"\\StringFileInfo\\{lang:04x}{cp:04x}\\ProductVersion", ctypes.byref(val), ctypes.byref(n))
+    return val.value.strip()
+
+
+def bytecode_python(runtime: Path, arch: str, build_python: str | None) -> str:
+    """The interpreter that byte-compiles the bundled stdlib and whyfs.  Bytecode is
+    architecture-independent but version-specific: the runtime itself when this host can run
+    it, else a host interpreter of exactly the same version (checked, never assumed)."""
+    if not build_python:
+        if arch != host_arch():
+            raise SystemExit(f"building the {arch} MSI on a {host_arch()} host needs --build-python "
+                             f"(a {runtime_version(runtime)} interpreter for this host)")
+        return str(runtime / "python.exe")
+    have = subprocess.run([build_python, "-c", "import sys;print(sys.version.split()[0])"],
+                          capture_output=True, text=True, check=True).stdout.strip()
+    want = runtime_version(runtime)
+    if have != want:
+        raise SystemExit(f"--build-python is {have}, the bundled runtime is {want}: bytecode would not match")
+    return build_python
 
 
 def build_msi(stage_dir: Path, out: Path, arch: str, version: str) -> Path:
@@ -204,11 +248,13 @@ def main():
     ap.add_argument("--out", default=str(REPO / "dist"))
     ap.add_argument("--vcvars", default=r"C:\BuildTools2022\VC\Auxiliary\Build\vcvars64.bat")
     ap.add_argument("--version", help="override the package version (upgrade tests only)")
+    ap.add_argument("--build-python", help="host interpreter of the runtime's exact version, to byte-compile "
+                                           "when the runtime's architecture cannot run on this host")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     stage_dir = Path(tempfile.mkdtemp(prefix=f"whyfs-msi-{a.arch}-"))
-    stage(a.arch, Path(a.runtime), stage_dir, a.vcvars)
+    stage(a.arch, Path(a.runtime), stage_dir, a.vcvars, a.build_python)
     msi = build_msi(stage_dir, out, a.arch, a.version or package_version())
     size = sum(f.stat().st_size for f in stage_dir.rglob("*") if f.is_file())
     print(f"built {msi} ({msi.stat().st_size / 2**20:.1f} MiB; payload {size / 2**20:.1f} MiB from {stage_dir})")

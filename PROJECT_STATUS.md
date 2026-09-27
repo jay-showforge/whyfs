@@ -1,4 +1,22 @@
-# whyfs project status — v0.2.0a1
+# whyfs project status
+
+## Current (2026-09-26): whyfs 1.0 program, pre-1.0 (0.9.0.dev1), not released
+
+Scope: Linux x86-64, Linux ARM64, Windows x64, Windows ARM64, WSL2.  macOS is not in scope.
+
+| Platform | Status |
+|---|---|
+| Linux x86-64 / WSL2 | PASS on 43e69dd: graduation harness 46/46, corpus 79/79, secret gate 22/22, .deb 14/14 |
+| Windows x64 | PASS, frozen at 43e69dd (docs/WINDOWS.md) |
+| Linux ARM64 | native run pending (no native ARM64 host available); emulated supplement only |
+| Windows ARM64 | native run pending; binaries cross-built |
+
+Details, exact environments and commands: [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+The history below is the v0.2 record, kept as it was written.
+
+---
+
+## History: v0.2.0a1
 
 ## Verdict: **V0.2 DOES NOT GRADUATE**
 

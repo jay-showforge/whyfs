@@ -35,7 +35,7 @@ normally, and there is no wrapper command.  Everything stays local.
 | Linux x86-64 | eBPF (native C collector + BCC programs) | `.deb` (prebuilt collector) | **Validated natively** |
 | Linux ARM64 | same sources, built natively for arm64 | `.deb` (arm64) | **Native validation pending** |
 | Windows x64 | ETW (native collector + `whyfs` service) | MSI | **Validated natively** ([docs/WINDOWS.md](docs/WINDOWS.md)) |
-| Windows ARM64 | same sources, built for ARM64 | MSI (ARM64) | Binaries cross-built; **native validation pending** |
+| Windows ARM64 | same sources, built for ARM64 | MSI (ARM64) | MSI built and verified ARM64; **native validation pending** |
 | WSL2 | the Linux collector inside WSL2 | `.deb` | **Validated** (the Linux x86-64 host above is WSL2) |
 
 Not currently supported: **macOS**.  macOS is a future/community target; contributions are

@@ -17,7 +17,7 @@ supporting evidence only.
 | WSL2 | **PASS (native)** | the Linux x86-64 evidence above *is* WSL2 (Ubuntu 24.04, kernel 6.6.87.2-microsoft-standard-WSL2), including the `.deb` with the systemd unit |
 | Windows x64 | **PASS (native)**, frozen at `43e69dd` | [WINDOWS.md](WINDOWS.md) |
 | Linux ARM64 | **pending native run** | builds natively under emulation; supplemental emulated results below |
-| Windows ARM64 | **pending native run** | collector, service and launcher cross-build cleanly (MSVC `x64_arm64`, PE machine 0xAA64); MSI needs an ARM64 host |
+| Windows ARM64 | **pending native run** | collector, service and launcher cross-build cleanly (MSVC `x64_arm64`, 0 warnings); **ARM64 MSI built** with the signed CPython 3.13.5 ARM64 runtime, all 26 PE images verified ARM64 (`results/windows-arm64-build/ARTIFACTS.md`); never executed |
 
 ## What remains, and the exact environment it needs
 
@@ -32,9 +32,10 @@ performed**.  Everything they need is in this repository and prepared.
   `.github/workflows/native-validation.yml`, job `linux`; or
 - any native arm64 machine or VM on arm64 hardware (Ampere/Graviton cloud instance,
   Raspberry Pi 5 with 8 GB, Apple-silicon Linux VM with hardware virtualization) running
-  **Ubuntu 24.04 arm64** with a kernel that has `CONFIG_DEBUG_INFO_BTF=y`, BPF LSM available
-  (`bpf` in `/sys/kernel/security/lsm`, or boot with `lsm=...,bpf`) and BPF ring buffer
-  support (≥ 5.8; Ubuntu 24.04's 6.8 kernel qualifies).  Root access is required.
+  **Ubuntu 24.04 arm64** with a kernel that has `CONFIG_DEBUG_INFO_BTF=y`, fentry (BPF
+  trampoline) support on arm64 and the BPF ring buffer (Ubuntu 24.04's 6.8 kernel has all
+  three; the BPF LSM is *not* needed: the programs attach with fentry to the kernel's
+  `security_*` functions).  `whyfs doctor` checks this.  Root access is required.
 
 **Commands (as root, from the source tree; USER is an unprivileged account):**
 ```bash
@@ -75,6 +76,11 @@ ring-buffer layout.
   toolset, Node.js, and **Python 3.12 and 3.13 ARM64** (3.12 hosts `msilib` for the MSI
   builder; 3.13 is the runtime bundled into the MSI).  Administrator rights are needed for
   the install tests; the gates run as a normal user.
+
+The ARM64 MSI from `results/windows-arm64-build/ARTIFACTS.md` (check its SHA-256) can be
+installed directly: skip the build and `make_msi` steps and run the tests from
+`test_msi.ps1` onwards.  To rebuild it on the ARM64 machine itself, `make_msi.py` runs the
+bundled runtime directly (no `--build-python` needed).
 
 **Commands (elevated PowerShell, from the source tree):**
 ```powershell
