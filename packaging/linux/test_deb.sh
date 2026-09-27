@@ -13,6 +13,7 @@ check precondition_clean "$([ ! -e /usr/bin/whyfs ] && [ ! -e /usr/lib/whyfs ] &
 apt-get install -y -q "$(readlink -f "$DEB")" > "$OUT/install.log" 2>&1
 check install "$([ $? = 0 ] && echo 1 || echo 0)"
 check cli_on_path "$(command -v whyfs >/dev/null && echo 1 || echo 0)" "$(whyfs --version 2>&1)"
+check package_modes "$([ "$(stat -c %a /usr/lib/whyfs/whyfs-collect)" = 755 ] && [ "$(stat -c %a /usr/lib/whyfs/whyfs-collect.source-sha256)" = 644 ] && [ "$(stat -c %U /usr/lib/whyfs/whyfs-collect)" = root ] && echo 1 || echo 0)" "$(stat -c '%a %U' /usr/lib/whyfs/whyfs-collect)"
 check prebuilt_collector_used "$(cd /tmp && python3 -c 'from whyfs import native_collect as n; print(n.binary())' 2>&1 | grep -q '^/usr/lib/whyfs/whyfs-collect$' && echo 1 || echo 0)"
 check no_compiler_needed "$([ ! -e /var/cache/whyfs ] || [ -z "$(ls -A /var/cache/whyfs)" ] && echo 1 || echo 0)"
 # trust: a tampered or unprotected packaged collector is never executed
@@ -37,7 +38,8 @@ if [ -d /run/systemd/system ]; then
   WS=$(mktemp -d /home/$USER_/whyfs-unit-XXXX); chown "$USER_:" "$WS"; chmod 755 "$WS"
   runuser -u "$USER_" -- whyfs init "$WS" >/dev/null
   UNIT="whyfs@$(systemd-escape --path "$WS").service"
-  systemctl start "$UNIT"; sleep 3
+  systemctl start "$UNIT"
+  for i in $(seq 1 "${WHYFS_START_TIMEOUT:-60}"); do [ -f "$WS/.whyfs/daemon.json" ] && break; sleep 1; done; sleep 1
   runuser -u "$USER_" -- bash -c "cd $WS && echo x > in.txt && cp in.txt out.txt"; sleep 1
   systemctl stop "$UNIT"
   check systemd_unit "$(cd "$WS" && runuser -u "$USER_" -- whyfs why out.txt --json | python3 -c 'import json,sys; print(int(json.load(sys.stdin)["exe"].endswith("/cp")))')"

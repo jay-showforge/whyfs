@@ -95,6 +95,9 @@ chmod 755 "$PKG/DEBIAN/prerm" "$PKG/DEBIAN/postrm" "$PKG/DEBIAN/postinst"
 find "$PKG/usr/lib/python3/dist-packages" -name '*.c' ! -name 'whyfs-collect.c' ! -name 'libwhyfs.c' -delete
 find "$PKG/usr/lib/python3/dist-packages" "$PKG/usr/share" "$PKG/lib" -type f -exec chmod 644 {} +   # source trees on
 find "$PKG" -type d -exec chmod 755 {} +                                                                # /mnt/c are 0777
+# explicit modes: never inherit the builder's umask (a group-writable collector is refused at run time)
+chmod 755 "$PKG/usr/lib/whyfs/whyfs-collect" "$PKG/usr/bin/whyfs"
+chmod 644 "$PKG/usr/lib/whyfs/whyfs-collect.source-sha256"
 mkdir -p "$OUT"
 dpkg-deb --root-owner-group --build "$PKG" "$OUT/whyfs_${DEBVER}_${ARCH}.deb" >/dev/null
 ls -la "$OUT/whyfs_${DEBVER}_${ARCH}.deb"

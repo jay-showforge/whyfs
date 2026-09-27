@@ -216,7 +216,9 @@ def start_background(root: Path, *, capture_all: bool = False) -> dict:
         close_fds=True,
     )
     log.close()
-    deadline = time.monotonic() + 5.0
+    # BCC compiles the BPF programs with clang at start: ~2-3 s on a fast x86 host, far more on
+    # small ARM64 boards.  Waiting is not failure; the worker exits (reported below) if it fails.
+    deadline = time.monotonic() + float(os.environ.get("WHYFS_START_TIMEOUT", "60"))
     while time.monotonic() < deadline:
         state = read_state(root)
         if state:
