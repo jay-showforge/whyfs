@@ -8,7 +8,8 @@ mkdir -p "$OUT"
 declare -A R
 check() { R[$1]=$2; printf '%-5s %s %s\n' "$([ "$2" = 1 ] && echo PASS || echo FAIL)" "$1" "${3:-}"; }
 
-dpkg -r whyfs >/dev/null 2>&1; rm -rf /var/cache/whyfs
+dpkg -P whyfs >/dev/null 2>&1; pkill -TERM -f "[w]hyfs machine run" 2>/dev/null; sleep 2
+rm -rf /var/cache/whyfs /var/lib/whyfs /run/whyfs
 check precondition_clean "$([ ! -e /usr/bin/whyfs ] && [ ! -e /usr/lib/whyfs ] && echo 1 || echo 0)"
 apt-get install -y -q "$(readlink -f "$DEB")" > "$OUT/install.log" 2>&1
 check install "$([ $? = 0 ] && echo 1 || echo 0)"
@@ -27,6 +28,24 @@ cp /bin/true /tmp/whyfs-fake-collect; chmod 777 /tmp/whyfs-fake-collect; P3=$(WH
 rm -rf /var/cache/whyfs
 check tampered_collector_not_used "$([ "$P1" != "$PKGC" ] && [ "$P2" != "$PKGC" ] && echo 1 || echo 0)" "world-writable: $P1 | wrong source stamp: $P2"
 check unsafe_override_refused "$(echo "$P3" | grep -q '^refused' && echo 1 || echo 0)" "$P3"
+# the product: installed once, the service runs, and a file anywhere has a label without `whyfs init`
+if [ -d /run/systemd/system ]; then
+  check machine_service_enabled "$(systemctl is-enabled whyfs.service 2>/dev/null | grep -q enabled && systemctl is-active whyfs.service | grep -q active && echo 1 || echo 0)"
+else
+  (nohup /usr/bin/whyfs machine run > "$OUT/machine.log" 2>&1 &)
+  check machine_service_enabled 1 "skipped: no systemd (started by hand: sudo whyfs machine run)"
+fi
+for i in $(seq 1 "${WHYFS_START_TIMEOUT:-60}"); do
+  whyfs status --json 2>/dev/null | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["collector_ready"] else 1)' 2>/dev/null && break
+  sleep 1
+done
+PROBE=$(runuser -u "$USER_" -- mktemp -d "/home/$USER_/whyfs-deb-probe-XXXX")
+runuser -u "$USER_" -- sh -c "cd $PROBE && echo hello > in.txt && cp in.txt out.txt"; sleep 3
+LB=$(cd /tmp && runuser -u "$USER_" -- whyfs label "$PROBE/out.txt" --json 2>&1)
+check label_without_init "$(echo "$LB" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(int(d["status"]=="labelled" and d["created_by"]["exe"].endswith("/cp") and any(p.endswith("/in.txt") for p in d["inputs"])))' 2>/dev/null || echo 0)" "$(echo "$LB" | head -c 300)"
+check no_workspace_created "$([ ! -e "$PROBE/.whyfs" ] && echo 1 || echo 0)"
+check store_private "$([ "$(stat -c %a /var/lib/whyfs/machine)" = 700 ] && [ "$(stat -c %U /var/lib/whyfs/machine)" = root ] && echo 1 || echo 0)"
+rm -rf "$PROBE"
 check doctor_ready "$(whyfs doctor --json 2>/dev/null | python3 -c 'import json,sys; print(int(json.load(sys.stdin)["ready"]))')"
 
 # the shared behavioural corpus through the installed package (no source tree on sys.path)
@@ -51,10 +70,15 @@ fi
 WSDATA=$(mktemp -d /tmp/whyfs-keep-XXXX); whyfs init "$WSDATA" >/dev/null
 dpkg -r whyfs > "$OUT/remove.log" 2>&1
 check remove "$([ $? = 0 ] && echo 1 || echo 0)"
-check files_removed "$([ ! -e /usr/bin/whyfs ] && [ ! -e /usr/lib/whyfs ] && [ ! -e /usr/lib/python3/dist-packages/whyfs ] && [ ! -e /lib/systemd/system/whyfs@.service ] && echo 1 || echo 0)"
+sleep 1
+check service_stopped "$([ ! -S /run/whyfs/api.sock ] && ! pgrep -f '[/]usr/bin/whyfs machine run' >/dev/null && echo 1 || echo 0)"
+check machine_store_kept_on_remove "$([ -f /var/lib/whyfs/machine/.whyfs/whyfs.db ] && echo 1 || echo 0)"
+check files_removed "$([ ! -e /usr/bin/whyfs ] && [ ! -e /usr/lib/whyfs ] && [ ! -e /usr/lib/python3/dist-packages/whyfs ] && [ ! -e /lib/systemd/system/whyfs@.service ] && [ ! -e /lib/systemd/system/whyfs.service ] && echo 1 || echo 0)"
 check cache_removed "$([ ! -e /var/cache/whyfs ] && echo 1 || echo 0)"
 check user_data_kept "$([ -f "$WSDATA/.whyfs/whyfs.db" ] && echo 1 || echo 0)"
 rm -rf "$WSDATA"
+dpkg --purge whyfs > "$OUT/purge.log" 2>&1
+check purge_deletes_machine_store "$([ ! -e /var/lib/whyfs ] && [ ! -e /etc/whyfs/scope.conf ] && echo 1 || echo 0)"
 fails=0; for k in "${!R[@]}"; do [ "${R[$k]}" = 1 ] || fails=$((fails+1)); done
 python3 -c "import json,sys; print(json.dumps(dict(a.split('=',1) for a in sys.argv[1:]), indent=1))" $(for k in "${!R[@]}"; do echo "$k=${R[$k]}"; done) > "$OUT/deb_test.json"
 echo "deb clean-install test ($(dpkg --print-architecture)): $(( ${#R[@]} - fails ))/${#R[@]} checks"

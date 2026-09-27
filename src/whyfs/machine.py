@@ -73,6 +73,26 @@ def effective_scope_text() -> str:
     return "\n".join(out)
 
 
+READY_NAME = "machine-ready.json"
+
+
+def collector_ready() -> bool:
+    """True once the machine collector is attached and recording (not merely started):
+    Linux: the daemon state file, written after the BPF programs load; Windows: written by
+    serve_windows when the collector reports ready."""
+    d = paths()["root"] / ".whyfs"
+    f = d / (READY_NAME if NT else "daemon.json")
+    try:
+        st = json.loads(f.read_text())
+    except (OSError, ValueError):
+        return False
+    pid = int(st.get("collector_pid") or st.get("pid") or 0)
+    if NT:
+        from .winsecurity import process_image
+        return bool(pid) and process_image(pid) is not None
+    return bool(pid) and os.path.exists(f"/proc/{pid}")
+
+
 def _prune_tick(root: Path, state: dict) -> None:
     cfg = load_config()
     if time.monotonic() < state.get("next_prune", 0):
@@ -159,7 +179,16 @@ def serve_windows() -> int:
                              creationflags=0x08000000)  # CREATE_NO_WINDOW
         _log(f"machine collector started: run {run_id} pid {p.pid}")
         lines: list[str] = []
-        threading.Thread(target=lambda: [lines.append(x) for x in p.stdout if x.strip()], daemon=True).start()
+        ready = root / ".whyfs" / READY_NAME
+
+        def reader():
+            for x in p.stdout:
+                if not x.strip():
+                    continue
+                lines.append(x)
+                if '"ready"' in x:
+                    ready.write_text(json.dumps({"collector_pid": p.pid, "run_id": run_id}))
+        threading.Thread(target=reader, daemon=True).start()
         started = time.monotonic()
         next_stats = time.monotonic() + 60
         while not stop.is_set() and p.poll() is None:
@@ -187,6 +216,10 @@ def serve_windows() -> int:
             except subprocess.TimeoutExpired:
                 p.kill()
         time.sleep(0.5)
+        try:
+            ready.unlink()
+        except OSError:
+            pass
         _update_stats(root, run_id, lines, final=True, exit_code=p.returncode)
         _log(f"machine collector {run_id} exited {p.returncode}")
         if not stop.is_set():  # crashed: restart, with backoff if it keeps failing

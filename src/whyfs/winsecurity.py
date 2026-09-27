@@ -56,6 +56,7 @@ for fn, args in {
     (adv, "ConvertStringSecurityDescriptorToSecurityDescriptorW"): [wintypes.LPCWSTR, _D, ctypes.POINTER(_P), _P],
     (adv, "GetSecurityDescriptorDacl"): [_P, ctypes.POINTER(wintypes.BOOL), ctypes.POINTER(_P), ctypes.POINTER(wintypes.BOOL)],
     (adv, "SetNamedSecurityInfoW"): [wintypes.LPWSTR, ctypes.c_int, _D, _P, _P, _P, _P],
+    (adv, "GetSecurityInfo"): [_H, ctypes.c_int, _D, ctypes.POINTER(_P), _P, _P, _P, ctypes.POINTER(_P)],
 }.items():
     getattr(fn[0], fn[1]).argtypes = args
 
@@ -127,6 +128,23 @@ def process_image(pid: int) -> str | None:
         return buf.value if k32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(n)) else None
     finally:
         k32.CloseHandle(h)
+
+
+TRUSTED_OWNERS = (SYSTEM_SID, "S-1-5-32-544")
+
+
+def pipe_owner(h) -> str | None:
+    """Owner SID of the pipe object.  A pipe created by the whyfs service (SYSTEM) is owned by
+    SYSTEM or Administrators; a process of an ordinary user cannot give its pipe either owner,
+    so a squatted pipe name is recognized even by a client that cannot inspect the server."""
+    owner, sd = ctypes.c_void_p(), ctypes.c_void_p()
+    rc = adv.GetSecurityInfo(h, 6, 1, ctypes.byref(owner), None, None, None, ctypes.byref(sd))  # SE_KERNEL_OBJECT, OWNER
+    if rc != 0:
+        return None
+    try:
+        return _sid_string(owner)
+    finally:
+        k32.LocalFree(sd)
 
 
 def trusted_server(pid: int) -> bool:
@@ -221,10 +239,10 @@ def pipe_client_call(name: str, request: bytes, timeout: float = 30.0) -> bytes:
             continue
         raise ServiceUnavailable(f"the whyfs service is not running ({name}: error {err})")
     try:
-        spid = wintypes.ULONG()
-        _check(k32.GetNamedPipeServerProcessId(h, ctypes.byref(spid)), "GetNamedPipeServerProcessId")
-        if not trusted_server(spid.value):
-            raise ServiceUnavailable(f"refusing {name}: its server (pid {spid.value}) is not the whyfs service")
+        owner = pipe_owner(h)
+        if owner not in TRUSTED_OWNERS:
+            raise ServiceUnavailable(f"refusing {name}: the pipe is owned by {owner}, not by SYSTEM or Administrators "
+                                     "(not the whyfs service)")
         pipe_write(h, request)
         out = b""
         while not out.endswith(b"\n"):

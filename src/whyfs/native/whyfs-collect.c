@@ -942,6 +942,32 @@ static int within_ws(const char *p, int cap_all) {  // BCCCollector._in_ws
     if (machine_mode) return sc_classify(p) == SC_IN;
     return cap_all ? 1 : within(p, &ws_root);
 }
+static int64_t proc_start_ns(uint32_t pid) {  // agents.proc_start_ns: btime + starttime ticks (0: unknown)
+    char p[64], buf[1024];
+    snprintf(p, sizeof p, "/proc/%u/stat", pid);
+    FILE *f = fopen(p, "r");
+    if (!f) return 0;
+    size_t n = fread(buf, 1, sizeof buf - 1, f);
+    fclose(f);
+    buf[n] = 0;
+    char *q = strrchr(buf, ')');
+    if (!q) return 0;
+    unsigned long long ticks = 0;
+    int field = 2;
+    for (char *t = strtok(q + 1, " "); t; t = strtok(NULL, " ")) {
+        if (++field == 22) { ticks = strtoull(t, NULL, 10); break; }
+    }
+    if (field != 22) return 0;
+    long long btime = -1;
+    FILE *s = fopen("/proc/stat", "r");
+    if (!s) return 0;
+    char line[256];
+    while (fgets(line, sizeof line, s)) if (!strncmp(line, "btime ", 6)) { btime = atoll(line + 6); break; }
+    fclose(s);
+    long hz = sysconf(_SC_CLK_TCK);
+    if (btime < 0 || hz <= 0) return 0;
+    return btime * 1000000000LL + (int64_t)(ticks * 1000000000ULL / (unsigned long long)hz);
+}
 static char *proc_user(uint32_t pid) {  // ebpf_bcc._proc_user
     char p[64], line[256];
     snprintf(p, sizeof p, "/proc/%u/status", pid);
@@ -981,7 +1007,8 @@ static void announce_existing(uint32_t pid) {
     free_argv(argv, argc);
     map_set(&image, pid, NULL, im);
     prow_t *r = calloc(1, sizeof *r);
-    r->ts = wall_ns(); r->pid = pid; r->os_pid = pid;
+    int64_t started = proc_start_ns(pid);  // a process that predates the collector: its OS start time
+    r->ts = started ? started : wall_ns(); r->pid = pid; r->os_pid = pid;
     r->exe = exe; r->cwd = xstrdup(cwd_of(pid)); r->command = xstrdup(im->cmd);
     r->user = proc_user(pid);
     record_process(r);

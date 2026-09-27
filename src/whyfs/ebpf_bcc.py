@@ -926,8 +926,9 @@ class BCCCollector:
         exe = _clean_link(_safe_proc_link(pid, "exe"))
         argv = self._proc_cmdline(pid)
         self.image[pid] = (exe, _redact_cmdline(argv) if argv else exe)
-        self._record_process({
-            "run_id": self.run_id, "ts_ns": time.time_ns(), "kind": "process",
+        from .agents import proc_start_ns
+        self._record_process({  # a process that predates the collector: its OS start time
+            "run_id": self.run_id, "ts_ns": proc_start_ns(pid) or time.time_ns(), "kind": "process",
             "pid": pid, "os_pid": pid, "ppid": None, "parent_key": None,
             "exe": exe, "cwd": self._cwd(pid), "command": self.image[pid][1], "source": "ebpf",
             "user": _proc_user(pid),

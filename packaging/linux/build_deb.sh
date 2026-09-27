@@ -49,6 +49,37 @@ TimeoutStopSec=60
 WantedBy=multi-user.target
 EOF
 
+# The machine-wide labelling service (docs/MACHINE_MODE.md): enabled at install.
+cat > "$PKG/lib/systemd/system/whyfs.service" <<'EOF'
+[Unit]
+Description=whyfs: provenance labels for files (machine-wide collector and local API)
+Documentation=file:/usr/share/doc/whyfs/README.md
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/whyfs machine run
+KillSignal=SIGTERM
+TimeoutStopSec=90
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# scope policy: shipped defaults + the administrator's additions (a conffile)
+PYTHONPATH="$REPO/src" python3 -m whyfs.scope linux > "$PKG/usr/lib/whyfs/scope-default.conf"
+mkdir -p "$PKG/etc/whyfs"
+cat > "$PKG/etc/whyfs/scope.conf" <<'EOF'
+# whyfs scope additions (defaults: /usr/lib/whyfs/scope-default.conf; restart whyfs.service after edits)
+#   exclude <path pattern>        never record files here
+#   include <path pattern>        record files here even if a default excludes them
+#   temp <path pattern>           treat as a temporary root
+#   exclude-image <name|path>     never record events of this program
+# Patterns: absolute paths; `*` matches one component; `~` means every user's home.
+EOF
+
 cp "$REPO/LICENSE" "$PKG/usr/share/doc/whyfs/copyright"
 cp "$REPO/README.md" "$PKG/usr/share/doc/whyfs/README.md"
 
@@ -68,9 +99,12 @@ Description: file provenance: why does this file exist, what made it, what depen
  .
  Source available under the Business Source License 1.1 (see copyright).
 EOF
+echo "/etc/whyfs/scope.conf" > "$PKG/DEBIAN/conffiles"
 cat > "$PKG/DEBIAN/prerm" <<'EOF'
 #!/bin/sh
 set -e
+if [ -d /run/systemd/system ]; then systemctl disable --now whyfs.service >/dev/null 2>&1 || true; fi
+pkill -TERM -f "[/]usr/bin/whyfs machine run" 2>/dev/null || true
 # bytecode Python wrote at run time is not in the package manifest (py3clean's job)
 find /usr/lib/python3/dist-packages/whyfs -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 if [ -d /run/systemd/system ]; then
@@ -83,18 +117,27 @@ cat > "$PKG/DEBIAN/postrm" <<'EOF'
 #!/bin/sh
 set -e
 # collectors built from source by earlier installs; workspace stores (<workspace>/.whyfs) are the users' data and stay
-if [ "$1" = remove ] || [ "$1" = purge ]; then rm -rf /var/cache/whyfs; fi
+if [ "$1" = remove ] || [ "$1" = purge ]; then rm -rf /var/cache/whyfs /run/whyfs; fi
+# the machine store holds the provenance record: kept on remove, deleted on purge
+if [ "$1" = purge ]; then rm -rf /var/lib/whyfs; fi
 if [ -d /run/systemd/system ]; then systemctl daemon-reload || true; fi
 EOF
 cat > "$PKG/DEBIAN/postinst" <<'EOF'
 #!/bin/sh
 set -e
-if [ -d /run/systemd/system ]; then systemctl daemon-reload || true; fi
+if [ -d /run/systemd/system ]; then
+  systemctl daemon-reload || true
+  systemctl enable --now whyfs.service || echo "whyfs: could not start whyfs.service; see: journalctl -u whyfs" >&2
+else
+  echo "whyfs: systemd is not running here (e.g. WSL without systemd=true): start the labelling service with" >&2
+  echo "       sudo whyfs machine run   (or enable systemd in /etc/wsl.conf)" >&2
+fi
 EOF
 chmod 755 "$PKG/DEBIAN/prerm" "$PKG/DEBIAN/postrm" "$PKG/DEBIAN/postinst"
 find "$PKG/usr/lib/python3/dist-packages" -name '*.c' ! -name 'whyfs-collect.c' ! -name 'libwhyfs.c' -delete
 find "$PKG/usr/lib/python3/dist-packages" "$PKG/usr/share" "$PKG/lib" -type f -exec chmod 644 {} +   # source trees on
 find "$PKG" -type d -exec chmod 755 {} +                                                                # /mnt/c are 0777
+chmod 644 "$PKG/etc/whyfs/scope.conf" "$PKG/usr/lib/whyfs/scope-default.conf" "$PKG/DEBIAN/conffiles"
 # explicit modes: never inherit the builder's umask (a group-writable collector is refused at run time)
 chmod 755 "$PKG/usr/lib/whyfs/whyfs-collect" "$PKG/usr/bin/whyfs"
 chmod 644 "$PKG/usr/lib/whyfs/whyfs-collect.source-sha256"

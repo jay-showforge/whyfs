@@ -149,9 +149,13 @@ def main() -> int:
     if not NT and os.geteuid() != 0:
         raise SystemExit("run as root on Linux; workloads and queries run as --user")
     g = Gate(a.user, out)
-    st = g.api("status")
-    if not st.get("ok") or not st["result"]["collector_running"]:
-        raise SystemExit(f"the whyfs machine service is not running: {st}")
+    for _ in range(120):  # the service may still be attaching its collector
+        st = g.api("status")
+        if st.get("ok") and st["result"].get("collector_ready"):
+            break
+        time.sleep(1)
+    else:
+        raise SystemExit(f"the whyfs machine service is not ready: {st}")
     me = st["result"]["requester"]
     for pth in (Path.cwd(), g.home):
         for q in [pth, *pth.parents]:

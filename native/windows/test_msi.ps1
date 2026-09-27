@@ -29,7 +29,39 @@ Check "launcher_version" ($ver -match "whyfs \d") "$ver"
 $acl = (Get-Acl $inst).Access | Where-Object { $_.IdentityReference -match "Users" -and $_.FileSystemRights -match "Write|Modify|FullControl" }
 Check "install_dir_not_user_writable" (-not $acl)
 
-# 2. everyday use as a standard user, installed binaries only
+# 2a. the product: the service labels files anywhere, without `whyfs init`
+$ready = $false
+for ($i = 0; $i -lt 90 -and -not $ready; $i++) {
+    try { $ready = ((& "$inst\whyfs.exe" status --json | ConvertFrom-Json).collector_ready) } catch { }
+    if (-not $ready) { Start-Sleep 1 }
+}
+Check "machine_collector_ready" $ready
+$mflow = "$Out\machine_flow.ps1"
+@"
+`$d = Join-Path `$env:USERPROFILE 'whyfs-msi-probe'
+if (Test-Path `$d) { Remove-Item -Recurse -Force `$d }
+New-Item -ItemType Directory `$d | Out-Null; Set-Location `$d
+'probe' | Set-Content in.txt
+cmd /c "type in.txt > out.txt"
+Start-Sleep 10
+& '$inst\whyfs.exe' label (Join-Path `$d 'out.txt') --json | Out-File -Encoding utf8 (Join-Path `$d 'label.json')
+& '$inst\whyfs.exe' status --json | Out-File -Encoding utf8 (Join-Path `$d 'status.json')
+"@ | Set-Content $mflow -Encoding ascii
+$mo = & $AsUser "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$mflow`"" 2>&1
+$probe = Join-Path $env:USERPROFILE "whyfs-msi-probe"
+try {
+    $lb = Get-Content "$probe\label.json" -Raw | ConvertFrom-Json
+    $mst = Get-Content "$probe\status.json" -Raw | ConvertFrom-Json
+    Check "label_without_init_non_elevated" (($lb.status -eq "labelled") -and ((Split-Path $lb.created_by.exe -Leaf) -eq "cmd.exe") -and ((@($lb.inputs) | ForEach-Object { Split-Path $_ -Leaf }) -contains "in.txt")) "$($lb.status) $($lb.created_by.exe)"
+    Check "non_elevated_view_is_restricted" ($mst.admin_view -eq $false)
+    Check "no_workspace_created" (-not (Test-Path "$probe\.whyfs"))
+} catch { Check "machine_flow_outputs" $false "$_ $mo" }
+$store = Join-Path $env:ProgramData "whyfs\machine"
+$sacl = (Get-Acl $store).Access | Where-Object { $_.IdentityReference -match "Users|Everyone|Authenticated" }
+Check "machine_store_not_user_readable" (-not $sacl)
+Remove-Item -Recurse -Force $probe -ErrorAction SilentlyContinue
+
+# 2b. explicit workspace capture as a standard user, installed binaries only
 $flow = "$Out\user_flow.ps1"
 @"
 `$ws = Join-Path `$env:TEMP 'whyfs-msi-user-ws'
@@ -75,6 +107,8 @@ Check "service_removed" (-not (Get-Service whyfs -ErrorAction SilentlyContinue))
 Check "files_removed" (-not (Test-Path $inst))
 Check "path_entry_removed" (-not ((MachinePath) -split ";" -contains $inst))
 Check "no_orphan_etw_sessions" (-not ((logman query -ets) -match "whyfs"))
+Check "machine_process_stopped" (-not (Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -match "whyfs machine serve" }))
+Check "api_pipe_gone" (-not ([System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*whyfs-api" }))
 Check "user_data_kept" (Test-Path "$ws\.whyfs\whyfs.db")
 $results | ConvertTo-Json | Set-Content "$Out\msi_test.json" -Encoding utf8
 $failed = @($results.GetEnumerator() | Where-Object { -not $_.Value })

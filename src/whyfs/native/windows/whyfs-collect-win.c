@@ -669,6 +669,13 @@ static void announce_existing(uint32_t pid, int64_t ts) {
     map_set(&image, pid, NULL, im);
     prow_t *r = calloc(1, sizeof *r);
     r->ts = ts; r->pid = pid; r->os_pid = pid; r->exe = exe;
+    if (live_mode) {  // a process that predates the collector: its OS start time
+        HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+        FILETIME c, e, k, u;
+        if (h && GetProcessTimes(h, &c, &e, &k, &u))
+            r->ts = (int64_t)(((((uint64_t)c.dwHighDateTime) << 32) | c.dwLowDateTime) - 116444736000000000ULL) * 100;
+        if (h) CloseHandle(h);
+    }
     r->user = xstrdup(map_get(&users_sid, pid, NULL));
     record_process(r);
 }
@@ -833,6 +840,13 @@ static void process_rec(rec_t *r) {
         map_set(&image, pid, NULL, im);
         prow_t *row = calloc(1, sizeof *row);
         row->ts = ts; row->pid = (int64_t)child_key; row->os_pid = pid;
+        if ((r->flags & 1) && live_mode) {  // rundown: the process's OS start time, not the rundown's
+            HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+            FILETIME c, e, k, u;
+            if (h && GetProcessTimes(h, &c, &e, &k, &u))
+                row->ts = (int64_t)(((((uint64_t)c.dwHighDateTime) << 32) | c.dwLowDateTime) - 116444736000000000ULL) * 100;
+            if (h) CloseHandle(h);
+        }
         row->has_ppid = parent != 0; row->ppid = parent;
         row->has_parent_key = has_pk; row->parent_key = (int64_t)parent_key;
         row->exe = xstrdup(r->s1); row->command = xstrdup(cmd);
@@ -1385,6 +1399,7 @@ static void WINAPI on_sys_event(PEVENT_RECORD ev) {
     // Start: the Kernel-Process record creates the process; this one completes it (and its user).
     // DCStart: an existing process (rundown) -- create it here if nothing else did.
     r->type = op == 3 ? R_PROC_START : R_PROC_INFO;
+    if (op == 3) r->flags |= 1;  // rundown (DCStart): a process that predates the session
     if (op == 3) {
         char *img = proc_image(pid);
         r->s1 = img ? norm_path(img) : NULL; free(img);

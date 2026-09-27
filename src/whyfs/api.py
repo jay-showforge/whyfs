@@ -276,6 +276,7 @@ def op_status(ctx, con, params):
         "admin_view": ctx["admin"], "visible": visible,
         "store_bytes": retention.db_bytes(con), "policy": machine.load_config(),
         "collector": dict(run) if run else None, "collector_running": bool(run and run["ended_ns"] is None),
+        "collector_ready": machine.collector_ready(),
         "collector_stats": stats,
         "lost": sum(int(stats.get(k, 0)) for k in ("kernel_drops", "queue_drops", "user_unresolved", "late_records",
                                                     "lost_file", "lost_sys")),

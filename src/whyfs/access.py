@@ -31,9 +31,13 @@ def restrict(con: sqlite3.Connection, user: str) -> sqlite3.Connection:
 
 
 def open_for(root: Path, user: str | None, admin: bool) -> sqlite3.Connection:
+    if not admin and not user:
+        raise PermissionError("unknown requester")
     con = connect(root, check_same_thread=False)
     if not admin:
-        if not user:
-            raise PermissionError("unknown requester")
-        restrict(con, user)
+        try:
+            restrict(con, user)
+        except BaseException:
+            con.close()
+            raise
     return con

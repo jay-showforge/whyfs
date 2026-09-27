@@ -98,15 +98,12 @@ def ancestry(con: sqlite3.Connection, run_id: str, key: int, max_hops: int = 64)
 
 
 def _starts_match(row: sqlite3.Row, root_start_ns: int | None) -> bool:
-    """A registered root PID names this process instance, not a later reuse of the PID:
-    the process row's first observation must not precede the root's start by more than
-    clock skew, and a row the collector saw start (it has a parent) must start with it."""
+    """A registered root PID names this process instance, not a later reuse of the PID: the
+    process row starts when the root process started.  first_seen_ns is the observed start
+    (fork / process start) or, for a process that predates the collector, its OS start time."""
     if not root_start_ns:
         return True
-    seen = row["first_seen_ns"]
-    if row["parent_key"] is not None:
-        return abs(seen - root_start_ns) <= 2_000_000_000
-    return seen >= root_start_ns - 2_000_000_000
+    return abs(row["first_seen_ns"] - root_start_ns) <= 2_000_000_000
 
 
 def session_for(con: sqlite3.Connection, run_id: str, key: int, at_ns: int) -> dict | None:
