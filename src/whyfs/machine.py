@@ -65,8 +65,17 @@ def scope_files() -> list[str]:
 
 
 def effective_scope_text() -> str:
+    """The rules in effect, for `status` (read-only: never writes the generated defaults)."""
+    p = paths()
     out = []
-    for f in scope_files():
+    if p["default_scope"].exists():
+        files = [p["default_scope"]]
+    else:
+        out.append(f"# --- built-in defaults (no {p['default_scope']})\n" + defaults_text(NT))
+        files = []
+    if p["scope"].exists():
+        files.append(p["scope"])
+    for f in files:
         try:
             out.append(f"# --- {f}\n" + Path(f).read_text(encoding="utf-8"))
         except OSError:
