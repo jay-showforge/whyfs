@@ -71,7 +71,19 @@ def main() -> int:
     scenarios.prepare(base)
     if LINUX and a.user:
         subprocess.run(["chown", "-R", f"{a.user}:", str(base)], check=True)
-    if not a.machine:
+    if a.machine:  # the service may still be (re)starting its collector, e.g. right after another gate
+        deadline = time.time() + 120
+        while True:
+            try:
+                ready = json.loads(whyfs("status", "--json", cwd=base, check=False).stdout).get("collector_ready")
+            except ValueError:
+                ready = False
+            if ready:
+                break
+            if time.time() > deadline:
+                raise SystemExit("the machine collector is not ready after 120 s")
+            time.sleep(1.0)
+    else:
         whyfs("init", ".", cwd=base)
         whyfs("daemon", "start", "--workspace", str(base), cwd=base)
         time.sleep(1.0)

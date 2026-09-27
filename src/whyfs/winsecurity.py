@@ -227,7 +227,7 @@ def pipe_client_context(h) -> dict:
 
 # ---------------------------------------------------------------- client side
 def pipe_client_call(name: str, request: bytes, timeout: float = 30.0) -> bytes:
-    from .api import ServiceUnavailable
+    from .client import ServiceUnavailable
     deadline = time.monotonic() + timeout
     while True:
         h = k32.CreateFileW(name, 0xC0000000, 0, None, 3, 0, None)  # GENERIC_READ|WRITE, OPEN_EXISTING

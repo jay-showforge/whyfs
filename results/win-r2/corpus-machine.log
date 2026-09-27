@@ -1,0 +1,58 @@
+﻿  A read input -> write output                   0/3
+  B source -> compiler -> binary                 0/4
+  C parent process -> child -> generated file    0/3
+  D rename generated file                        0/3
+  E overwrite output                             0/3
+  F reopen input                                 0/3
+  G parallel workers                             0/24
+  H generated intermediate -> final output       0/6
+  FAIL A why out.txt: got None, want {'creator': 'python', 'inputs': ['in.txt']}
+  FAIL A impact in.txt: got [], want ['out.txt']
+  FAIL A history out.txt: got 0, want 1
+  FAIL B why main.bin: got None, want {'creator': 'python', 'inputs': ['defs.h', 'main.src'], 'command_has': 'cc'}
+  FAIL B impact defs.h: got [], want ['main.bin']
+  FAIL B impact main.src: got [], want ['main.bin']
+  FAIL B history main.bin: got 0, want 1
+  FAIL C why gen.txt: got None, want {'creator': 'python', 'inputs': ['cfg.txt'], 'command_has': 'copy', 'parent': 'python', 'parent_command_has': 'spawn'}
+  FAIL C impact cfg.txt: got [], want ['gen.txt']
+  FAIL C history gen.txt: got 0, want 1
+  FAIL D why final.out: got None, want {'creator': 'python', 'inputs': ['data.txt'], 'command_has': 'copy', 'renamed_from': ['tmp.out']}
+  FAIL D impact data.txt: got [], want ['final.out', 'tmp.out']
+  FAIL D history final.out: got 0, want 1
+  FAIL E why out.txt: got None, want {'creator': 'python', 'inputs': ['b.txt']}
+  FAIL E impact b.txt: got [], want ['out.txt']
+  FAIL E history out.txt: got 0, want 2
+  FAIL F why out.txt: got None, want {'creator': 'python', 'inputs': ['in.txt']}
+  FAIL F impact in.txt: got [], want ['out.txt']
+  FAIL F history out.txt: got 0, want 1
+  FAIL G why out_0.txt: got None, want {'creator': 'python', 'inputs': ['in_0.txt'], 'command_has': 'in_0.txt'}
+  FAIL G why out_1.txt: got None, want {'creator': 'python', 'inputs': ['in_1.txt'], 'command_has': 'in_1.txt'}
+  FAIL G why out_2.txt: got None, want {'creator': 'python', 'inputs': ['in_2.txt'], 'command_has': 'in_2.txt'}
+  FAIL G why out_3.txt: got None, want {'creator': 'python', 'inputs': ['in_3.txt'], 'command_has': 'in_3.txt'}
+  FAIL G why out_4.txt: got None, want {'creator': 'python', 'inputs': ['in_4.txt'], 'command_has': 'in_4.txt'}
+  FAIL G why out_5.txt: got None, want {'creator': 'python', 'inputs': ['in_5.txt'], 'command_has': 'in_5.txt'}
+  FAIL G why out_6.txt: got None, want {'creator': 'python', 'inputs': ['in_6.txt'], 'command_has': 'in_6.txt'}
+  FAIL G why out_7.txt: got None, want {'creator': 'python', 'inputs': ['in_7.txt'], 'command_has': 'in_7.txt'}
+  FAIL G impact in_0.txt: got [], want ['out_0.txt']
+  FAIL G impact in_1.txt: got [], want ['out_1.txt']
+  FAIL G impact in_2.txt: got [], want ['out_2.txt']
+  FAIL G impact in_3.txt: got [], want ['out_3.txt']
+  FAIL G impact in_4.txt: got [], want ['out_4.txt']
+  FAIL G impact in_5.txt: got [], want ['out_5.txt']
+  FAIL G impact in_6.txt: got [], want ['out_6.txt']
+  FAIL G impact in_7.txt: got [], want ['out_7.txt']
+  FAIL G history out_0.txt: got 0, want 1
+  FAIL G history out_1.txt: got 0, want 1
+  FAIL G history out_2.txt: got 0, want 1
+  FAIL G history out_3.txt: got 0, want 1
+  FAIL G history out_4.txt: got 0, want 1
+  FAIL G history out_5.txt: got 0, want 1
+  FAIL G history out_6.txt: got 0, want 1
+  FAIL G history out_7.txt: got 0, want 1
+  FAIL H why final.txt: got None, want {'creator': 'python', 'inputs': ['mid.txt']}
+  FAIL H why mid.txt: got None, want {'creator': 'python', 'inputs': ['src.txt']}
+  FAIL H impact src.txt: got [], want ['final.txt', 'mid.txt']
+  FAIL H impact mid.txt: got [], want ['final.txt']
+  FAIL H history final.txt: got 0, want 1
+  FAIL H history mid.txt: got 0, want 1
+corpus on Windows AMD64 (etw-native): 0/49 checks, lost 0

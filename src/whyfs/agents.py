@@ -142,9 +142,16 @@ def session_roots(con: sqlite3.Connection, session_id: str) -> list[tuple[str, i
         parts = session_id.split(":")
         if len(parts) >= 4:
             run_id, key = ":".join(parts[2:-1]), int(parts[-1])
-            row = con.execute("SELECT first_seen_ns FROM processes WHERE run_id=? AND pid=?", (run_id, key)).fetchone()
-            if row:
-                return [(run_id, key, row["first_seen_ns"], None)]
+            row = con.execute("SELECT os_pid, first_seen_ns FROM processes WHERE run_id=? AND pid=?", (run_id, key)).fetchone()
+            if not row:
+                return []
+            out = [(run_id, key, row["first_seen_ns"], None)]
+            # the same process instance in later collector runs (a service restart starts a new run)
+            if row["os_pid"] is not None:
+                for r in con.execute("SELECT run_id, pid FROM processes WHERE os_pid=? AND run_id!=? "
+                                     "AND ABS(first_seen_ns-?)<=2000000000", (row["os_pid"], run_id, row["first_seen_ns"])):
+                    out.append((r["run_id"], r["pid"], row["first_seen_ns"], None))
+            return out
         return []
     s = con.execute("SELECT * FROM agent_sessions WHERE session_id=?", (session_id,)).fetchone()
     if not s or s["root_os_pid"] is None:

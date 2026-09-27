@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhyFS</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd;
+  --accent: #2b5fd9; --accent-soft: #e8eefc; --ok: #1f7a4d; --ok-soft: #e4f3ea;
+  --warn: #9a5b00; --warn-soft: #fbf0dc; --bad: #a3312b; --bad-soft: #fbe6e4;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "DejaVu Sans Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615; --panel: #1f1f1d; --ink: #ecebe6; --muted: #9c9b94; --line: #33322f;
+    --accent: #7ea2ff; --accent-soft: #232c44; --ok: #6fcf9a; --ok-soft: #1c3026;
+    --warn: #f0b457; --warn-soft: #3a2e17; --bad: #f08a82; --bad-soft: #3d1f1d;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, "Segoe UI", sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+header h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
+header .sub { color: var(--muted); font-size: 13px; }
+header .status { margin-left: auto; font-size: 12px; color: var(--muted); }
+main { display: grid; grid-template-columns: minmax(340px, 44%) 1fr; gap: 0; height: calc(100vh - 53px); }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; height: auto; } #results { max-height: 50vh; } }
+#left { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+form { padding: 14px 16px 10px; display: grid; gap: 8px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > * { flex: 1 1 140px; min-width: 0; }
+label.f { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+input, select, button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+#q { font-size: 15px; padding: 8px 10px; }
+button { cursor: pointer; background: var(--panel); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+#results { overflow: auto; flex: 1; min-height: 0; }
+#results .empty { padding: 24px 18px; color: var(--muted); }
+.res { padding: 9px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.res:hover { background: var(--accent-soft); }
+.res.sel { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.res .n { font-weight: 600; word-break: break-all; }
+.res .p { color: var(--muted); font-size: 12px; word-break: break-all; }
+.res .m { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+.tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.tag.del { background: var(--bad-soft); color: var(--bad); }
+#right { overflow: auto; min-height: 0; padding: 18px 24px 40px; }
+#right .placeholder { color: var(--muted); margin-top: 40px; max-width: 560px; }
+.title { font-size: 20px; font-weight: 650; word-break: break-all; margin: 0 0 2px; }
+.path { font-family: var(--mono); font-size: 12.5px; color: var(--muted); word-break: break-all; }
+.actions { display: flex; gap: 8px; margin: 10px 0 4px; flex-wrap: wrap; }
+.badge { display: inline-block; font-size: 12px; padding: 2px 9px; border-radius: 999px; margin-right: 6px; }
+.b-ok { background: var(--ok-soft); color: var(--ok); }
+.b-warn { background: var(--warn-soft); color: var(--warn); }
+.b-bad { background: var(--bad-soft); color: var(--bad); }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 12px; }
+section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 8px; }
+.why { font-size: 15.5px; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
+dt { color: var(--muted); }
+dd { margin: 0; word-break: break-word; }
+code, .mono { font-family: var(--mono); font-size: 12.5px; }
+ul.files { list-style: none; padding: 0; margin: 0; }
+ul.files li { padding: 3px 0; word-break: break-all; }
+a.file { color: var(--accent); text-decoration: none; cursor: pointer; font-family: var(--mono); font-size: 12.5px; }
+a.file:hover { text-decoration: underline; }
+.chain { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chain span.p { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-family: var(--mono); font-size: 12px; }
+.muted { color: var(--muted); }
+table.hist { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.hist td { padding: 4px 8px 4px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.err { color: var(--bad); padding: 12px 16px; }
+.gaps li { color: var(--warn); }
+</style>
+</head>
+<body>
+<header>
+  <h1>WhyFS</h1><span class="sub">where your files came from</span>
+  <span class="status" id="svc"></span>
+</header>
+<main>
+  <div id="left">
+    <form id="f" autocomplete="off">
+      <input id="q" placeholder="Search by file name or path, e.g. app.js" aria-label="file name or path">
+      <div class="row">
+        <label class="f">Folder<input id="path" placeholder="any folder"></label>
+        <label class="f">Created by program<input id="creator" placeholder="e.g. python, code.exe"></label>
+      </div>
+      <div class="row">
+        <label class="f">User<input id="user" placeholder="any user"></label>
+        <label class="f">AI agent / session<select id="agent"><option value="">any</option></select></label>
+      </div>
+      <div class="row">
+        <label class="f">When<select id="when">
+          <option value="">any time</option><option value="1h">last hour</option><option value="today">today</option>
+          <option value="7d">last 7 days</option><option value="30d">last 30 days</option><option value="custom">between…</option>
+        </select></label>
+        <label class="f">What happened<select id="action">
+          <option value="any">created or changed</option><option value="created">created</option>
+          <option value="changed">changed</option><option value="deleted">deleted</option>
+        </select></label>
+      </div>
+      <div class="row" id="customrow" hidden>
+        <label class="f">From<input id="from" type="datetime-local"></label>
+        <label class="f">To<input id="to" type="datetime-local"></label>
+      </div>
+      <div class="row" style="align-items:center">
+        <div class="chips">
+          <span class="chip" data-preset="recent">Recently changed</span>
+          <span class="chip" data-preset="today">Created today</span>
+          <span class="chip" data-preset="agents">Made by AI agents</span>
+          <span class="chip" data-preset="python">Produced by Python</span>
+        </div>
+        <button class="primary" type="submit" style="flex:0 0 auto">Search</button>
+      </div>
+    </form>
+    <div id="results"><div class="empty">Search the files WhyFS has labelled on this computer, or pick a shortcut above.</div></div>
+  </div>
+  <div id="right"><div class="placeholder">
+    <p><b>Select a file</b> to see its label: what created it, from which inputs, in which process chain, for which user or AI agent, what happened to it since, and what depends on it.</p>
+    <p class="muted">In Explorer or your file manager, right-click a file and choose <i>WhyFS</i> to open its label directly.</p>
+  </div></div>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else if (k === "onclick") e.addEventListener("click", v); else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k !== null && k !== undefined && k !== false) e.append(k instanceof Node ? k : String(k));
+  return e;
+}
+async function api(op, params) {
+  const r = await fetch("/api", { method: "POST", headers: { "Content-Type": "application/json", "X-Whyfs": "1" },
+                                  body: JSON.stringify({ op, params: params || {} }) });
+  if (!r.ok) throw new Error(r.status === 403 ? "This WhyFS window has expired: open WhyFS again from its menu entry." : "HTTP " + r.status);
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || "request failed");
+  return j.result;
+}
+const base = (p) => (p || "").split(/[\\/]/).filter(Boolean).pop() || p || "?";
+const dir = (p) => { const i = Math.max(p.lastIndexOf("\\"), p.lastIndexOf("/")); return i > 0 ? p.slice(0, i) : p; };
+const when = (iso) => { if (!iso) return "?"; const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleString(); };
+const ns = (d) => BigInt(d.getTime()) * 1000000n;
+function fileLink(p) { return el("a", { class: "file", title: "Show the label of " + p, onclick: () => showLabel(p) }, p); }
+
+// ---------------------------------------------------------------- search
+let agentSessions = [];
+async function loadSessions() {
+  try {
+    agentSessions = await api("list_agent_sessions", { limit: 300 });
+    const sel = $("agent");
+    const names = [...new Set(agentSessions.map((s) => s.agent_name))].sort();
+    if (names.length) sel.append(el("optgroup", { label: "Agent" }, names.map((n) => el("option", { value: "agent:" + n }, "any " + n + " session"))));
+    if (agentSessions.length) sel.append(el("optgroup", { label: "Session" }, agentSessions.slice(0, 60).map((s) =>
+      el("option", { value: "session:" + s.session_id }, `${s.agent_name} · ${when(s.started)}${s.task ? " · " + s.task.slice(0, 40) : ""}`))));
+  } catch (e) { /* sessions are optional */ }
+}
+function params() {
+  const p = { limit: 200, action: $("action").value };
+  const q = $("q").value.trim();
+  if (q) { if (/[\\/]/.test(q)) p.path = q; else p.name = q; }
+  if ($("path").value.trim()) p.path = $("path").value.trim() + (p.path ? "" : "");
+  if ($("path").value.trim() && q && /[\\/]/.test(q)) p.name = base(q);
+  if ($("creator").value.trim()) p.creator = $("creator").value.trim();
+  if ($("user").value.trim()) p.user = $("user").value.trim();
+  const a = $("agent").value;
+  if (a.startsWith("agent:")) p.agent = a.slice(6); else if (a.startsWith("session:")) p.session_id = a.slice(8);
+  const w = $("when").value, now = new Date();
+  if (w === "1h") p.since_ns = String(ns(new Date(now - 3600e3)));
+  if (w === "today") { const d = new Date(now); d.setHours(0, 0, 0, 0); p.since_ns = String(ns(d)); }
+  if (w === "7d") p.since_ns = String(ns(new Date(now - 7 * 864e5)));
+  if (w === "30d") p.since_ns = String(ns(new Date(now - 30 * 864e5)));
+  if (w === "custom") {
+    if ($("from").value) p.since_ns = String(ns(new Date($("from").value)));
+    if ($("to").value) p.until_ns = String(ns(new Date($("to").value)));
+  }
+  return p;
+}
+async function search() {
+  const box = $("results");
+  box.replaceChildren(el("div", { class: "empty" }, "Searching…"));
+  try {
+    const rows = await api("search_files", params());
+    if (!rows.length) { box.replaceChildren(el("div", { class: "empty" }, "No labelled files match.  WhyFS only knows files it observed being written, moved or deleted while it was running.")); return; }
+    box.replaceChildren(...rows.map((r) => {
+      const d = el("div", { class: "res", tabindex: "0" },
+        el("div", { class: "n" }, base(r.path), " ",
+           r.last_action === "deleted" ? el("span", { class: "tag del" }, "deleted") : r.created_in_range ? el("span", { class: "tag" }, "created") : null),
+        el("div", { class: "p" }, dir(r.path)),
+        el("div", { class: "m" }, el("span", {}, `${r.last_action} ${when(r.at)}`), el("span", {}, "by " + base(r.exe)),
+           r.user_name ? el("span", {}, r.user_name) : null, r.agent ? el("span", { class: "tag" }, r.agent.agent_name) : null));
+      d.addEventListener("click", () => { for (const x of box.querySelectorAll(".sel")) x.classList.remove("sel"); d.classList.add("sel"); showLabel(r.path); });
+      d.addEventListener("keydown", (e) => { if (e.key === "Enter") d.click(); });
+      return d;
+    }));
+  } catch (e) { box.replaceChildren(el("div", { class: "err" }, e.message)); }
+}
+$("f").addEventListener("submit", (e) => { e.preventDefault(); search(); });
+$("when").addEventListener("change", () => { $("customrow").hidden = $("when").value !== "custom"; });
+for (const c of document.querySelectorAll(".chip")) c.addEventListener("click", () => {
+  const p = c.dataset.preset;
+  $("q").value = ""; $("creator").value = ""; $("agent").value = ""; $("action").value = "any"; $("when").value = "";
+  if (p === "recent") $("when").value = "today";
+  if (p === "today") { $("when").value = "today"; $("action").value = "created"; }
+  if (p === "agents") { const o = [...$("agent").options].find((o) => o.value.startsWith("agent:")); if (o) $("agent").value = o.value; else $("when").value = "7d"; }
+  if (p === "python") $("creator").value = "python";
+  $("customrow").hidden = true;
+  search();
+});
+
+// ---------------------------------------------------------------- the canonical label
+function statusBadges(lb) {
+  const out = [];
+  if (lb.status === "labelled") out.push(el("span", { class: "badge b-ok" }, "labelled"));
+  else if (lb.status === "not-observed") out.push(el("span", { class: "badge b-bad" }, "origin not observed"));
+  else out.push(el("span", { class: "badge b-warn" }, "no record"));
+  const obs = lb.observation;
+  if (obs) out.push(el("span", { class: "badge " + (obs.complete ? "b-ok" : "b-warn") }, obs.complete ? "evidence complete" : "evidence incomplete"));
+  if (!lb.exists) out.push(el("span", { class: "badge b-bad" }, "file no longer exists"));
+  if (lb.agent) out.push(el("span", { class: "badge b-warn" }, "AI agent: " + lb.agent.agent_name));
+  return out;
+}
+function sec(title, id, ...kids) { return el("section", { id }, el("h2", {}, title), ...kids); }
+function dl(pairs) { return el("dl", {}, pairs.filter((p) => p && p[1] !== null && p[1] !== undefined && p[1] !== "").flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])); }
+async function showLabel(path, view) {
+  const R = $("right");
+  R.replaceChildren(el("div", { class: "placeholder" }, "Loading the label of ", el("code", {}, path), "…"));
+  let lb;
+  try { lb = await api("get_file_provenance", { path }); } catch (e) { R.replaceChildren(el("div", { class: "err" }, e.message)); return; }
+  const kids = [
+    el("div", { class: "title" }, base(lb.path)), el("div", { class: "path" }, lb.path),
+    el("div", { class: "actions" }, statusBadges(lb),
+       lb.exists ? el("button", { onclick: () => api("reveal", { path: lb.path }).catch(() => {}) }, "Show in folder") : null,
+       el("button", { onclick: () => { $("q").value = ""; $("path").value = dir(lb.path); $("when").value = ""; search(); } }, "Search this folder"),
+       el("button", { onclick: () => navigator.clipboard && navigator.clipboard.writeText(JSON.stringify(lb, null, 2)) }, "Copy label (JSON)")),
+  ];
+  if (lb.status !== "labelled") {
+    kids.push(sec("Why does this file exist?", "why", el("p", {}, lb.note || "No record.")));
+    if (lb.previous_file_at_path) kids.push(sec("Previous file at this path", "prev", dl([
+      ["Written by", lb.previous_file_at_path.written_by], ["At", when(lb.previous_file_at_path.at)], ["Command", el("code", {}, lb.previous_file_at_path.command || "")]])));
+  } else {
+    kids.push(sec("Why does this file exist?", "why", el("div", { class: "why" }, lb.causal_why),
+      el("p", { class: "muted" }, lb.intent && lb.intent.task ? ["Task given by the agent: ", el("b", {}, lb.intent.task), " (" + lb.intent.source + ")"] : "No task or intent was provided for this activity; WhyFS does not guess intent.")));
+    const cb = lb.created_by || {};
+    const chain = (lb.process_chain || []).filter((c, i, a) => c.exe || i > 0);
+    kids.push(sec("What created it", "created", dl([
+      ["Program", el("code", {}, cb.exe || "?")], ["Process", "pid " + cb.pid],
+      ["Command", cb.command ? el("code", {}, cb.command) : null], ["Working folder", cb.cwd ? el("code", {}, cb.cwd) : null],
+      ["Created", when(lb.created)], ["Last written", lb.last_written !== lb.created ? when(lb.last_written) : null],
+      ["User", lb.user_name || lb.user || "unknown"],
+      ["Process chain", chain.length ? el("div", { class: "chain" }, chain.flatMap((c, i) => [i ? "→" : null, el("span", { class: "p", title: c.command || "" }, base(c.exe) || "?")])) : null],
+    ])));
+    const a = lb.agent;
+    kids.push(sec("AI agent", "agent", a ? dl([
+      ["Agent", a.agent_name + (a.agent_version ? " " + a.agent_version : "")],
+      ["How known", a.source === "registered" ? "the agent registered its session with WhyFS" : "detected from the program image and command line"],
+      ["Session", el("span", {}, el("code", {}, a.session_id), " ", el("button", { onclick: () => { $("agent").append(el("option", { value: "session:" + a.session_id }, a.agent_name + " session")); $("agent").value = "session:" + a.session_id; $("q").value = ""; $("path").value = ""; $("when").value = ""; search(); } }, "Files from this session"))],
+      ["Started", when(a.started)], ["Workspace", a.workspace ? el("code", {}, a.workspace) : null],
+    ]) : el("p", { class: "muted" }, "No AI agent was observed in the process chain that wrote this file.")));
+    const ins = lb.inputs || [];
+    kids.push(sec("Inputs", "inputs",
+      ins.length ? el("ul", { class: "files" }, ins.map((p) => el("li", {}, fileLink(p)))) : el("p", { class: "muted" }, "No input files were observed."),
+      lb.inputs_hidden ? el("p", { class: "muted" }, `${lb.inputs_hidden} system and library files the program loaded are not shown.`) : null,
+      lb.shared_by_outputs ? el("p", { class: "muted" }, `The same process wrote ${lb.shared_by_outputs} other files from these inputs; which input produced which output is not observable.`) : null,
+      (lb.renamed_from || []).length ? el("p", {}, "Moved here from ", fileLink(lb.renamed_from[0].from)) : null));
+  }
+  const hist = lb.history || [];
+  kids.push(sec("What has happened to it", "history", hist.length ? el("table", { class: "hist" }, hist.map((h) => el("tr", {},
+    el("td", { class: "muted" }, when(h.at)), el("td", {}, h.action), el("td", {}, "by ", el("code", {}, base(h.exe))),
+    el("td", {}, h.action === "moved here" && h.path ? ["from ", fileLink(h.path)] : h.action === "moved away" && h.path2 ? ["to ", fileLink(h.path2)] : "")))) :
+    el("p", { class: "muted" }, "No recorded activity.")));
+  const im = lb.impact || {};
+  kids.push(sec("If you remove or change it", "impact", el("p", {}, im.summary || ""),
+    (im.generated_outputs || []).length ? [el("div", { class: "muted" }, "Files generated from it:"), el("ul", { class: "files" }, im.generated_outputs.map((p) => el("li", {}, fileLink(p))))] : null,
+    (im.possibly_affected || []).length ? el("details", {}, el("summary", { class: "muted" }, `${im.possibly_affected.length} files written later by long-running programs that read it (dependency not observable)`),
+      el("ul", { class: "files" }, im.possibly_affected.slice(0, 200).map((p) => el("li", {}, fileLink(p))))) : null,
+    (im.readers || []).length ? [el("div", { class: "muted" }, "Programs observed reading it:"), el("ul", { class: "files" }, im.readers.map((r) => el("li", {}, el("code", {}, r.exe || "?"), ` · ${r.processes} process${r.processes === 1 ? "" : "es"}, last ${when(r.last_read)}`)))] : null));
+  const obs = lb.observation || {};
+  kids.push(sec("Evidence", "evidence", dl([
+    ["Source", lb.evidence || (lb.status === "labelled" ? "OS-observed" : "none")],
+    ["Identity", lb.identity ? lb.identity.check : null], ["Observing since", obs.observing_since ? when(obs.observing_since) : null],
+    ["Completeness", obs.complete ? "no observation gaps are known" : el("ul", { class: "gaps" }, (obs.gaps || []).map((g) => el("li", {}, g)))],
+    ["Note", lb.note || null],
+  ])));
+  R.replaceChildren(...kids);
+  R.scrollTop = 0;
+  if (view && view !== "label") { const t = $(["impact", "history", "created"].includes(view) ? view : "why"); if (t) t.scrollIntoView(); }
+}
+
+// ---------------------------------------------------------------- start
+(async function start() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  history.replaceState(null, "", "/");
+  loadSessions();
+  api("status", {}).then((s) => {
+    $("svc").textContent = s.collector_running ? `recording · ${s.visible.labelled_files.toLocaleString()} labelled files visible to you` : "the whyfs service is not recording";
+  }).catch((e) => { $("svc").textContent = e.message; });
+  if (h.get("path")) { $("path").value = h.get("path"); $("when").value = ""; search(); }
+  if (h.get("file")) showLabel(h.get("file"), h.get("view"));
+  else if (!h.get("path")) { $("when").value = "today"; search(); }
+})();
+</script>
+</body>
+</html>

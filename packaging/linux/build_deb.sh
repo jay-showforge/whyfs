@@ -92,10 +92,12 @@ Depends: python3 (>= 3.10), python3-bpfcc, libbpf1, libsqlite3-0, libelf1
 Recommends: bpfcc-tools
 Section: devel
 Priority: optional
-Description: file provenance: why does this file exist, what made it, what depends on it
- whyfs records which processes create, read, rename and delete files in the
- workspaces you choose (Linux: eBPF), and answers "whyfs why FILE",
- "whyfs impact FILE" and "whyfs history FILE".
+Description: automatic provenance labels for files
+ whyfs automatically labels files with their provenance -- where, when, how,
+ and what or who caused them to exist -- so people and software agents can
+ understand the files they encounter.  A local service (eBPF) records which
+ processes create, read, rename and delete files; "whyfs label FILE" and the
+ local API explain any file, including its inputs and known dependents.
  .
  Source available under the Business Source License 1.1 (see copyright).
 EOF
@@ -125,6 +127,8 @@ EOF
 cat > "$PKG/DEBIAN/postinst" <<'EOF'
 #!/bin/sh
 set -e
+# bytecode for every user: each CLI query is a fresh process (removed again by prerm)
+python3 -m compileall -q /usr/lib/python3/dist-packages/whyfs >/dev/null 2>&1 || true
 if [ -d /run/systemd/system ]; then
   systemctl daemon-reload || true
   systemctl enable --now whyfs.service || echo "whyfs: could not start whyfs.service; see: journalctl -u whyfs" >&2

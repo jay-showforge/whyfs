@@ -173,6 +173,119 @@ def _find_by_identity(con: sqlite3.Connection, fid: str | None) -> sqlite3.Row |
     return con.execute("SELECT * FROM events WHERE file_id=? AND is_write=1 ORDER BY ts_ns DESC LIMIT 1", (fid,)).fetchone()
 
 
+# ---------------------------------------------------------------- impact and observation gaps
+LOSS_KEYS = ("kernel_drops", "queue_drops", "lost_file", "lost_sys", "buffers_lost_file", "buffers_lost_sys",
+             "late_records", "user_unresolved")
+GAP_MIN_NS = 5 * 10**9            # shorter pauses (a service restart) are not reported
+WEAK_RETENTION_DAYS = 30           # pure reads are kept this long by default (retention.py)
+# A reading process that wrote more files than this after the read (an agent, an editor, a
+# browser) links the file to all of them only ambiguously: which output used it is not observable.
+AMBIGUOUS_SHARED = 25
+
+
+def readers(con: sqlite3.Connection, path: str, limit: int = 20) -> list[dict]:
+    """Programs observed reading the file (reads are kept for the weak-retention period)."""
+    rows = con.execute(
+        "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e "
+        "LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid "
+        "WHERE e.path=? AND e.is_read=1 AND e.api NOT LIKE '%derived-temp' GROUP BY pr.exe ORDER BY last DESC LIMIT ?",
+        (path, limit)).fetchall()
+    return [{"exe": r["exe"], "processes": r["n"], "last_read_ns": r["last"], "last_read": iso(r["last"])} for r in rows]
+
+
+def observation(con: sqlite3.Connection, since_ns: int | None, *, chain: list[dict] | None = None,
+                identity: str | None = None, status: str = "labelled") -> dict:
+    """Whether whyfs was watching, without loss, from ``since_ns`` until now: the gaps that
+    make a label (and above all "no dependents observed") incomplete."""
+    gaps: list[str] = []
+    runs = con.execute("SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns").fetchall()
+    now = _dt.datetime.now().timestamp() * 1e9
+    first = runs[0]["started_ns"] if runs else None
+    if status != "labelled":
+        gaps.append("this file's origin was not observed")
+    if since_ns and runs:
+        # intervals after since_ns during which no collector run was recording
+        covered_to = since_ns
+        for r in runs:
+            if (r["ended_ns"] or now) < since_ns:
+                continue
+            if r["started_ns"] - covered_to > GAP_MIN_NS:
+                gaps.append(f"whyfs was not recording from {iso(int(covered_to))} to {iso(r['started_ns'])}")
+            covered_to = max(covered_to, r["ended_ns"] or now)
+        if now - covered_to > GAP_MIN_NS:
+            gaps.append(f"whyfs is not recording now (last recorded {iso(int(covered_to))})")
+        ids = [r["id"] for r in runs if (r["ended_ns"] or now) >= since_ns]
+        lost = 0
+        for i in range(0, len(ids), 500):
+            chunk = ids[i:i + 500]
+            lost += con.execute(f"SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN "
+                                f"({','.join('?' * len(chunk))}) AND key IN ({','.join('?' * len(LOSS_KEYS))})",
+                                [*chunk, *LOSS_KEYS]).fetchone()[0]
+        if lost:
+            gaps.append(f"the collector reported {lost} lost or unattributed events since the file was created")
+        if now - since_ns > WEAK_RETENTION_DAYS * 86400e9:
+            gaps.append(f"reads older than {WEAK_RETENTION_DAYS} days are pruned: older uses of this file are no longer known")
+    if chain and chain[0].get("exe") is None:
+        gaps.append("the process chain is cut off: an ancestor started before whyfs was running")
+    if identity == "unknown":
+        gaps.append("the file's identity could not be compared with the recorded one")
+    return {"complete": not gaps, "gaps": gaps, "observing_since": iso(first) if first else None}
+
+
+def impact(lb: dict, rd: list[dict]) -> dict:
+    """What removing or changing the file would affect, as far as whyfs observed.  Never
+    claims a file is safe to remove: absence of observed use is not absence of use."""
+    deps = lb.get("dependents") or []
+    # specific: reachable from the file through edges of processes with few outputs
+    specific, frontier = set(), {pkey(lb["path"])}
+    while frontier:
+        nxt = set()
+        for d in deps:
+            if d.get("to") and pkey(d["from"]) in frontier and (d.get("shared") or 0) <= AMBIGUOUS_SHARED:
+                k = pkey(d["to"])
+                if k not in specific:
+                    specific.add(k)
+                    nxt.add(k)
+        frontier = nxt
+    outs = sorted({d["to"] for d in deps if d.get("to") and pkey(d["to"]) in specific})
+    possible = sorted({d["to"] for d in deps if d.get("to") and pkey(d["to"]) not in specific})
+    via = sorted({_short(d.get("exe") or "?") for d in deps if (d.get("shared") or 0) > AMBIGUOUS_SHARED
+                  and pkey(d["from"]) == pkey(lb["path"])})
+    creator = _short((lb.get("created_by") or {}).get("exe") or "?")
+    readers_other = [r for r in rd if r.get("exe") != (lb.get("created_by") or {}).get("exe")]
+    lines = []
+    if outs:
+        lines.append(f"{len(outs)} file{'s were' if len(outs) != 1 else ' was'} observed being generated from this file "
+                     "(directly or through intermediates); changing or removing it may affect them, and they could "
+                     "not be regenerated the same way without it.")
+    if possible:
+        lines.append(f"{len(possible)} more file{'s were' if len(possible) != 1 else ' was'} written afterwards by "
+                     f"long-running programs that read it{' (' + ', '.join(via[:3]) + ')' if via else ''}; whether "
+                     "they depend on it is not observable.")
+    if readers_other:
+        names = ", ".join(sorted({_short(r['exe'] or '?') for r in readers_other})[:5])
+        lines.append(f"Observed being read by {names}" +
+                     ("" if outs else " (no output files were observed from those reads)") +
+                     ": programs that read it may depend on it when they run.")
+    if not outs and not readers_other:
+        lines.append("No dependents were observed.  This does not mean it is safe to remove: whyfs only knows "
+                     "the activity it observed.")
+    if lb.get("status") == "labelled" and (lb.get("shared_by_outputs") or 0) > AMBIGUOUS_SHARED:
+        lines.append(f"It was written by a long-running program ({creator}) that wrote {lb['shared_by_outputs']} other "
+                     "files; which of its inputs this file came from is not observable.")
+    elif lb.get("status") == "labelled" and (lb.get("inputs") or lb.get("renamed_from")):
+        lines.append(f"This file is generated: {creator} wrote it" +
+                     (f" from {len(lb['inputs'])} observed input{'s' if len(lb['inputs']) != 1 else ''}" if lb.get("inputs") else "") +
+                     "; rerunning that process may recreate it (whyfs does not verify this).")
+    obs = lb.get("observation") or {}
+    if obs and not obs.get("complete"):
+        lines.append("Evidence is incomplete: " + "; ".join(obs.get("gaps") or []) + ".")
+    return {"generated_outputs": outs, "possibly_affected": possible, "dependents": deps, "readers": readers_other,
+            "is_generated": bool(lb.get("status") == "labelled" and (lb.get("inputs") or lb.get("renamed_from"))
+                                 and (lb.get("shared_by_outputs") or 0) <= AMBIGUOUS_SHARED),
+            "no_observed_dependents": not outs and not readers_other, "summary": " ".join(lines)}
+
+
 def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = False, history_limit: int = 20,
                  dependents_limit: int = 50) -> dict:
     target = normalize(path)
@@ -192,6 +305,9 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
     if not w:
         label.update(status="no-record", note="whyfs has no observed origin for this file (created before whyfs "
                      "was running, excluded by the scope policy, or not visible to you)")
+        label["dependents"] = impact_details(con, target, include_noise=include_noise)[:dependents_limit]
+        label["observation"] = observation(con, None, status="no-record")
+        label["impact"] = impact(label, readers(con, target))
         return label
     # the creator's write, under whatever name the file had then (it may have moved since)
     rec = con.execute("SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 "
@@ -213,6 +329,9 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
                    f"{iso(stale['ts_ns'])} and the file now here was not observed being written")
         label.update(status="not-observed", note=f"this file's origin was not observed: {why_not}",
                      previous_file_at_path={"written_by": w["exe"], "at": iso(w["ts_ns"]), "command": w.get("command")})
+        label["dependents"] = []
+        label["observation"] = observation(con, None, identity=idcheck, status="not-observed")
+        label["impact"] = impact(label, [])
         return label
     if via_identity:
         note = f"found by file identity: the observed writes were to {via_identity} (a hard link or an unobserved move)"
@@ -251,6 +370,8 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
     if not label["intent"]:
         label["intent"] = {"task": None, "note": "no intent context was provided; whyfs does not infer intent"}
     label["causal_why"] = _causal_sentence(label)
+    label["observation"] = observation(con, label["created_ns"], chain=label["process_chain"], identity=idcheck)
+    label["impact"] = impact(label, readers(con, target))
     label["evidence"] = "OS-observed" + ("" if not session else
                                          " + registered agent context" if session["source"] == "registered" else
                                          " + detected agent (process image and command line)")
@@ -283,6 +404,7 @@ def render_label(lb: dict) -> str:
         if lb.get("previous_file_at_path"):
             pv = lb["previous_file_at_path"]
             L.append(f"Previous file at this path: written by {pv['written_by']} at {pv['at']}")
+        L.extend(_render_impact_tail(lb))
         return "\n".join(L)
     L.append(f"Created:  {lb['created']}" + ("" if lb["created"] == lb["last_written"] else f"   (last written {lb['last_written']})"))
     L.append(f"User:     {lb.get('user_name') or lb.get('user') or 'unknown'}")
@@ -321,7 +443,20 @@ def render_label(lb: dict) -> str:
         L.append("Used by:")
         for d in lb["dependents"][:10]:
             L.append(f"  {d.get('to')}  (via {_short(d.get('exe') or '?')})")
+    L.extend(_render_impact_tail(lb))
     if lb.get("note"):
         L.append(f"Note:     {lb['note']}")
     L.append(f"Evidence: {lb['evidence']}; identity {lb['identity']['check']}")
     return "\n".join(L)
+
+
+def _render_impact_tail(lb: dict) -> list[str]:
+    L = []
+    im = lb.get("impact")
+    if im:
+        L.append("If removed or changed: " + im["summary"])
+    obs = lb.get("observation")
+    if obs:
+        L.append("Provenance: " + ("complete as far as whyfs can tell" if obs["complete"] else
+                                   "incomplete — " + "; ".join(obs["gaps"])))
+    return L

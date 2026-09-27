@@ -38,10 +38,8 @@ from .access import open_for
 from .query import impact_details, pkey
 from .query import why as qwhy
 from .store import normalize
+from .client import PIPE_NAME, PROTOCOL, SOCKET_PATH, ServiceUnavailable, call, dumps  # noqa: F401
 
-PROTOCOL = 1
-PIPE_NAME = r"\\.\pipe\whyfs-api"
-SOCKET_PATH = "/run/whyfs/api.sock"
 MAX_REQUEST = 1 << 20
 _SESSION_ID = re.compile(r"^[A-Za-z0-9._:\-]{1,128}$")
 
@@ -119,6 +117,164 @@ def op_get_recent_changes(ctx, con, params):
                     "ts_ns": r["ts_ns"], "at": label.iso(r["ts_ns"]), "exe": r["exe"], "pid": r["os_pid"],
                     "user": r["user"], "agent": ({"agent_name": s["agent_name"], "session_id": s["session_id"],
                                                   "source": s["source"]} if s else None)})
+        if len(out) >= limit:
+            break
+    return out
+
+
+def _like(text: str) -> str:
+    return "%" + str(text).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"
+
+
+def _ns(v) -> int | None:
+    if v in (None, ""):
+        return None
+    return int(v)
+
+
+def _users_matching(con, text: str) -> list[str]:
+    """Stored user ids (uid:N / SIDs) whose id or resolved name contains ``text``."""
+    t = text.lower()
+    out = []
+    for (u,) in con.execute("SELECT DISTINCT user FROM processes WHERE user IS NOT NULL"):
+        name = label.user_name(u) or ""
+        if t in u.lower() or t in name.lower():
+            out.append(u)
+    return out
+
+
+def _session_process_sets(con, session_ids: list[str]) -> dict[str, tuple[set, int, int]]:
+    """run_id -> (process keys, start, end) of the given sessions' process trees."""
+    out: dict[str, tuple[set, int, int]] = {}
+    for sid in session_ids:
+        for run_id, key, start, end in agents.session_roots(con, sid):
+            keys, s0, e0 = out.get(run_id, (set(), 1 << 62, 0))
+            keys.update(agents.descendants(con, run_id, key))
+            out[run_id] = (keys, min(s0, (start or 0) - 2 * 10**9), max(e0, end or (1 << 62)))
+    return out
+
+
+def op_list_agent_sessions(ctx, con, params):
+    """Registered sessions and detected agent process trees, newest first."""
+    since = _ns(params.get("since_ns")) or 0
+    name = (params.get("agent") or "").lower()
+    limit = min(int(params.get("limit", 200)), 2000)
+    out = []
+    for s in con.execute("SELECT * FROM agent_sessions WHERE started_ns>=? ORDER BY started_ns DESC LIMIT ?", (since, limit)):
+        if name and name not in s["agent_name"].lower():
+            continue
+        d = _session_view(con, s)
+        d.pop("root_start_ns", None)
+        out.append(d)
+    # detected agents: root processes whose image/command line is a known agent and whose parent is not
+    rows = con.execute("SELECT p.*, pp.exe AS pexe, pp.command AS pcommand FROM processes p "
+                       "LEFT JOIN processes pp ON pp.run_id=p.run_id AND pp.pid=p.parent_key "
+                       "WHERE p.first_seen_ns>=? AND (p.exe LIKE '%claude%' OR p.exe LIKE '%node%' OR p.exe LIKE '%codex%') "
+                       "ORDER BY p.first_seen_ns DESC LIMIT 20000", (since,)).fetchall()
+    seen = set()
+    for r in reversed(rows):  # oldest first: a process instance is named by its first collector run
+        a = agents.detect(r["exe"], r["command"])
+        if not a or agents.detect(r["pexe"], r["pcommand"]):
+            continue
+        inst = (r["os_pid"], r["first_seen_ns"] // 2_000_000_000)
+        if inst in seen:  # the same process, seen again by a later collector run
+            continue
+        seen.add(inst)
+        if name and name not in a["agent_name"].lower():
+            continue
+        out.append({"session_id": f"detected:{a['agent_id']}:{r['run_id']}:{r['pid']}", "agent_name": a["agent_name"],
+                    "agent_version": a["agent_version"], "user": r["user"], "user_name": label.user_name(r["user"]),
+                    "root_os_pid": r["os_pid"], "workspace": r["cwd"], "task": None, "started_ns": r["first_seen_ns"],
+                    "started": label.iso(r["first_seen_ns"]), "ended_ns": None, "ended": None, "source": "detected",
+                    "confidence": "high: " + a["evidence"], "evidence": a["evidence"]})
+    out.sort(key=lambda d: -(d.get("started_ns") or 0))
+    return out[:limit]
+
+
+def op_search_files(ctx, con, params):
+    """Files whose observed history matches every given filter (docs/AGENT_PROTOCOL.md):
+    name (part of the file name), path (part of the full path), creator (part of the writing
+    program's path), user (id or name), agent (agent name), session_id, since_ns/until_ns,
+    action (created | changed | deleted | any).  One row per file, newest activity first."""
+    limit = min(int(params.get("limit", 100)), 1000)
+    since, until = _ns(params.get("since_ns")), _ns(params.get("until_ns"))
+    action = params.get("action") or "any"
+    if action not in ("any", "created", "changed", "deleted"):
+        raise ApiError("action must be any, created, changed or deleted")
+    where = ["(e.is_write=1 OR e.kind IN ('rename','unlink'))", "e.api NOT LIKE '%derived-temp'"]
+    args: list = []
+    target = "CASE WHEN e.kind='rename' THEN e.path2 ELSE e.path END"
+    if since is not None:
+        where.append("e.ts_ns>=?")
+        args.append(since)
+    if until is not None:
+        where.append("e.ts_ns<=?")
+        args.append(until)
+    for key, expr in (("path", target), ("creator", "pr.exe")):
+        if params.get(key):
+            where.append(f"{expr} LIKE ? ESCAPE '!'")
+            args.append(_like(params[key]))
+    if params.get("name"):  # the file name: the part after the last separator
+        where.append(f"{target} LIKE ? ESCAPE '!'")
+        args.append(_like(params["name"]))
+    if action == "deleted":
+        where.append("e.kind='unlink'")
+    elif action in ("created", "changed"):
+        where.append("e.kind!='unlink'")
+    if params.get("user"):
+        users = _users_matching(con, str(params["user"]))
+        if not users:
+            return []
+        where.append(f"pr.user IN ({','.join('?' * len(users))})")
+        args += users
+    sessions = None
+    if params.get("session_id") or params.get("agent"):
+        sids = [str(params["session_id"])] if params.get("session_id") else [
+            d["session_id"] for d in op_list_agent_sessions(ctx, con, {"agent": params["agent"], "limit": 2000})]
+        sessions = _session_process_sets(con, sids)
+        if not sessions:
+            return []
+        where.append(f"e.run_id IN ({','.join('?' * len(sessions))})")
+        args += list(sessions)
+    q = (f"SELECT {target} AS target, e.kind, e.ts_ns, e.run_id, e.pid, pr.exe, pr.os_pid, pr.user FROM events e "
+         f"LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid WHERE {' AND '.join(where)} "
+         f"ORDER BY e.ts_ns DESC LIMIT ?")
+    args.append(limit * 50)
+    name = str(params.get("name") or "").lower()
+    files: dict[str, dict] = {}
+    for r in con.execute(q, args):
+        t = r["target"]
+        if not t:
+            continue
+        if name and name not in os.path.basename(t).lower():
+            continue
+        if sessions is not None:
+            ks = sessions.get(r["run_id"])
+            if not ks or r["pid"] not in ks[0] or not (ks[1] <= r["ts_ns"] <= ks[2]):
+                continue
+        k = pkey(t)
+        if k in files:
+            continue
+        files[k] = {"path": t, "last_action": {"io": "written", "rename": "moved here", "unlink": "deleted"}[r["kind"]],
+                    "ts_ns": r["ts_ns"], "at": label.iso(r["ts_ns"]), "exe": r["exe"], "pid": r["os_pid"],
+                    "user": r["user"], "user_name": label.user_name(r["user"]), "run_id": r["run_id"], "process_key": r["pid"]}
+        if len(files) >= limit * 3:
+            break
+    out = []
+    for f in files.values():
+        first = con.execute("SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 "
+                            "UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename')",
+                            (f["path"], f["path"])).fetchone()[0]
+        f["first_observed_ns"] = first
+        f["first_observed"] = label.iso(first)
+        f["created_in_range"] = bool(first is not None and (since is None or first >= since) and (until is None or first <= until))
+        if action == "created" and not f["created_in_range"]:
+            continue
+        s = agents.session_for(con, f["run_id"], f["process_key"], f["ts_ns"])
+        f["agent"] = {"agent_name": s["agent_name"], "session_id": s["session_id"], "source": s["source"]} if s else None
+        f["exists"] = os.path.exists(f["path"])
+        del f["run_id"], f["process_key"]
+        out.append(f)
         if len(out) >= limit:
             break
     return out
@@ -316,8 +472,7 @@ def handle(ctx: dict, root: Path, request: dict) -> dict:
         return {"v": PROTOCOL, "ok": False, "error": f"{type(exc).__name__}: {exc}"}
 
 
-def _dumps(obj) -> bytes:
-    return (json.dumps(obj, default=str, separators=(",", ":")) + "\n").encode()
+_dumps = dumps
 
 
 # ---------------------------------------------------------------- Linux server
@@ -405,41 +560,7 @@ def serve_pipe(root: Path, stop: threading.Event | None = None) -> threading.Thr
     return t
 
 
-# ---------------------------------------------------------------- client
-class ServiceUnavailable(RuntimeError):
-    pass
-
-
-def call(op: str, params: dict | None = None, timeout: float = 30.0) -> dict:
-    """One request to the local service; returns the reply dict."""
-    req = _dumps({"v": PROTOCOL, "op": op, "params": params or {}})
-    if os.name == "nt":
-        from . import winsecurity as ws
-        raw = ws.pipe_client_call(PIPE_NAME, req, timeout)
-    else:
-        import socket
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.settimeout(timeout)
-        try:
-            s.connect(SOCKET_PATH)
-        except (FileNotFoundError, ConnectionRefusedError) as exc:
-            raise ServiceUnavailable(f"the whyfs service is not running ({SOCKET_PATH}: {exc.strerror})")
-        # /run/whyfs is root-owned: the socket cannot be planted by another user
-        st = os.stat(os.path.dirname(SOCKET_PATH))
-        if st.st_uid != 0 or st.st_mode & 0o022:
-            raise ServiceUnavailable(f"refusing {SOCKET_PATH}: its directory is not root-owned and private")
-        s.sendall(req)
-        buf = b""
-        while not buf.endswith(b"\n"):
-            chunk = s.recv(1 << 16)
-            if not chunk:
-                break
-            buf += chunk
-        s.close()
-        raw = buf
-    if not raw:
-        raise ServiceUnavailable("the whyfs service closed the connection")
-    return json.loads(raw)
+# ---------------------------------------------------------------- client (whyfs.client)
 
 
 def main(argv: list[str] | None = None) -> int:  # `whyfs api OP [JSON-PARAMS]`
@@ -447,7 +568,10 @@ def main(argv: list[str] | None = None) -> int:  # `whyfs api OP [JSON-PARAMS]`
     if not argv:
         print(__doc__)
         return 2
-    params = json.loads(argv[1]) if len(argv) > 1 else {}
+    try:
+        params = json.loads(argv[1]) if len(argv) > 1 else {}
+    except ValueError as exc:
+        raise SystemExit(f"whyfs api: the parameters are not valid JSON ({exc}); backslashes in paths must be doubled")
     if "path" in params and isinstance(params["path"], str):
         params["path"] = os.path.abspath(params["path"])
     print(json.dumps(call(argv[0], params), indent=2, default=str))

@@ -7,6 +7,7 @@ Run with a Python that still has msilib (3.11/3.12); the *bundled runtime* is ta
 
 Installs to %ProgramFiles%\\whyfs:
   whyfs.exe                  launcher on the system PATH (runs runtime\\python.exe -m whyfs)
+  whyfsw.exe                 the same without a console (Explorer menu entries, Start menu: WhyFS)
   whyfs-svc.exe              the collector service (registered, auto-start, started at install)
   whyfs-collect-win.exe      the native ETW collector the service runs per workspace
   runtime\\                   private, isolated Python runtime (._pth: no site-packages, no env)
@@ -84,6 +85,8 @@ def stage(arch: str, runtime: Path, stage_dir: Path, vcvars: str, build_python: 
     obj = Path(tempfile.mkdtemp())
     subprocess.run(f'cmd /c ""{vcall}" {vcarg} >nul && cl /nologo /O2 /W4 "{REPO}\\src\\whyfs\\native\\windows\\whyfs-launcher.c" '
                    f'/Fe:"{stage_dir}\\whyfs.exe" /Fo:"{obj}\\\\" >nul"', check=True)
+    subprocess.run(f'cmd /c ""{vcall}" {vcarg} >nul && cl /nologo /O2 /W4 /DWHYFS_GUI "{REPO}\\src\\whyfs\\native\\windows\\whyfs-launcher.c" '
+                   f'/Fe:"{stage_dir}\\whyfsw.exe" /Fo:"{obj}\\\\" user32.lib /link /SUBSYSTEM:WINDOWS >nul"', check=True)
     # --- private runtime
     rt = stage_dir / "runtime"
     rt.mkdir()
@@ -191,7 +194,8 @@ def build_msi(stage_dir: Path, out: Path, arch: str, version: str) -> Path:
     si.Persist()
     msilib.add_data(db, "Property", [
         ("UpgradeCode", UPGRADE_CODE), ("ALLUSERS", "1"), ("ARPNOMODIFY", "1"),
-        ("ARPCOMMENTS", "Records where files in your workspaces came from: whyfs why / impact / history."),
+        ("ARPCOMMENTS", "Automatically labels files with their provenance: where, when, how, and what or who "
+                        "caused them to exist."),
         ("ARPHELPLINK", "mailto:licensing@tenzorpipe.org"), ("MSIFASTINSTALL", "1"),
         ("SecureCustomProperties", "WHYFSOLDER;WHYFSNEWER"),
     ])
@@ -241,8 +245,43 @@ def build_msi(stage_dir: Path, out: Path, arch: str, version: str) -> Path:
         v.Execute(None)
         v.Close()
     msilib.add_data(db, "Environment", [("WhyfsPath", "=-*PATH", "[~];[INSTALLDIR]", inst.component)])
+    add_shell_integration(db, inst.component)
     db.Commit()
     return msi
+
+
+# Explorer: right-click a file -> WhyFS -> ...; a folder (or its background) -> search it.  Classic
+# registry verbs (Windows 11 lists them under "Show more options"); nothing touches the files.
+SHELL_FILE_VERBS = (  # (key, text, whyfs ui arguments)
+    ("1why", "Why does this file exist?", 'ui --file "%1"'),
+    ("2created", "What created this file?", 'ui --file "%1" --view created'),
+    ("3impact", "What depends on this file?", 'ui --file "%1" --view impact'),
+    ("4history", "Show WhyFS history", 'ui --file "%1" --view history'),
+    ("5search", "Search WhyFS...", "ui"),
+)
+
+
+def add_shell_integration(db, component: str) -> None:
+    cls = "Software\\Classes"
+    exe = '"[INSTALLDIR]whyfsw.exe"'
+    rows = [
+        ("WhyfsFileMenu", 2, f"{cls}\\*\\shell\\WhyFS", "MUIVerb", "WhyFS", component),
+        ("WhyfsFileMenuSub", 2, f"{cls}\\*\\shell\\WhyFS", "ExtendedSubCommandsKey", "WhyFS.FileMenu", component),
+        ("WhyfsFileMenuIcon", 2, f"{cls}\\*\\shell\\WhyFS", "Icon", "[INSTALLDIR]whyfsw.exe", component),
+    ]
+    for key, text, args in SHELL_FILE_VERBS:
+        base = f"{cls}\\WhyFS.FileMenu\\shell\\{key}"
+        rows.append((f"WhyfsVerb{key}", 2, base, None, text, component))
+        rows.append((f"WhyfsVerb{key}Cmd", 2, base + "\\command", None, f"{exe} {args}", component))
+    for rid, key, arg in (("Dir", "Directory", "%1"), ("DirBg", "Directory\\Background", "%V")):
+        base = f"{cls}\\{key}\\shell\\WhyFS"
+        rows.append((f"Whyfs{rid}", 2, base, "MUIVerb", "WhyFS: search this folder", component))
+        rows.append((f"Whyfs{rid}Cmd", 2, base + "\\command", None, f'{exe} ui --path "{arg}"', component))
+    msilib.add_data(db, "Registry", rows)
+    msilib.add_data(db, "Directory", [("ProgramMenuFolder", "TARGETDIR", ".")])
+    msilib.add_data(db, "Shortcut", [("WhyfsStartMenu", "ProgramMenuFolder", "WhyFS", component, "[INSTALLDIR]whyfsw.exe",
+                                      "ui", "Search where your files came from, and read their provenance labels",
+                                      None, None, None, None, None)])
 
 
 def main():

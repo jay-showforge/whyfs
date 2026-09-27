@@ -3,20 +3,50 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
-import subprocess
 import sys
 import time
-import uuid
 from pathlib import Path
 
 # The collector modules (eBPF, privilege separation, services) are imported only by the
 # commands that use them: `why` / `impact` / `history` start fast on every platform.
-from .query import history as qhistory
-from .query import impact_details
-from .query import raw_process_events
-from .query import why as qwhy
-from .store import connect, import_log, normalize
+# The store and query modules (sqlite3 and friends) are imported on first use: most queries are
+# answered by the service, and a fresh process's import time is most of a CLI query's latency.
+
+
+def connect(*args, **kw):
+    from .store import connect as f
+    return f(*args, **kw)
+
+
+def import_log(*args, **kw):
+    from .store import import_log as f
+    return f(*args, **kw)
+
+
+def normalize(*args, **kw):
+    from .store import normalize as f
+    return f(*args, **kw)
+
+
+def qwhy(*args, **kw):
+    from .query import why as f
+    return f(*args, **kw)
+
+
+def qhistory(*args, **kw):
+    from .query import history as f
+    return f(*args, **kw)
+
+
+def impact_details(*args, **kw):
+    from .query import impact_details as f
+    return f(*args, **kw)
+
+
+def raw_process_events(*args, **kw):
+    from .query import raw_process_events as f
+    return f(*args, **kw)
+
 
 ROOT_MARKER = ".whyfs"
 VERSION = "0.9.0.dev1"
@@ -40,6 +70,8 @@ def native_lib(root: Path) -> Path:
     if not src.exists():
         src = Path(__file__).resolve().parent / "libwhyfs.c"
     if not out.exists() or (src.exists() and src.stat().st_mtime_ns > out.stat().st_mtime_ns):
+        import shutil
+        import subprocess
         cc = shutil.which("cc") or shutil.which("gcc")
         if not cc:
             raise SystemExit("whyfs trace needs a C compiler for the LD_PRELOAD fallback (install gcc/clang).")
@@ -80,6 +112,8 @@ def cmd_trace(a):
     (root / ROOT_MARKER).mkdir(parents=True, exist_ok=True)
     con = connect(root)
     lib = native_lib(root)
+    import subprocess
+    import uuid
     run_id = uuid.uuid4().hex
     log = root / ROOT_MARKER / f"events-{run_id}.jsonl"
     started = time.time_ns()
@@ -124,7 +158,7 @@ def _workspace_of(path: str) -> Path | None:
 
 
 def _service(op: str, **params):
-    from .api import ServiceUnavailable, call
+    from .client import ServiceUnavailable, call
     try:
         reply = call(op, params)
     except ServiceUnavailable as exc:
@@ -139,6 +173,17 @@ def _machine(a) -> bool:
     return bool(getattr(a, "machine", False)) or _workspace_of(a.file) is None
 
 
+def _service_fallback(op: str, empty, **params):
+    """An explicit workspace store without a record for the file: the machine service may have
+    one (the window and the API read the service, so the CLI answers the same)."""
+    from .client import ServiceUnavailable, call
+    try:
+        reply = call(op, params)
+    except (ServiceUnavailable, OSError):
+        return empty
+    return reply.get("result") or empty if reply.get("ok") else empty
+
+
 def cmd_why(a):
     show_all = a.all or a.raw
     if _machine(a):
@@ -149,6 +194,8 @@ def cmd_why(a):
     if result and a.raw and result.get("run_id"):
         result["raw_events"] = [dict(r) for r in raw_process_events(con, result["run_id"], result["process_key"])]
     con.close()
+    if not result:
+        result = _service_fallback("why", None, path=os.path.abspath(a.file), include_noise=show_all, raw=a.raw)
     return _print_why(a, result, show_all)
 
 
@@ -209,6 +256,8 @@ def cmd_history(a):
         _root, con = _root_and_con(a.file)
         rows = [dict(r) for r in qhistory(con, a.file, a.limit)]
         con.close()
+        if not rows:
+            rows = _service_fallback("history", [], path=os.path.abspath(a.file), limit=a.limit)
     if a.json:
         print(json.dumps(rows, indent=2))
         return 0
@@ -229,6 +278,8 @@ def cmd_impact(a):
         _root, con = _root_and_con(a.file)
         edges = impact_details(con, a.file, a.depth, a.all)
         con.close()
+        if not edges:
+            edges = _service_fallback("impact", [], path=os.path.abspath(a.file), depth=a.depth, include_noise=a.all)
     if a.json:
         print(json.dumps(edges, indent=2))
         return 0
@@ -332,18 +383,21 @@ def cmd_service(a):
 
 def cmd_label(a):
     """The file's provenance label (docs/MACHINE_MODE.md)."""
-    from . import label as lbl
     path = os.path.abspath(a.file)
     if _machine(a):
         lb = _service("get_file_provenance", path=path, include_noise=a.all)
     else:
+        from .label import explain_file
         _root, con = _root_and_con(a.file)
-        lb = lbl.explain_file(con, path, include_noise=a.all)
+        lb = explain_file(con, path, include_noise=a.all)
         con.close()
+        if lb.get("status") == "no-record":
+            lb = _service_fallback("get_file_provenance", None, path=path, include_noise=a.all) or lb
     if a.json:
         print(json.dumps(lb, indent=2, default=str))
     else:
-        print(lbl.render_label(lb))
+        from .label import render_label
+        print(render_label(lb))
     return 0 if lb.get("status") == "labelled" else 1
 
 
@@ -397,6 +451,56 @@ def cmd_recent(a):
         ag = f"  [{r['agent']['agent_name']}]" if r.get("agent") else ""
         print(f"{r['at']}  {r['action']:<10} {r['path']}  ({os.path.basename(r['exe'] or '?')}){ag}")
     return 0
+
+
+def _when(text: str | None, end: bool = False) -> int | None:
+    """A time for --since/--until: 2h / 3d / today / yesterday / an ISO date or date-time."""
+    if not text:
+        return None
+    import datetime as dt
+    t = text.strip().lower()
+    now = dt.datetime.now()
+    if t in ("today", "yesterday"):
+        d = now.replace(hour=0, minute=0, second=0, microsecond=0) - dt.timedelta(days=t == "yesterday")
+        if end:
+            d += dt.timedelta(days=1)
+        return int(d.timestamp() * 1e9)
+    if t[-1:] in "mhd" and t[:-1].replace(".", "", 1).isdigit():
+        secs = float(t[:-1]) * {"m": 60, "h": 3600, "d": 86400}[t[-1]]
+        return int((now.timestamp() - secs) * 1e9)
+    try:
+        d = dt.datetime.fromisoformat(text.strip())
+    except ValueError:
+        raise SystemExit(f"whyfs: cannot read the time {text!r} (use e.g. 2h, 3d, today, 2026-09-27 or 2026-09-27T14:00)")
+    if end and len(text.strip()) <= 10:
+        d += dt.timedelta(days=1)
+    return int(d.timestamp() * 1e9)
+
+
+def cmd_search(a):
+    """Search the provenance index (the same search the WhyFS window uses)."""
+    params = {"name": a.name, "path": os.path.abspath(a.under) if a.under else a.path, "creator": a.creator,
+              "user": a.user, "agent": a.agent, "session_id": a.session, "since_ns": _when(a.since),
+              "until_ns": _when(a.until, end=True), "action": a.action, "limit": a.limit}
+    rows = _service("search_files", **{k: v for k, v in params.items() if v not in (None, "")})
+    if a.json:
+        print(json.dumps(rows, indent=2))
+        return 0
+    if not rows:
+        print("No labelled files match.")
+        return 1
+    for r in rows:
+        ag = f"  [{r['agent']['agent_name']}]" if r.get("agent") else ""
+        print(f"{r['at']}  {r['last_action']:<10} {r['path']}  ({os.path.basename(r['exe'] or '?')}){ag}")
+    return 0
+
+
+def cmd_ui(a):
+    """The WhyFS window: search and file labels in the browser (the menu entries run this)."""
+    from . import ui
+    if a.serve:
+        return ui.serve()
+    return ui.open_ui(file=a.file, view=a.view, path=a.path, print_url=a.print_url)
 
 
 def cmd_status(a):
@@ -489,6 +593,29 @@ def parser():
     q.add_argument("--limit", type=int, default=50)
     q.add_argument("--json", action="store_true")
     q.set_defaults(func=cmd_recent)
+
+    q = sp.add_parser("search", help="search labelled files by name, path, program, user, agent, session or time")
+    q.add_argument("name", nargs="?", help="part of the file name, e.g. app.js")
+    q.add_argument("--path", help="part of the full path")
+    q.add_argument("--under", help="only files under this directory")
+    q.add_argument("--creator", help="part of the writing program's path, e.g. python")
+    q.add_argument("--user", help="user name or id")
+    q.add_argument("--agent", help="AI agent name, e.g. \"Claude Code\"")
+    q.add_argument("--session", help="agent session id (whyfs api list_agent_sessions)")
+    q.add_argument("--since", help="2h, 3d, today, yesterday, or an ISO date/time")
+    q.add_argument("--until", help="as --since")
+    q.add_argument("--action", choices=("any", "created", "changed", "deleted"), default="any")
+    q.add_argument("--limit", type=int, default=50)
+    q.add_argument("--json", action="store_true")
+    q.set_defaults(func=cmd_search)
+
+    q = sp.add_parser("ui", help="open the WhyFS window: search files and read their labels (no terminal needed)")
+    q.add_argument("--file", help="open this file's label")
+    q.add_argument("--view", choices=("label", "created", "impact", "history"), default="label")
+    q.add_argument("--path", help="search in this folder")
+    q.add_argument("--print-url", action="store_true", help="print the one-time address instead of opening a browser")
+    q.add_argument("--serve", action="store_true", help=argparse.SUPPRESS)
+    q.set_defaults(func=cmd_ui)
 
     q = sp.add_parser("status", help="what the whyfs service records: scope, size, loss, retention")
     q.add_argument("--scope", action="store_true", help="print the scope rules in effect")
