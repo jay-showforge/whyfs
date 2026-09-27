@@ -25,10 +25,27 @@ PROJECT_STATUS.md.
 | Linux x86-64 | **PASS (native)** | `results/linux-r4/`.  WSL2 kernel 6.6.87.2, Ubuntu 24.04, i5-14400F.  Suites OK (root and user).  `.deb` **24/24** (machine service, label without init, private store, file-manager entries, purge), SHA-256 `08eaebc17ef9037d0f9a325c7c15455e9895e838c695f831eafaf9faa9f1f849`.  Product gate **46/46**.  Machine and workspace corpus **79/79**, lost 0.  Secret gate **22/22**.  Machine perf: idle **0.29 %** of a core; make -j8 −4.3 %, Vite −1.6 %, static ×300 −1.8 % (no measurable slowdown); lost 0; why/label CLI **21/22 ms** |
 | WSL2 | **PASS (native)** | the Linux x86-64 evidence above *is* WSL2, with systemd running `whyfs.service` |
 | Windows x64 | **PASS (native)**, frozen at `3dc9266` | [WINDOWS.md](WINDOWS.md), `results/win-r5/`.  MSI **32/32**, upgrade **16/16**, product gate **44/44** (incl. Explorer menu and WhyFS window), corpora **79/79**, secret gate **22/22**, functional gate PASS (64/64, 142/142).  Idle **0.068 %** of a core; MSVC +3.40 %, Vite −3.34 %, exe ×300 −0.97 %; lost 0; why/label **82/84 ms** |
-| Linux ARM64 | **pending native run** | emulated supplement on 3dc9266 (below); the earlier emulated runs found 3 real arm64 defects, now fixed |
+| Linux ARM64 | **pending native run** | emulated supplement on 3dc9266 (below): arm64 `.deb` 24/24, product gate 46/46, machine corpus 79/79, secret gate 22/22, user suite OK; the earlier emulated runs found 3 real arm64 defects, now fixed |
 | Windows ARM64 | **pending native run** | ARM64 MSI rebuilt from 3dc9266: `whyfs-0.9.0.dev1-arm64.msi`, SHA-256 `4d47731162fddfa10f8a32dee6693b222f66b59e4afe5e2d7883048c14d35e49`.  All 27 PE images are ARM64 (0xAA64), including the windowless `whyfsw.exe` (subsystem 2) and the CPython 3.13.5 ARM64 runtime.  Never executed |
 
 ## Emulated ARM64 supplement (not native evidence)
+
+### Run 4: the frozen machine-labels product (3dc9266)
+
+`results/arm64-qemu-supplemental-4/`.  QEMU 8.2 TCG on the x64 host, Ubuntu 24.04 arm64, kernel
+6.8.0-142-generic.  Start/stop timeouts were raised for emulation (a systemd drop-in in the guest
+only, removed afterwards).  No timing claims are made.
+
+| Check | Result |
+|---|---|
+| `.deb` built natively in the arm64 guest | `whyfs_0.9.0~dev1_arm64.deb`, SHA-256 `f7c1b90b56938d9745366596d1017de54cd7892c939bb5d9f413f228fd5e718e`; collector is an aarch64 ELF |
+| `.deb` clean install / machine service / label without init / file-manager entries / purge | **24/24**, including the installed-package corpus 79/79 |
+| Product gate (A–H, agents, privacy, U: the WhyFS window and search) | **46/46** (the machine collector was ready ~70 s after install under TCG) |
+| Machine corpus (no workspace) | **79/79**, lost 0 |
+| Secret gate | **22/22**.  The first attempt timed out starting its workspace daemon at the default 60 s under TCG (`secret-gate.log`); rerun with the emulation timeout (`secret-gate-2`) |
+| User test suite | OK |
+
+### Runs 1–3 (workspace mode, before the product pivot)
 
 `results/arm64-qemu-supplemental*`.  Environment: QEMU 8.2 TCG (`-cpu max`, 8 vCPU) on the
 x64 host, Ubuntu 24.04 arm64 cloud image, kernel 6.8.0-142-generic.  Timing is meaningless
