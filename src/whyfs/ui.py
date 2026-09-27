@@ -277,6 +277,14 @@ def open_ui(file=None, view=None, path=None, print_url=False) -> int:
     if print_url:
         print(url)
         return 0
+    if os.environ.get("WHYFS_UI_BROWSER") == "none":
+        # headless machines (CI) and tests: hand the one-time address to the user's private state
+        # directory instead of a browser, so the menu entries can be exercised without a display
+        p = state_path().with_name("last-launch.url")
+        fd = os.open(p, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(url)
+        return 0
     if os.name == "nt":
         os.startfile(url)  # noqa: S606 -- the user's default browser
     else:

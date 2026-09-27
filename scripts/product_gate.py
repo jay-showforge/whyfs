@@ -364,6 +364,8 @@ def usability(g: "Gate", out_file: Path, src: Path, leaf: Path, sid: str) -> Non
     if INSTALLED:
         ok, detail = _menu_entries()
         g.check("U.file_manager_entries_installed", ok, detail)
+        if NT and ok:
+            _explorer_verb(g, out_file, detail)
     # the menu command, with --print-url instead of opening the user's browser
     p = g.run([*whyfs_cmd(), "ui", "--print-url", "--file", str(out_file)], check=False)
     url = (p.stdout or "").strip().splitlines()[-1] if p.stdout.strip() else ""
@@ -436,6 +438,38 @@ def usability(g: "Gate", out_file: Path, src: Path, leaf: Path, sid: str) -> Non
                     os.kill(int(d["pid"]), 15)
                 except OSError:
                     pass
+
+
+def _explorer_verb(g: "Gate", f: Path, verbs: dict) -> None:
+    """Run the exact command Explorer runs for "What depends on this file?" (the registered verb,
+    with %1 = the file), headless: the launcher starts the WhyFS window server and hands over the
+    one-time address, which must open that file's impact view."""
+    import urllib.request
+    cmd = verbs["3impact"].replace("%1", str(f))  # passed to CreateProcess verbatim, as Explorer does
+    url_file = Path(os.environ.get("LOCALAPPDATA", "")) / "whyfs" / "last-launch.url"
+    try:
+        url_file.unlink()
+    except OSError:
+        pass
+    e = dict(os.environ, WHYFS_UI_BROWSER="none")
+    p = subprocess.run(cmd, env=e, capture_output=True, timeout=60)
+    deadline = time.time() + 30
+    while time.time() < deadline and not url_file.exists():
+        time.sleep(0.2)
+    url = url_file.read_text().strip() if url_file.exists() else ""
+    loc = ""
+    if url:
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *args, **kw):
+                return None
+        try:
+            urllib.request.build_opener(NoRedirect).open(url, timeout=15)
+        except urllib.error.HTTPError as exc:
+            loc = exc.headers.get("Location", "") if exc.code == 303 else f"HTTP {exc.code}"
+    from urllib.parse import quote
+    want = "file=" + quote(str(f), safe="")
+    g.check("U.explorer_verb_opens_the_file_in_the_window", p.returncode == 0 and want in loc and "view=impact" in loc,
+            {"command": cmd, "rc": p.returncode, "location": loc[:200]})
 
 
 def _ui_states(g: "Gate") -> list[str]:

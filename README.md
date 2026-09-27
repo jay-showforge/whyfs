@@ -177,13 +177,18 @@ python scripts/machine_perf.py --out DIR         # machine-wide performance and 
 
 ## License
 
-whyfs is **source available under the Business Source License 1.1** (see [LICENSE](LICENSE)).
-It is not OSI-approved open source.
+WhyFS is **source available under the Business Source License 1.1** ([LICENSE](LICENSE)).  It is
+not OSI-approved open source.
 
-- Non-production use (testing, evaluation, personal, educational, research) is permitted.
-- Production use is free for individuals and organizations (together with their affiliates)
-  whose aggregate annual gross revenue is below US$100,000.
-- Other production use, and commercial embedding, bundling or distribution, require a
-  commercial license: licensing@tenzorpipe.org.
-- Each version converts to the Apache License 2.0 on its Change Date, four years after its
-  first public release.
+- **Anyone** may copy, modify, redistribute and make **non-production** use of WhyFS.  That
+  includes evaluation, testing and development, by businesses too.
+- **Free production use** covers two cases:
+  - personal, non-commercial use by an individual on devices they own or control;
+  - non-commercial teaching, learning and research at accredited educational institutions.
+- **Commercial production use** needs a commercial license from the first production deployment:
+  - use by or on behalf of a business or other for-profit organization;
+  - WhyFS as part of a product, appliance, managed service or agent platform.
+
+  Contact licensing@tenzorpipe.org.
+- **Change to Apache 2.0.**  Each version becomes available under the Apache License 2.0 on its
+  Change Date.  The date is set when that version is first publicly distributed.

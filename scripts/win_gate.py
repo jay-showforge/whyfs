@@ -31,7 +31,7 @@ from whyfs.schema import validate_record  # noqa: E402,F401
 from whyfs.store import connect  # noqa: E402
 
 VCVARS = os.environ.get("WHYFS_VCVARS", r"C:\BuildTools2022\VC\Auxiliary\Build\vcvars64.bat")
-VITE_TEMPLATE = Path(os.environ.get("WHYFS_VITE_TEMPLATE", r"C:\Users\ftmon\whyfs-vite-template"))
+VITE_TEMPLATE = Path(os.environ.get("WHYFS_VITE_TEMPLATE", os.path.expanduser(r"~\whyfs-vite-template")))
 PY = sys.executable
 UNITS = 36
 ENV = dict(os.environ, PYTHONPATH=str(REPO / "src"))

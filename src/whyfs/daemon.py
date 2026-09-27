@@ -176,8 +176,9 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
             if tick is not None and time.monotonic() >= next_tick:
                 next_tick = time.monotonic() + tick_every
                 live = native.stats() if native else {k: int(v) for k, v in vars(collector.stats).items()}
-                if live:
-                    store.call("update_stats", run_id, {k: int(v) for k, v in live.items() if isinstance(v, (int, bool))})
+                beat = {k: int(v) for k, v in (live or {}).items() if isinstance(v, (int, bool))}
+                beat["heartbeat_ns"] = time.time_ns()  # observation integrity: a crash ends the run here
+                store.call("update_stats", run_id, beat)
                 try:
                     tick({"run_id": run_id, "root": root, "stats": live})
                 except Exception as exc:  # retention must never stop collection

@@ -124,19 +124,28 @@ class ImpactTests(Base):
 class GapTests(Base):
     runs = (("r1", T0, T0 + 60 * S), ("r2", T0 + 120 * S, None))
 
-    def test_downtime_and_loss_are_gaps(self):
+    def test_downtime_and_loss_after_creation_are_later_gaps(self):
         src = self.f("a.txt")
         p = self.s.proc(PY, "python w.py", run="r1")
-        self.s.ev(p, "io", src, T0 + 10 * S, write=True, run="r1")
-        lb = label.explain_file(self.s.con, str(src))
-        obs = lb["observation"]
-        self.assertFalse(obs["complete"])
-        self.assertTrue(any("not recording" in g for g in obs["gaps"]), obs["gaps"])
+        self.s.ev(p, "io", src, T0 + 10 * S, write=True, run="r1", file_id=label.current_file_id(str(src)))
+        obs = label.explain_file(self.s.con, str(src))["observation"]
+        self.assertTrue(obs["complete"], obs)  # recorded, without loss, when it was created
+        self.assertTrue(any("not recording" in g for g in obs["later_gaps"]), obs["later_gaps"])
         self.s.con.execute("INSERT INTO collector_stats(run_id,key,value) VALUES('r2','kernel_drops',7)")
         self.s.con.commit()
         obs = label.explain_file(self.s.con, str(src))["observation"]
-        self.assertTrue(any("7 lost" in g for g in obs["gaps"]), obs["gaps"])
+        self.assertTrue(any("7 lost" in g for g in obs["later_gaps"]), obs["later_gaps"])
         self.assertIn("Evidence is incomplete", label.explain_file(self.s.con, str(src))["impact"]["summary"])
+
+    def test_loss_in_the_creating_session_makes_the_origin_incomplete(self):
+        src = self.f("l.txt")
+        p = self.s.proc(PY, "python w.py", run="r1")
+        self.s.ev(p, "io", src, T0 + 10 * S, write=True, run="r1", file_id=label.current_file_id(str(src)))
+        self.s.con.execute("INSERT INTO collector_stats(run_id,key,value) VALUES('r1','lost_file',3)")
+        self.s.con.commit()
+        obs = label.explain_file(self.s.con, str(src))["observation"]
+        self.assertFalse(obs["complete"])
+        self.assertTrue(any("3 lost" in g for g in obs["gaps"]), obs["gaps"])
 
     def test_continuous_recording_without_loss_is_complete(self):
         self.s.con.execute("UPDATE runs SET ended_ns=NULL WHERE id='r1'")

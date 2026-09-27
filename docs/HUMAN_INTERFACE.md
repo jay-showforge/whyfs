@@ -94,15 +94,35 @@ whyfs never says a file is safe to delete.
 
 ## Observation gaps
 
-`observation.complete` is false, and `observation.gaps` says why, when:
-- whyfs was not recording for part of the time since the file was created (collector downtime of
-  more than 5 s, or it is not recording now);
-- the collector reported lost or unattributed events since then;
-- reads older than the weak-retention period (30 days) have been pruned, so older uses are no
-  longer known;
-- the process chain is cut off: an ancestor started before whyfs was running;
-- the file's identity could not be compared with the recorded one;
-- the file's origin was not observed at all (`no-record`, `not-observed`).
+A label separates two questions:
+- **Origin**: was whyfs recording, without loss, when this file was created?
+  `observation.complete` answers this, and `observation.gaps` lists the reasons when it is
+  false.
+- **Since then**: was whyfs recording afterwards?  `observation.later_gaps` lists downtime or
+  loss after creation.  Later history and dependents may be missing, and the impact answer says
+  so.
+
+The origin is **incomplete** when any of these hold:
+- the file's origin was not observed at all (`no-record` or `not-observed`);
+- the file appeared while whyfs was not recording.  `observation.file_time_in_gap` names the
+  gap and whether it followed a crash;
+- the file predates whyfs;
+- the collector reported lost or unattributed events in the recording session in which the file
+  was created;
+- the file's identity could not be compared with the recorded one.
+
+**Later gaps** include:
+- whyfs was not recording for part of the time since (downtime of more than 5 s, e.g. an
+  observer crash or a shut-down machine);
+- it is not recording now;
+- events were lost in later sessions;
+- reads older than the 30-day weak-retention period were pruned.
+
+`observation.notes` carries information that does not make a label incomplete.  An example is a
+process chain that begins where whyfs started observing, because earlier ancestors, such as boot
+and logon processes, had already exited.
+
+How gaps are recorded is described in [MACHINE_MODE.md](MACHINE_MODE.md#observation-integrity).
 
 ## Security of the window
 

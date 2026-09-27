@@ -1,9 +1,9 @@
-# Native runtime validation of every supported whyfs 1.0 platform on real hardware:
+# Native runtime validation of every supported WhyFS 1.0 platform on real hardware:
 #   Linux x86-64 (ubuntu-24.04), Linux ARM64 (ubuntu-24.04-arm: Arm-hosted, native),
 #   Windows x64 (windows-2022), Windows ARM64 (windows-11-arm: Arm-hosted, native).
-# Manual trigger only.  Not run yet: the repository has not been pushed anywhere (release
-# policy).  Every step is the same command used for the local validation; see
-# docs/PLATFORM_VALIDATION.md for what each result must show.
+# Manual trigger only.  Every gate is its own step (continue-on-error) so that all evidence is
+# produced and uploaded; the final "verdict" step fails the job if any gate failed.
+# docs/PLATFORM_VALIDATION.md says what each result must show.
 name: native-validation
 on: [workflow_dispatch]
 
@@ -14,63 +14,109 @@ jobs:
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
       - name: platform identity (must be native, not emulated)
         run: |
-          uname -a; dpkg --print-architecture; lscpu | head -20
-          grep -E 'CONFIG_DEBUG_INFO_BTF=|CONFIG_BPF_SYSCALL=|CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS=' /boot/config-$(uname -r) || true
+          mkdir -p results
+          { uname -a; dpkg --print-architecture; lscpu; systemd-detect-virt || true; head -30 /proc/cpuinfo;
+            grep -E 'CONFIG_DEBUG_INFO_BTF=|CONFIG_BPF_SYSCALL=|CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS=' /boot/config-$(uname -r) || true; } | tee results/platform.txt
+          test "$(uname -m)" = "$([ '${{ matrix.runner }}' = ubuntu-24.04-arm ] && echo aarch64 || echo x86_64)"
+          ! grep -qi qemu /proc/cpuinfo
       - name: toolchain and BPF prerequisites
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q bpfcc-tools python3-bpfcc libbpf-dev libsqlite3-dev libelf-dev zlib1g-dev \
-            pkg-config gcc make clang nodejs npm rsync file dpkg-dev linux-headers-$(uname -r)
-      - name: Vite fixture template (graduation harness)
+            pkg-config gcc make clang nodejs npm rsync file dpkg-dev desktop-file-utils linux-headers-$(uname -r)
+      - name: Vite fixture template
         run: |
           mkdir -p ~/vite-template && cd ~/vite-template
           echo '{"name":"whyfs-vite-fixture","private":true,"type":"module"}' > package.json
           npm install --no-audit --no-fund vite@5.4.21
-      - name: unit, resolver, differential, redaction-parity and live eBPF tests (root and user)
+      - id: tests
+        name: unit, model, label, observation, discovery, redaction and live eBPF tests (root and user)
+        continue-on-error: true
         run: |
-          sudo env PYTHONPATH=src:tests python3 -m unittest discover -s tests
-          PYTHONPATH=src:tests python3 -m unittest discover -s tests
+          sudo env PYTHONPATH=src:tests python3 -m unittest discover -s tests 2>&1 | tee results/tests-root.log
+          test ${PIPESTATUS[0]} -eq 0
+          PYTHONPATH=src:tests python3 -m unittest discover -s tests 2>&1 | tee results/tests-user.log
+          test ${PIPESTATUS[0]} -eq 0
       - name: build the .deb natively for this architecture
         run: bash packaging/linux/build_deb.sh dist
-      - name: package clean install / tamper refusal / installed corpus / systemd / uninstall
-        run: sudo bash packaging/linux/test_deb.sh dist/whyfs_*.deb runner results/deb-test
+      - id: deb
+        name: package install / systemd service / label without init / file-manager entries / tamper refusal / uninstall / purge
+        continue-on-error: true
+        run: |
+          desktop-file-validate packaging/linux/desktop/whyfs.desktop packaging/linux/desktop/whyfs-label.desktop 2>&1 | tee results/desktop-validate.txt
+          sudo bash packaging/linux/test_deb.sh dist/whyfs_*.deb runner results/deb-test 2>&1 | tee results/deb-test.log
+          grep -q "checks" results/deb-test.log && ! grep -q "^FAIL" results/deb-test.log
       - name: install the .deb (the machine-wide labelling service starts with it)
         run: |
           sudo apt-get install -y -q ./dist/whyfs_*.deb
-          for i in $(seq 1 120); do whyfs status --json | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["collector_ready"] else 1)' && break; sleep 1; done
-      - name: product behaviour (no init; Tests A-H, agents, privacy, file-manager entries and the WhyFS window)
+          for i in $(seq 1 180); do whyfs status --json 2>/dev/null | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["collector_ready"] else 1)' && break; sleep 1; done
+          whyfs status | tee results/status-after-install.txt
+      - id: product
+        name: product gate (no init; A-H; agents; privacy; file-manager entries; WhyFS window; search; impact)
+        continue-on-error: true
         run: sudo python3 scripts/product_gate.py --installed --user runner --out results/product-gate
-      - name: shared A-H corpus through the machine collector (no workspace)
+      - id: outage
+        name: observation integrity (forced outage; automatic recovery; A complete, B unknown, C complete)
+        continue-on-error: true
+        run: sudo python3 scripts/outage_gate.py --user runner --out results/outage-gate
+      - id: corpus_machine
+        name: shared A-H corpus through the machine collector (no workspace)
+        continue-on-error: true
         run: sudo env -u PYTHONPATH python3 scripts/run_corpus.py --installed --machine --user runner --out results/corpus-machine
-      - name: machine-wide performance and resource cost (idle, workloads, loss, CLI latency)
-        run: sudo python3 scripts/machine_perf.py --user runner --out results/machine-perf --pairs 20 --idle-min 10
-      - name: shared A-H corpus (explicit workspace capture, source tree)
-        run: sudo python3 scripts/run_corpus.py --user runner --out results/corpus
-      - name: live secret-redaction gate
+      - id: secret
+        name: live secret-redaction gate
+        continue-on-error: true
         run: sudo python3 scripts/secret_gate.py --user runner --out results/secret-gate
-      - name: graduation gate (static binary, make -j8, Node/Vite, rename, accuracy, zero drops, 20-pair performance)
+      - id: perf
+        name: machine-wide performance and resource cost (idle, workloads, loss, CLI latency)
+        continue-on-error: true
+        run: sudo python3 scripts/machine_perf.py --user runner --out results/machine-perf --pairs 20 --idle-min 10
+      - id: corpus_workspace
+        name: shared A-H corpus (explicit workspace capture, source tree)
+        continue-on-error: true
+        run: sudo python3 scripts/run_corpus.py --user runner --out results/corpus
+      - id: graduation
+        name: accuracy gate (static binary, make -j8, Node/Vite, mmap, rename, parallel writers, zero drops)
+        continue-on-error: true
         run: sudo python3 scripts/v02_graduation.py --user runner --out results/graduation --pairs 20
-      - name: unmodified shipped gate
-        run: sudo python3 scripts/v02_gate.py
+      - name: service journal and store status
+        if: always()
+        run: |
+          sudo journalctl -u whyfs.service --no-pager > results/whyfs-journal.txt 2>&1 || true
+          whyfs status --json > results/status-final.json 2>&1 || true
+          sudo chown -R "$(id -u):$(id -g)" results || true
       - name: checksums
         if: always()
         run: cd dist && sha256sum * > SHA256SUMS || true
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "linux-${{ matrix.runner }}", path: "results/\ndist/" }
+      - name: verdict
+        if: always()
+        env:
+          OUTCOMES: >-
+            tests=${{ steps.tests.outcome }} deb=${{ steps.deb.outcome }} product=${{ steps.product.outcome }}
+            outage=${{ steps.outage.outcome }} corpus_machine=${{ steps.corpus_machine.outcome }}
+            secret=${{ steps.secret.outcome }} perf=${{ steps.perf.outcome }}
+            corpus_workspace=${{ steps.corpus_workspace.outcome }} graduation=${{ steps.graduation.outcome }}
+        run: |
+          echo "$OUTCOMES" | tr ' ' '\n'
+          ! echo "$OUTCOMES" | tr ' ' '\n' | grep -v '=success$' | grep -q .
 
   windows:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { runner: windows-2022, arch: x64, vcvars: vcvars64.bat }
-          - { runner: windows-11-arm, arch: arm64, vcvars: vcvarsarm64.bat }
+          - { runner: windows-2022, arch: x64, vcvars: vcvars64.bat, wmi_arch: 9 }
+          - { runner: windows-11-arm, arch: arm64, vcvars: vcvarsarm64.bat, wmi_arch: 12 }
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 330
     env:
       PYTHONPATH: "src;tests"
     steps:
@@ -78,22 +124,29 @@ jobs:
       - uses: actions/setup-python@v5          # msilib host for make_msi.py
         id: py312
         with: { python-version: "3.12", architecture: "${{ matrix.arch }}" }
-      - uses: actions/setup-python@v5          # the runtime bundled into the MSI
+      - uses: actions/setup-python@v5          # the runtime bundled into the MSI, and the test interpreter
         id: py313
         with: { python-version: "3.13", architecture: "${{ matrix.arch }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", architecture: "${{ matrix.arch }}" }
       - name: platform identity (must be native, not emulated)
         shell: pwsh
         run: |
-          Get-CimInstance Win32_Processor | Select-Object Name, Architecture   # Architecture 12 = ARM64, 9 = x64
-          Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture
-          python -c "import platform; print(platform.machine())"
+          New-Item -ItemType Directory -Force results | Out-Null
+          $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1 Name, Architecture, NumberOfCores
+          $os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture
+          $py = python -c "import platform, sys; print(platform.machine(), sys.version)"
+          $node = node -p "process.arch + ' ' + process.version"
+          "$($cpu | Format-List | Out-String)$($os | Format-List | Out-String)python: $py`nnode: $node" | Tee-Object results\platform.txt
+          if ($cpu.Architecture -ne ${{ matrix.wmi_arch }}) { throw "not a native ${{ matrix.arch }} processor" }
+          if ("${{ matrix.arch }}" -eq "arm64" -and -not ($py -match "^ARM64 ")) { throw "python is not native ARM64: $py" }
       - name: locate MSVC
         shell: pwsh
         run: |
           $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
           "VSROOT=$vs" >> $env:GITHUB_ENV
           "WHYFS_VCVARS=$vs\VC\Auxiliary\Build\${{ matrix.vcvars }}" >> $env:GITHUB_ENV
-      - name: build collector, service and launcher (MSVC, native arch)
+      - name: build collector and service (MSVC, native arch)
         shell: pwsh
         run: powershell -ExecutionPolicy Bypass -File native\windows\build.ps1 -Arch ${{ matrix.arch }} -VsRoot $env:VSROOT
       - name: standard-user helper for the installer test
@@ -101,20 +154,33 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force C:\whyfs-tools | Out-Null
           cmd /c "`"$env:WHYFS_VCVARS`" >nul && cl /nologo /O2 native\windows\tools\asuser.c /Fe:C:\whyfs-tools\asuser.exe /Fo:C:\whyfs-tools\ advapi32.lib"
-      - name: Windows model, query and redaction-parity tests
-        run: python -m unittest discover -s tests
+      - id: tests
+        name: Windows model, query, label, observation, discovery and redaction-parity tests
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests 2>&1 | Tee-Object results\tests.log
+          if ($LASTEXITCODE -ne 0) { exit 1 }
       - name: MSIs (this version, and a lower version for the upgrade test)
         shell: pwsh
         run: |
           $rt = Split-Path "${{ steps.py313.outputs.python-path }}"
           & "${{ steps.py312.outputs.python-path }}" native\windows\make_msi.py --arch ${{ matrix.arch }} --runtime $rt --vcvars $env:WHYFS_VCVARS --out dist
           & "${{ steps.py312.outputs.python-path }}" native\windows\make_msi.py --arch ${{ matrix.arch }} --runtime $rt --vcvars $env:WHYFS_VCVARS --version 0.9.0.dev0 --out dist-old
-      - name: MSI clean install, standard-user flow, uninstall
+      - id: msi
+        name: MSI clean install, service, standard-user flow, Explorer menu, Start menu, uninstall
+        continue-on-error: true
         shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File native\windows\test_msi.ps1 -Msi (Get-ChildItem dist\*.msi).FullName -Out results\msi-test -AsUser C:\whyfs-tools\asuser.exe
-      - name: MSI upgrade, downgrade refusal, data retention
+        run: |
+          powershell -ExecutionPolicy Bypass -File native\windows\test_msi.ps1 -Msi (Get-ChildItem dist\*.msi).FullName -Out results\msi-test -AsUser C:\whyfs-tools\asuser.exe 2>&1 | Tee-Object results\msi-test.log
+          if (Select-String -Path results\msi-test.log -Pattern "^FAIL" -Quiet) { exit 1 }
+      - id: upgrade
+        name: MSI upgrade, downgrade refusal, data retention
+        continue-on-error: true
         shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File native\windows\test_msi_upgrade.ps1 -Old (Get-ChildItem dist-old\*.msi).FullName -New (Get-ChildItem dist\*.msi).FullName -Out results\msi-upgrade
+        run: |
+          powershell -ExecutionPolicy Bypass -File native\windows\test_msi_upgrade.ps1 -Old (Get-ChildItem dist-old\*.msi).FullName -New (Get-ChildItem dist\*.msi).FullName -Out results\msi-upgrade 2>&1 | Tee-Object results\msi-upgrade.log
+          if (Select-String -Path results\msi-upgrade.log -Pattern "^FAIL" -Quiet) { exit 1 }
       - name: Vite fixture template
         shell: pwsh
         run: |
@@ -122,17 +188,46 @@ jobs:
           Set-Content C:\whyfs-vite-template\package.json '{"name":"whyfs-vite-fixture","private":true,"type":"module"}'
           Push-Location C:\whyfs-vite-template; npm install --no-audit --no-fund vite@5.4.21; Pop-Location
           "WHYFS_VITE_TEMPLATE=C:\whyfs-vite-template" >> $env:GITHUB_ENV
-      - name: install; product gate (incl. Explorer menu and WhyFS window); corpora; secret gate; functional gate; machine performance
+      - name: install the MSI (the machine-wide labelling service starts with it)
         shell: pwsh
         run: |
-          Start-Process msiexec.exe -ArgumentList "/i `"$((Get-ChildItem dist\*.msi).FullName)`" /qn /norestart" -Wait
-          for ($i = 0; $i -lt 120; $i++) { try { if ((& "$env:ProgramFiles\whyfs\whyfs.exe" status --json | ConvertFrom-Json).collector_ready) { break } } catch {}; Start-Sleep 1 }
-          python scripts\product_gate.py --installed --out results\product-gate
-          python scripts\run_corpus.py --machine --out results\corpus-machine
-          python scripts\run_corpus.py --out results\corpus
-          python scripts\secret_gate.py --installed --out results\secret-gate
-          python scripts\win_gate.py --out results\win-gate --skip-perf
-          python scripts\machine_perf.py --out results\machine-perf --pairs 20 --idle-min 10
+          Start-Process msiexec.exe -ArgumentList "/i `"$((Get-ChildItem dist\*.msi).FullName)`" /qn /norestart /l*v `"$PWD\results\install.log`"" -Wait
+          for ($i = 0; $i -lt 180; $i++) { try { if ((& "$env:ProgramFiles\whyfs\whyfs.exe" status --json | ConvertFrom-Json).collector_ready) { break } } catch {}; Start-Sleep 1 }
+          & "$env:ProgramFiles\whyfs\whyfs.exe" status | Tee-Object results\status-after-install.txt
+      - id: product
+        name: product gate (no init; A-H; agents; privacy; Explorer verbs run headless; WhyFS window; search; impact)
+        continue-on-error: true
+        run: python scripts\product_gate.py --installed --out results\product-gate
+      - id: outage
+        name: observation integrity (forced outage; automatic recovery; A complete, B unknown, C complete)
+        continue-on-error: true
+        run: python scripts\outage_gate.py --out results\outage-gate
+      - id: corpus_machine
+        name: shared A-H corpus through the machine collector (no workspace)
+        continue-on-error: true
+        run: python scripts\run_corpus.py --machine --out results\corpus-machine
+      - id: corpus_workspace
+        name: shared A-H corpus (explicit workspace capture)
+        continue-on-error: true
+        run: python scripts\run_corpus.py --out results\corpus
+      - id: secret
+        name: live secret-redaction gate
+        continue-on-error: true
+        run: python scripts\secret_gate.py --installed --out results\secret-gate
+      - id: functional
+        name: functional fixture gate (native exe, PowerShell, Python, Node/Vite, MSVC, mmap, rename, parallel, parent/child)
+        continue-on-error: true
+        run: python scripts\win_gate.py --out results\win-gate --skip-perf
+      - id: perf
+        name: machine-wide performance and resource cost (idle, workloads, loss, CLI latency)
+        continue-on-error: true
+        run: python scripts\machine_perf.py --out results\machine-perf --pairs 20 --idle-min 10
+      - name: service logs and store status
+        if: always()
+        shell: pwsh
+        run: |
+          Copy-Item "$env:ProgramData\whyfs\logs" results\service-logs -Recurse -ErrorAction SilentlyContinue
+          & "$env:ProgramFiles\whyfs\whyfs.exe" status --json > results\status-final.json 2>&1
       - name: checksums
         if: always()
         shell: pwsh
@@ -140,3 +235,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "windows-${{ matrix.arch }}", path: "results/\ndist/" }
+      - name: verdict
+        if: always()
+        shell: pwsh
+        env:
+          OUTCOMES: >-
+            tests=${{ steps.tests.outcome }} msi=${{ steps.msi.outcome }} upgrade=${{ steps.upgrade.outcome }}
+            product=${{ steps.product.outcome }} outage=${{ steps.outage.outcome }}
+            corpus_machine=${{ steps.corpus_machine.outcome }} corpus_workspace=${{ steps.corpus_workspace.outcome }}
+            secret=${{ steps.secret.outcome }} functional=${{ steps.functional.outcome }} perf=${{ steps.perf.outcome }}
+        run: |
+          $o = $env:OUTCOMES -split '\s+' | Where-Object { $_ }
+          $o
+          if ($o | Where-Object { $_ -notmatch '=success$' }) { exit 1 }

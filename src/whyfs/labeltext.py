@@ -69,6 +69,8 @@ def _render_impact_tail(lb: dict) -> list[str]:
         L.append("If removed or changed: " + im["summary"])
     obs = lb.get("observation")
     if obs:
-        L.append("Provenance: " + ("complete as far as whyfs can tell" if obs["complete"] else
-                                   "incomplete — " + "; ".join(obs["gaps"])))
+        L.append("Provenance: " + ("complete: whyfs was recording, without loss, when this file was created"
+                                   if obs["complete"] else "incomplete — " + "; ".join(obs["gaps"])))
+        if obs.get("later_gaps"):
+            L.append("Since then: " + "; ".join(obs["later_gaps"]) + " (later history and dependents may be missing)")
     return L

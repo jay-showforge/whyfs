@@ -1,6 +1,6 @@
 # Clean-install test of the Windows installer (run elevated; the user flow runs non-elevated).
 #   powershell -ExecutionPolicy Bypass -File native\windows\test_msi.ps1 -Msi dist\whyfs-<v>-x64.msi -Out results\msi-test
-param([Parameter(Mandatory)][string]$Msi, [string]$Out = "$env:TEMP\whyfs-msi-test", [string]$AsUser = "C:\Users\ftmon\whyfs-win-build\asuser.exe")
+param([Parameter(Mandatory)][string]$Msi, [string]$Out = "$env:TEMP\whyfs-msi-test", [string]$AsUser = "$env:USERPROFILE\whyfs-win-build\asuser.exe")
 $ErrorActionPreference = "Continue"
 New-Item -ItemType Directory -Force $Out | Out-Null
 $results = [ordered]@{}

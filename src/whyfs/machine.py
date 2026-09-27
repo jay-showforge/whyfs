@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -117,14 +118,21 @@ def run_linux() -> int:
     os.chmod(root.parent, 0o755)
     root.mkdir(mode=0o700, exist_ok=True)
     os.chmod(root, 0o700)
+    from .observation import HEARTBEAT_EVERY_S, close_unclean_runs
     from .store import connect
-    connect(root).close()  # the store exists before the API and the writer open it
+    con = connect(root)  # the store exists before the API and the writer open it
+    try:
+        closed = close_unclean_runs(con)  # a crashed predecessor ends at its last heartbeat: a recorded gap
+    finally:
+        con.close()
+    if closed:
+        print(f"whyfs machine: closed {len(closed)} run(s) that ended unexpectedly", file=sys.stderr)
     stop = threading.Event()
     serve_unix(root, stop=stop)
     state: dict = {"next_prune": time.monotonic() + 300}
     try:
         return run_foreground(root, machine=True, scope_files=tuple(scope_files()),
-                              tick=lambda ctx: _prune_tick(root, state), tick_every=60.0)
+                              tick=lambda ctx: _prune_tick(root, state), tick_every=float(HEARTBEAT_EVERY_S))
     finally:
         stop.set()
 
@@ -165,9 +173,13 @@ def serve_windows() -> int:
     threading.Thread(target=lambda: (sys.stdin.readline(), stop.set()), daemon=True).start()
     state: dict = {"next_prune": time.monotonic() + 300}
     backoff = 1.0
+    from .observation import HEARTBEAT_EVERY_S, close_unclean_runs, heartbeat
     while not stop.is_set():
         run_id = "machine-" + uuid.uuid4().hex
         con = connect(root)
+        closed = close_unclean_runs(con)  # a crashed predecessor ends at its last heartbeat: a recorded gap
+        if closed:
+            _log(f"closed {len(closed)} run(s) that ended unexpectedly")
         con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES(?,?,?,?,?,?)",
                     (run_id, time.time_ns(), str(root), "whyfs machine", str(root), "etw-native"))
         con.commit()
@@ -191,8 +203,19 @@ def serve_windows() -> int:
         threading.Thread(target=reader, daemon=True).start()
         started = time.monotonic()
         next_stats = time.monotonic() + 60
+        next_beat = 0.0
         while not stop.is_set() and p.poll() is None:
             stop.wait(1.0)
+            if time.monotonic() >= next_beat:
+                next_beat = time.monotonic() + HEARTBEAT_EVERY_S
+                try:
+                    hcon = connect(root)
+                    try:
+                        heartbeat(hcon, run_id)
+                    finally:
+                        hcon.close()
+                except sqlite3.Error as exc:
+                    _log(f"heartbeat failed: {exc}")
             if time.monotonic() >= next_stats:
                 next_stats = time.monotonic() + 60
                 try:

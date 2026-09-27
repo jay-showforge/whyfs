@@ -124,6 +124,57 @@ JSON, one request per line; each reply is one JSON object `{"ok": true, "result"
 The CLI (`whyfs label|why|history|impact|agent|status`) is a client of the same service.
 There is no cloud component, account or telemetry.  See [AGENT_PROTOCOL.md](AGENT_PROTOCOL.md).
 
+## Observation integrity
+
+**Guarantee.**  If the observer was active and healthy, a label reflects what it observed.  If
+the observer was unavailable or evidence was lost, the label says so.
+
+**Starts with the OS.**
+- Linux: `whyfs.service` is enabled for `multi-user.target` at install.
+- Windows: the `whyfs` service is `AUTO_START`.
+
+No user action is needed after boot.
+
+**Recovers from crashes.**
+- Linux: systemd `Restart=on-failure` restarts the service 5 s after a crash.
+- Windows: the service manager's recovery actions restart the service after 5 s, then 30 s.
+  Inside it, the service restarts its host process, and the host restarts the collector, with
+  backoff.
+
+**Records its own downtime.**
+- Every collector run writes a heartbeat (`collector_stats.heartbeat_ns`) every 10 s.
+- A run that ends cleanly records its end.
+- A crashed run never does.  The next run closes it at its last heartbeat and marks it unclean
+  (`unclean_end`), so the interval until the next start is a recorded gap.
+- A current run whose heartbeat is older than 45 s is reported as not recording.
+- `whyfs status` / the `status` API list `recording_gaps` with their times and whether they
+  followed a crash.
+
+**Records loss.**
+- Kernel-side: BPF ring drops, ETW lost events and buffers.
+- Userspace: queue drops, late records, unresolved users.
+
+Both are counted per run.  Loss in the session that created a file makes its origin incomplete;
+loss afterwards is a later gap.
+
+**Never fabricates.**  A file that appeared while nothing was observing has no recorded write, so
+it gets no creator.  Its label is `no-record`, with `observation.complete: false`.  When its
+timestamps fall inside a recorded gap, `observation.file_time_in_gap` names that gap.  Identity
+checks keep an older record at the same path from being attached to it.
+
+**Tested.**  `scripts/outage_gate.py` runs the forced-outage scenario on the installed service:
+1. create File A;
+2. kill the whole observer (Linux: SIGKILL to every process of the unit; Windows: the service
+   process tree);
+3. create File B while nothing observes;
+4. let the OS service manager recover the observer by itself;
+5. create File C.
+
+The required outcome: A complete, B unknown with the gap named, C complete, and the gap reported
+by `status`.  `scripts/boot_check.py` checks, after a real OS boot, that whyfs is recording with
+no user action and that the downtime is a recorded gap (run on WSL2 by shutting down and booting
+the VM).  `tests/test_observation.py` covers the query side.
+
 ## Human discovery
 
 People reach labels without a terminal.  Right-click a file in Explorer or the Linux file

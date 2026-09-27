@@ -224,7 +224,8 @@ function statusBadges(lb) {
   else if (lb.status === "not-observed") out.push(el("span", { class: "badge b-bad" }, "origin not observed"));
   else out.push(el("span", { class: "badge b-warn" }, "no record"));
   const obs = lb.observation;
-  if (obs) out.push(el("span", { class: "badge " + (obs.complete ? "b-ok" : "b-warn") }, obs.complete ? "evidence complete" : "evidence incomplete"));
+  if (obs) out.push(el("span", { class: "badge " + (obs.complete ? "b-ok" : "b-warn") }, obs.complete ? "origin observed completely" : "evidence incomplete"));
+  if (obs && obs.complete && (obs.later_gaps || []).length) out.push(el("span", { class: "badge b-warn" }, "gaps since creation"));
   if (!lb.exists) out.push(el("span", { class: "badge b-bad" }, "file no longer exists"));
   if (lb.agent) out.push(el("span", { class: "badge b-warn" }, "AI agent: " + lb.agent.agent_name));
   return out;
@@ -288,7 +289,8 @@ async function showLabel(path, view) {
   kids.push(sec("Evidence", "evidence", dl([
     ["Source", lb.evidence || (lb.status === "labelled" ? "OS-observed" : "none")],
     ["Identity", lb.identity ? lb.identity.check : null], ["Observing since", obs.observing_since ? when(obs.observing_since) : null],
-    ["Completeness", obs.complete ? "no observation gaps are known" : el("ul", { class: "gaps" }, (obs.gaps || []).map((g) => el("li", {}, g)))],
+    ["Origin", obs.complete ? "complete: whyfs was recording, without loss, when this file was created" : el("ul", { class: "gaps" }, (obs.gaps || []).map((g) => el("li", {}, g)))],
+    ["Since then", (obs.later_gaps || []).length ? el("ul", { class: "gaps" }, obs.later_gaps.map((g) => el("li", {}, g))) : (lb.status === "labelled" ? "no gaps: whyfs has been recording without loss" : null)],
     ["Note", lb.note || null],
   ])));
   R.replaceChildren(...kids);

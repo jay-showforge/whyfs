@@ -13,7 +13,7 @@ sys.path.insert(0, str(REPO / "src"))
 from whyfs.query import impact, why  # noqa: E402
 from whyfs.store import connect  # noqa: E402
 
-EXE = Path(os.environ.get("WHYFS_COLLECT_WIN", r"C:\Users\ftmon\whyfs-win-build\whyfs-collect-win.exe"))
+EXE = Path(os.environ.get("WHYFS_COLLECT_WIN", os.path.expanduser(r"~\whyfs-win-build\whyfs-collect-win.exe")))
 SQLITE = Path(sys.base_prefix) / "DLLs" / "sqlite3.dll"
 VCVARS = r"C:\BuildTools2022\VC\Auxiliary\Build\vcvars64.bat"
 

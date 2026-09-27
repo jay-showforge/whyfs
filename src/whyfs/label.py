@@ -175,10 +175,7 @@ def _find_by_identity(con: sqlite3.Connection, fid: str | None) -> sqlite3.Row |
 
 
 # ---------------------------------------------------------------- impact and observation gaps
-LOSS_KEYS = ("kernel_drops", "queue_drops", "lost_file", "lost_sys", "buffers_lost_file", "buffers_lost_sys",
-             "late_records", "user_unresolved")
-GAP_MIN_NS = 5 * 10**9            # shorter pauses (a service restart) are not reported
-WEAK_RETENTION_DAYS = 30           # pure reads are kept this long by default (retention.py)
+from .observation import GAP_MIN_NS, LOSS_KEYS, WEAK_RETENTION_DAYS  # noqa: E402,F401
 # A reading process that wrote more files than this after the read (an agent, an editor, a
 # browser) links the file to all of them only ambiguously: which output used it is not observable.
 AMBIGUOUS_SHARED = 25
@@ -197,43 +194,11 @@ def readers(con: sqlite3.Connection, path: str, limit: int = 20, creator: tuple 
     return [{"exe": r["exe"], "processes": r["n"], "last_read_ns": r["last"], "last_read": iso(r["last"])} for r in rows]
 
 
-def observation(con: sqlite3.Connection, since_ns: int | None, *, chain: list[dict] | None = None,
-                identity: str | None = None, status: str = "labelled") -> dict:
-    """Whether whyfs was watching, without loss, from ``since_ns`` until now: the gaps that
-    make a label (and above all "no dependents observed") incomplete."""
-    gaps: list[str] = []
-    runs = con.execute("SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns").fetchall()
-    now = _dt.datetime.now().timestamp() * 1e9
-    first = runs[0]["started_ns"] if runs else None
-    if status != "labelled":
-        gaps.append("this file's origin was not observed")
-    if since_ns and runs:
-        # intervals after since_ns during which no collector run was recording
-        covered_to = since_ns
-        for r in runs:
-            if (r["ended_ns"] or now) < since_ns:
-                continue
-            if r["started_ns"] - covered_to > GAP_MIN_NS:
-                gaps.append(f"whyfs was not recording from {iso(int(covered_to))} to {iso(r['started_ns'])}")
-            covered_to = max(covered_to, r["ended_ns"] or now)
-        if now - covered_to > GAP_MIN_NS:
-            gaps.append(f"whyfs is not recording now (last recorded {iso(int(covered_to))})")
-        ids = [r["id"] for r in runs if (r["ended_ns"] or now) >= since_ns]
-        lost = 0
-        for i in range(0, len(ids), 500):
-            chunk = ids[i:i + 500]
-            lost += con.execute(f"SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN "
-                                f"({','.join('?' * len(chunk))}) AND key IN ({','.join('?' * len(LOSS_KEYS))})",
-                                [*chunk, *LOSS_KEYS]).fetchone()[0]
-        if lost:
-            gaps.append(f"the collector reported {lost} lost or unattributed events since the file was created")
-        if now - since_ns > WEAK_RETENTION_DAYS * 86400e9:
-            gaps.append(f"reads older than {WEAK_RETENTION_DAYS} days are pruned: older uses of this file are no longer known")
-    if chain and chain[0].get("exe") is None:
-        gaps.append("the process chain is cut off: an ancestor started before whyfs was running")
-    if identity == "unknown":
-        gaps.append("the file's identity could not be compared with the recorded one")
-    return {"complete": not gaps, "gaps": gaps, "observing_since": iso(first) if first else None}
+def observation(con: sqlite3.Connection, since_ns: int | None, *, path: str | None = None,
+                chain: list[dict] | None = None, identity: str | None = None, status: str = "labelled") -> dict:
+    """The label's observation section (whyfs.observation): origin completeness, later gaps."""
+    from .observation import for_label
+    return for_label(con, since_ns, path=path, chain=chain, identity=identity, status=status)
 
 
 def impact(lb: dict, rd: list[dict]) -> dict:
@@ -282,8 +247,9 @@ def impact(lb: dict, rd: list[dict]) -> dict:
                      (f" from {len(lb['inputs'])} observed input{'s' if len(lb['inputs']) != 1 else ''}" if lb.get("inputs") else "") +
                      "; rerunning that process may recreate it (whyfs does not verify this).")
     obs = lb.get("observation") or {}
-    if obs and not obs.get("complete"):
-        lines.append("Evidence is incomplete: " + "; ".join(obs.get("gaps") or []) + ".")
+    missing = (obs.get("gaps") or []) + (obs.get("later_gaps") or [])
+    if missing:
+        lines.append("Evidence is incomplete: " + "; ".join(missing) + ".")
     return {"generated_outputs": outs, "possibly_affected": possible, "dependents": deps, "readers": readers_other,
             "is_generated": bool(lb.get("status") == "labelled" and (lb.get("inputs") or lb.get("renamed_from"))
                                  and (lb.get("shared_by_outputs") or 0) <= AMBIGUOUS_SHARED),
@@ -310,7 +276,7 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
         label.update(status="no-record", note="whyfs has no observed origin for this file (created before whyfs "
                      "was running, excluded by the scope policy, or not visible to you)")
         label["dependents"] = impact_details(con, target, include_noise=include_noise)[:dependents_limit]
-        label["observation"] = observation(con, None, status="no-record")
+        label["observation"] = observation(con, None, path=target, status="no-record")
         label["impact"] = impact(label, readers(con, target))
         return label
     # the creator's write, under whatever name the file had then (it may have moved since)
@@ -334,7 +300,7 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
         label.update(status="not-observed", note=f"this file's origin was not observed: {why_not}",
                      previous_file_at_path={"written_by": w["exe"], "at": iso(w["ts_ns"]), "command": w.get("command")})
         label["dependents"] = []
-        label["observation"] = observation(con, None, identity=idcheck, status="not-observed")
+        label["observation"] = observation(con, None, path=target, identity=idcheck, status="not-observed")
         label["impact"] = impact(label, [])
         return label
     if via_identity:
