@@ -95,7 +95,11 @@ def evaluate(con, root: Path, why, impact, history) -> list[dict]:
             if not w:
                 check(f"why {f}", False, None, exp)
                 continue
-            got_in = sorted(Path(p).name for p in (w["inputs"] or []))
+            # The tool program itself (wtool.py, run by every step) is an input in the literal sense --
+            # the interpreter reads it -- and a machine-wide collector sees it; the scenarios state
+            # their data inputs, so the program is compared separately from them.
+            tool = Path(tool_path()).name
+            got_in = sorted(Path(p).name for p in (w["inputs"] or []) if Path(p).name != tool)
             check(f"why {f} creator", program(w["exe"]) == exp["creator"], program(w["exe"]), exp["creator"])
             check(f"why {f} inputs", got_in == sorted(exp["inputs"]), got_in, sorted(exp["inputs"]))
             if "command_has" in exp:

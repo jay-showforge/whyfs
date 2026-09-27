@@ -412,7 +412,7 @@ static char *redact_cmdline_w(const wchar_t *cmd) {
 
 // ---------------------------------------------------------------- decoded kernel records (the Windows contract)
 enum { R_PROC_START = 1, R_PROC_INFO, R_PROC_END, R_CREATE, R_CLEANUP, R_KEYINFO, R_READ, R_WRITE, R_DELETE_PATH,
-       R_RENAME_PATH, R_NAME_DELETE, R_MAP, R_CLOSE };
+       R_RENAME_PATH, R_NAME_DELETE, R_MAP, R_CLOSE, R_FO_RESET };
 typedef struct {
     int64_t ts;       // wall-clock ns
     uint64_t order;   // arrival order (stable tie-break)
@@ -963,10 +963,11 @@ static void process_rec_inner(rec_t *r) {
         return;
     }
     fobj_t *f = r->fo ? map_get(&fobjs, r->fo, NULL) : NULL;
-    if (f && r->key) map_put(&fkeys, r->key, NULL, xstrdup(f->path));  // learn FileKey -> path
+    if (f && r->key) map_set(&fkeys, r->key, NULL, xstrdup(f->path))->u = f->creator;  // FileKey -> path, owning lineage
     switch (r->type) {
     case R_KEYINFO: return;
     case R_CLOSE: map_pop(&fobjs, r->fo, NULL); return;  // IRP_MJ_CLOSE: the file object is freed
+    case R_FO_RESET: map_pop(&fobjs, r->fo, NULL); st.filtered++; return;  // an out-of-scope Create reused the pointer
     case R_NAME_DELETE: map_pop(&fkeys, r->key, NULL); return;
     case R_CLEANUP:
         if (f && (f->opts & FILE_DELETE_ON_CLOSE) && uok != 0) {
@@ -994,9 +995,15 @@ static void process_rec_inner(rec_t *r) {
         return;
     }
     case R_MAP: {  // memory-mapped view: flags = protection (MM_*: 4/6 writable, shared)
-        const char *kp = map_get(&fkeys, r->key, NULL);
-        if (!kp) { st.filtered++; return; }
+        ent_t *ke = map_find(&fkeys, r->key, NULL);
+        if (!ke) { st.filtered++; return; }
+        const char *kp = ke->v;
         if (uok == 0) { st.other_user++; return; }
+        {  // like the file-object guard: a FileKey is reused after its file's control block is freed,
+           // so a mapping counts only in the lineage that opened the file it was learned from
+            uint64_t k = key_of(pid, ts);
+            if (ke->u && k != ke->u && !descends_from(k, ke->u)) { st.foreign_fo++; return; }
+        }
         uint32_t prot = r->flags & 7;
         int is_write = prot == 4 || prot == 6;
         char *p = xstrdup(kp);
@@ -1423,9 +1430,12 @@ static void on_file_event_inner(PEVENT_RECORD ev) {
         // paths).  Safe for FileObject reuse: a tracked object is retired by its Close event
         // before its pointer can be reused, and Close events are always processed.
         if (machine_mode && r->s1 && sc_classify(r->s1) == SC_OUT) {
+            // Still a record, but a tiny one: a Create that fails gets no Close event, so the
+            // FileObject pointer's previous entry must be reset whenever the pointer is reused --
+            // by any Create, in scope or not (else a stale path is learned for the new object).
             InterlockedIncrement64(&early_filtered);
-            rec_free(r);
-            return;
+            free(r->s1); r->s1 = NULL;
+            r->type = R_FO_RESET;
         }
         break;
     case 13: r->type = R_CLEANUP; break;
@@ -1620,12 +1630,11 @@ static void print_prof(void) {
 }
 static void print_stats(void) {
     print_prof();
-    uint64_t filtered_total = st.filtered + (uint64_t)early_filtered;
     printf("{\"received\":%llu,\"submitted\":%llu,\"filtered\":%llu,\"other_user\":%llu,\"unmapped_paths\":%llu,"
            "\"kernel_drops\":%llu,\"queue_drops\":%llu,\"proc_fallbacks\":%llu,\"writer_rows\":%llu,\"writer_batches\":%llu,"
            "\"writer_max_batch\":%llu,\"writer_failed\":%d,\"pending_exec\":%zu,\"user_unresolved\":%llu,\"foreign_file_object\":%llu,\"cb_file\":%lld,\"cb_sys\":%lld,"
            "\"lost_file\":%lu,\"lost_sys\":%lu,\"buffers_lost_file\":%lu,\"buffers_lost_sys\":%lu,\"max_lag_file_ms\":%.1f,\"max_lag_sys_ms\":%.1f,\"late_records\":%llu,\"excluded_image\":%llu,\"user_late\":%llu,\"image_maps_skipped\":%lld}\n",
-           st.received + (uint64_t)early_filtered, st.submitted, filtered_total, st.other_user, st.unmapped_paths, st.kernel_lost, st.queue_drops, st.proc_fallbacks,
+           st.received, st.submitted, st.filtered, st.other_user, st.unmapped_paths, st.kernel_lost, st.queue_drops, st.proc_fallbacks,
            w_rows, w_batches, w_max, writer_failed, pending_exec.count, st.user_unresolved, st.foreign_fo, (long long)n_cb_file, (long long)n_cb_sys,
            lost_a, lost_b, bufs_lost_a, bufs_lost_b, max_lag_file / 1e6, max_lag_sys / 1e6, late_records,
            st.excluded_image, st.user_late, (long long)image_maps_skipped);

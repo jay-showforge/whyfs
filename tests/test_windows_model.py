@@ -34,7 +34,7 @@ def collector() -> Path | None:
 
 EXE = collector()
 R_PROC_START, R_PROC_INFO, R_PROC_END, R_CREATE, R_CLEANUP, R_KEYINFO, R_READ, R_WRITE, R_DELETE_PATH, R_RENAME_PATH, \
-    R_NAME_DELETE, R_MAP, R_CLOSE = range(1, 14)
+    R_NAME_DELETE, R_MAP, R_CLOSE, R_FO_RESET = range(1, 15)
 OPEN, CREATE_NEW, OVERWRITE_IF = 0x01000000, 0x02000000, 0x05000000
 DIRECTORY, DELETE_ON_CLOSE = 0x1, 0x1000
 
@@ -223,6 +223,27 @@ class WindowsModelTests(unittest.TestCase):
         s.add(R_NAME_DELETE, 1100, key=k).add(R_MAP, 1100, key=k, flags=1)   # key reused by an unknown file
         items, _ = s.replay()
         self.assertEqual(self.io(items, False), [])
+
+    def test_reused_file_object_of_a_failed_create_is_reset(self):
+        # A probe of an in-scope path that fails has no Close event; when the FileObject pointer is
+        # reused by an out-of-scope open (a reset record in machine mode), its file key must not be
+        # learned under the probed path.
+        s, f, k = self.s, self.s.new_fo(), 0xDDD0
+        s.proc(1300, SHELL, PY, "python gen.py")
+        s.open(1300, f, "pyvenv.cfg")                       # failed probe: no Close follows
+        s.add(R_FO_RESET, 1300, fo=f)                       # the pointer is reused by an out-of-scope open
+        s.add(R_KEYINFO, 1300, fo=f, key=k).add(R_MAP, 1300, key=k, flags=1)
+        items, _ = s.replay()
+        self.assertEqual(self.io(items, False), [])
+
+    def test_mapped_view_counts_only_in_the_opening_lineage(self):
+        s, f, k = self.s, self.s.new_fo(), 0xEEE0
+        s.proc(1400, SHELL, PY, "python a.py").open(1400, f, "data.bin").add(R_KEYINFO, 1400, fo=f, key=k)
+        s.proc(1401, 99, r"C:\other\tool.exe", "tool")   # an unrelated process: the key may be a reused one
+        s.add(R_MAP, 1401, key=k, flags=1)
+        s.add(R_MAP, 1400, key=k, flags=1)                  # the opener itself: counted
+        items, st = s.replay()
+        self.assertEqual(self.io(items, False), [(1400, "data.bin")])
 
     def test_derived_temporaries_bridge_lineage(self):
         s = self.s
