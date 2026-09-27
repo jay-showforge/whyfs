@@ -42,6 +42,11 @@ Results on the fixed code (run 3):
 - user test suite 191 OK;
 - the live eBPF module: see `results/arm64-qemu-supplemental-3/live.log`.
 
+Ready artifact: `whyfs_0.9.0~dev1_arm64.deb`, SHA-256
+`7218b01b2e19c58d7a70c7a4df251c805da8b3c7913440b611c9194b8659531c`.  It was built natively in
+the arm64 guest; its collector is an aarch64 ELF.  This is the package that passed 15/15
+above.
+
 These results do **not** replace the native run below.
 
 ## What remains, and the exact environment it needs
