@@ -13,11 +13,36 @@ supporting evidence only.
 
 | Platform | Status | Evidence |
 |---|---|---|
-| Linux x86-64 | **PASS (native)** | WSL2 kernel 6.6 on i5-14400F.  Graduation on frozen `04a6287` (`results/v02-graduation-native/`); re-run on the current code: see `results/linux-final-*` |
+| Linux x86-64 | **PASS (native)** | WSL2 kernel 6.6 on i5-14400F.  On commit 38aa328 (`results/linux-final-38aa328/`): graduation 46/46, static ×300 +3.29%, make -j8 +1.02%, Vite −0.21% (no measurable slowdown), 0 drops, attribution 44/44, recall 118/118, why CLI 38 ms; tests 191 OK (root and user).  On 43e69dd: corpus 79/79, secret gate 22/22.  `.deb` 15/15 after the packaging fixes |
 | WSL2 | **PASS (native)** | the Linux x86-64 evidence above *is* WSL2 (Ubuntu 24.04, kernel 6.6.87.2-microsoft-standard-WSL2), including the `.deb` with the systemd unit |
 | Windows x64 | **PASS (native)**, frozen at `43e69dd` | [WINDOWS.md](WINDOWS.md) |
-| Linux ARM64 | **pending native run** | builds natively under emulation; supplemental emulated results below |
+| Linux ARM64 | **pending native run** | emulated supplement (QEMU TCG, Ubuntu 24.04 arm64, kernel 6.8): arm64 .deb 15/15, corpus 79/79 lost 0, secret gate 22/22, user suite 191 OK; three real defects found and fixed (below) |
 | Windows ARM64 | **pending native run** | collector, service and launcher cross-build cleanly (MSVC `x64_arm64`, 0 warnings); **ARM64 MSI built** with the signed CPython 3.13.5 ARM64 runtime, all 26 PE images verified ARM64 (`results/windows-arm64-build/ARTIFACTS.md`); never executed |
+
+## Emulated ARM64 supplement (not native evidence)
+
+`results/arm64-qemu-supplemental*`.  Environment: QEMU 8.2 TCG (`-cpu max`, 8 vCPU) on the
+x64 host, Ubuntu 24.04 arm64 cloud image, kernel 6.8.0-142-generic.  Timing is meaningless
+under emulation, so no performance claim is made, and start/stop waits were raised for the
+runs (`WHYFS_START_TIMEOUT`, `WHYFS_STOP_TIMEOUT`).
+
+The emulated runs found three real defects that would have hit native ARM64 users:
+
+1. **whyfs refused to start on arm64 kernels.**  BCC 0.29's `BPF.support_kfunc()` is
+   hard-coded to x86_64, although arm64 has BPF trampolines.  Detection now asks the kernel.
+2. **The arm64 `.deb` shipped a group-writable collector** when built with umask 002.  whyfs
+   correctly refused to trust it.  Package modes are now explicit and tested.
+3. **`daemon start`/`stop` waited only 5 s** for BPF compilation and for the final drain.
+   Slow machines exceed that.  The default is now 60 s, configurable.
+
+Results on the fixed code (run 3):
+- `.deb` 15/15, including the installed-package corpus 79/79 on aarch64;
+- source-tree corpus 79/79, lost 0;
+- secret gate 22/22;
+- user test suite 191 OK;
+- the live eBPF module: see `results/arm64-qemu-supplemental-3/live.log`.
+
+These results do **not** replace the native run below.
 
 ## What remains, and the exact environment it needs
 

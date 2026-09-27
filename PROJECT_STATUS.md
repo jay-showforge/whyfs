@@ -6,10 +6,10 @@ Scope: Linux x86-64, Linux ARM64, Windows x64, Windows ARM64, WSL2.  macOS is no
 
 | Platform | Status |
 |---|---|
-| Linux x86-64 / WSL2 | PASS on 43e69dd: graduation harness 46/46, corpus 79/79, secret gate 22/22, .deb 14/14 |
+| Linux x86-64 / WSL2 | PASS: graduation 46/46 on 38aa328 (and 43e69dd), corpus 79/79, secret gate 22/22, .deb 15/15, 191 tests |
 | Windows x64 | PASS, frozen at 43e69dd (docs/WINDOWS.md) |
-| Linux ARM64 | native run pending (no native ARM64 host available); emulated supplement only |
-| Windows ARM64 | native run pending; binaries cross-built |
+| Linux ARM64 | native run pending (no native ARM64 host available); emulated supplement passes corpus/secret/.deb and found 3 real arm64 defects, now fixed |
+| Windows ARM64 | native run pending; ARM64 MSI built and verified (all images ARM64), never executed |
 
 Details, exact environments and commands: [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 The history below is the v0.2 record, kept as it was written.
