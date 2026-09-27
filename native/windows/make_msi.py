@@ -54,13 +54,25 @@ def msi_version(v: str) -> str:  # MSI ProductVersion: major.minor.build (number
     return f"{major}.{minor}.{patch * 1000 + dev}"
 
 
+def host_arch() -> str:
+    """The machine's native architecture, also from an emulated x64 process on ARM64."""
+    import ctypes
+    from ctypes import wintypes
+    proc, native = wintypes.USHORT(), wintypes.USHORT()
+    k32 = ctypes.windll.kernel32
+    if hasattr(k32, "IsWow64Process2") and k32.IsWow64Process2(k32.GetCurrentProcess(), ctypes.byref(proc), ctypes.byref(native)):
+        return "arm64" if native.value == 0xAA64 else "x64"
+    return "x64"
+
+
 def stage(arch: str, runtime: Path, stage_dir: Path, vcvars: str) -> None:
     binsrc = REPO / "src" / "whyfs" / "_bin" / f"win-{arch}"
     for b in ("whyfs-svc.exe", "whyfs-collect-win.exe"):
         if not (binsrc / b).exists():
             raise SystemExit(f"missing {binsrc / b}: run native/windows/build.ps1 first")
         shutil.copy2(binsrc / b, stage_dir / b)
-    vcarg = "x64" if arch == "x64" else "x64_arm64"
+    host = host_arch()
+    vcarg = arch if arch == host else f"{host}_{arch}"  # native, or cross from this host
     vcall = str(Path(vcvars).parent / "vcvarsall.bat")
     obj = Path(tempfile.mkdtemp())
     subprocess.run(f'cmd /c ""{vcall}" {vcarg} >nul && cl /nologo /O2 /W4 "{REPO}\\src\\whyfs\\native\\windows\\whyfs-launcher.c" '

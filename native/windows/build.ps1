@@ -8,9 +8,12 @@ $src = "$repo\src\whyfs\native\windows"
 $vcvarsall = "$VsRoot\VC\Auxiliary\Build\vcvarsall.bat"
 if (-not (Test-Path $vcvarsall)) { throw "MSVC not found at $VsRoot" }
 $targets = if ($Arch -eq "all") { @("x64", "arm64") } else { @($Arch) }
+# host architecture (Win32_Processor.Architecture: 9 = x64, 12 = ARM64): native tools where possible
+$hostArch = if ((Get-CimInstance Win32_Processor | Select-Object -First 1).Architecture -eq 12) { "arm64" } else { "x64" }
+function VcArg($target) { if ($target -eq $hostArch) { $target } else { "$($hostArch)_$target" } }
 $ok = $true
 foreach ($a in $targets) {
-    $vcarg = if ($a -eq "x64") { "x64" } else { "x64_arm64" }   # host x64, target arm64 (cross)
+    $vcarg = VcArg $a   # x64, arm64 (native) or x64_arm64 / arm64_x64 (cross)
     $out = "$repo\src\whyfs\_bin\win-$a"
     $obj = "$env:TEMP\whyfs-build-$a"
     New-Item -ItemType Directory -Force $out, $obj | Out-Null

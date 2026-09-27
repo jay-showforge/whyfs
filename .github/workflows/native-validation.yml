@@ -1,6 +1,9 @@
-# Native runtime validation on real hardware of every supported whyfs 1.0 platform.
-# Not yet run: the repository has not been pushed anywhere (release policy).  Every step is
-# the same command used for the local x86-64 validation; see docs/PLATFORM_VALIDATION.md.
+# Native runtime validation of every supported whyfs 1.0 platform on real hardware:
+#   Linux x86-64 (ubuntu-24.04), Linux ARM64 (ubuntu-24.04-arm: Arm-hosted, native),
+#   Windows x64 (windows-2022), Windows ARM64 (windows-11-arm: Arm-hosted, native).
+# Manual trigger only.  Not run yet: the repository has not been pushed anywhere (release
+# policy).  Every step is the same command used for the local validation; see
+# docs/PLATFORM_VALIDATION.md for what each result must show.
 name: native-validation
 on: [workflow_dispatch]
 
@@ -9,30 +12,44 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]      # x86-64 and native ARM64 (Arm-hosted runner)
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+      - name: platform identity (must be native, not emulated)
+        run: |
+          uname -a; dpkg --print-architecture; lscpu | head -20
+          grep -E 'CONFIG_DEBUG_INFO_BTF=|CONFIG_BPF_LSM=|CONFIG_BPF_SYSCALL=' /boot/config-$(uname -r) || true
+          cat /sys/kernel/security/lsm || true
       - name: toolchain and BPF prerequisites
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q bpfcc-tools python3-bpfcc libbpf-dev libsqlite3-dev libelf-dev zlib1g-dev \
-            pkg-config gcc make clang nodejs rsync file linux-headers-$(uname -r)
-          uname -a; dpkg --print-architecture
-      - name: unit, resolver, differential and live eBPF tests (root and user)
+            pkg-config gcc make clang nodejs npm rsync file dpkg-dev linux-headers-$(uname -r)
+      - name: Vite fixture template (graduation harness)
         run: |
-          sudo env PYTHONPATH=src python3 -m unittest discover -s tests
-          PYTHONPATH=src python3 -m unittest discover -s tests
-      - name: build the .deb for this architecture
+          mkdir -p ~/vite-template && cd ~/vite-template
+          echo '{"name":"whyfs-vite-fixture","private":true,"type":"module"}' > package.json
+          npm install --no-audit --no-fund vite@5.4.21
+      - name: unit, resolver, differential, redaction-parity and live eBPF tests (root and user)
+        run: |
+          sudo env PYTHONPATH=src:tests python3 -m unittest discover -s tests
+          PYTHONPATH=src:tests python3 -m unittest discover -s tests
+      - name: build the .deb natively for this architecture
         run: bash packaging/linux/build_deb.sh dist
-      - name: clean install / corpus / systemd / uninstall
+      - name: package clean install / tamper refusal / installed corpus / systemd / uninstall
         run: sudo bash packaging/linux/test_deb.sh dist/whyfs_*.deb runner results/deb-test
-      - name: shared A-H corpus from the source tree
+      - name: shared A-H corpus (source tree)
         run: sudo python3 scripts/run_corpus.py --user runner --out results/corpus
-      - name: graduation gate (functional, accuracy, performance; 20 pairs)
+      - name: live secret-redaction gate
+        run: sudo python3 scripts/secret_gate.py --user runner --out results/secret-gate
+      - name: graduation gate (static binary, make -j8, Node/Vite, rename, accuracy, zero drops, 20-pair performance)
         run: sudo python3 scripts/v02_graduation.py --user runner --out results/graduation --pairs 20
       - name: unmodified shipped gate
         run: sudo python3 scripts/v02_gate.py
+      - name: checksums
+        if: always()
+        run: cd dist && sha256sum * > SHA256SUMS || true
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "linux-${{ matrix.runner }}", path: "results/\ndist/" }
@@ -42,33 +59,71 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { runner: windows-2022, arch: x64 }
-          - { runner: windows-11-arm, arch: arm64 }   # native Windows on Arm runner
+          - { runner: windows-2022, arch: x64, vcvars: vcvars64.bat }
+          - { runner: windows-11-arm, arch: arm64, vcvars: vcvarsarm64.bat }
     runs-on: ${{ matrix.runner }}
+    env:
+      PYTHONPATH: "src;tests"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5          # msilib host for make_msi.py
+        id: py312
+        with: { python-version: "3.12", architecture: "${{ matrix.arch }}" }
+      - uses: actions/setup-python@v5          # the runtime bundled into the MSI
+        id: py313
         with: { python-version: "3.13", architecture: "${{ matrix.arch }}" }
+      - name: platform identity (must be native, not emulated)
+        shell: pwsh
+        run: |
+          Get-CimInstance Win32_Processor | Select-Object Name, Architecture   # Architecture 12 = ARM64, 9 = x64
+          Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture
+          python -c "import platform; print(platform.machine())"
+      - name: locate MSVC
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          "VSROOT=$vs" >> $env:GITHUB_ENV
+          "WHYFS_VCVARS=$vs\VC\Auxiliary\Build\${{ matrix.vcvars }}" >> $env:GITHUB_ENV
       - name: build collector, service and launcher (MSVC, native arch)
         shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File native\windows\build.ps1 -Arch ${{ matrix.arch }} -VsRoot (& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath)
-      - name: MSI (bundles this architecture's Python runtime)
+        run: powershell -ExecutionPolicy Bypass -File native\windows\build.ps1 -Arch ${{ matrix.arch }} -VsRoot $env:VSROOT
+      - name: standard-user helper for the installer test
         shell: pwsh
         run: |
-          py -3.12 -m pip --version  # msilib host
-          py -3.12 native\windows\make_msi.py --arch ${{ matrix.arch }} --runtime "$env:pythonLocation" --out dist
-      - name: Windows model and query tests
+          New-Item -ItemType Directory -Force C:\whyfs-tools | Out-Null
+          cmd /c "`"$env:WHYFS_VCVARS`" >nul && cl /nologo /O2 native\windows\tools\asuser.c /Fe:C:\whyfs-tools\asuser.exe /Fo:C:\whyfs-tools\ advapi32.lib"
+      - name: Windows model, query and redaction-parity tests
         run: python -m unittest discover -s tests
-        env: { PYTHONPATH: "src;tests" }
+      - name: MSIs (this version, and a lower version for the upgrade test)
+        shell: pwsh
+        run: |
+          $rt = Split-Path "${{ steps.py313.outputs.python-path }}"
+          & "${{ steps.py312.outputs.python-path }}" native\windows\make_msi.py --arch ${{ matrix.arch }} --runtime $rt --vcvars $env:WHYFS_VCVARS --out dist
+          & "${{ steps.py312.outputs.python-path }}" native\windows\make_msi.py --arch ${{ matrix.arch }} --runtime $rt --vcvars $env:WHYFS_VCVARS --version 0.9.0.dev0 --out dist-old
       - name: MSI clean install, standard-user flow, uninstall
         shell: pwsh
-        run: powershell -ExecutionPolicy Bypass -File native\windows\test_msi.ps1 -Msi (Get-ChildItem dist\*.msi).FullName -Out results\msi-test
-      - name: install for the gates, shared A-H corpus, Windows gate (20 pairs)
+        run: powershell -ExecutionPolicy Bypass -File native\windows\test_msi.ps1 -Msi (Get-ChildItem dist\*.msi).FullName -Out results\msi-test -AsUser C:\whyfs-tools\asuser.exe
+      - name: MSI upgrade, downgrade refusal, data retention
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File native\windows\test_msi_upgrade.ps1 -Old (Get-ChildItem dist-old\*.msi).FullName -New (Get-ChildItem dist\*.msi).FullName -Out results\msi-upgrade
+      - name: Vite fixture template
         shell: pwsh
         run: |
-          msiexec /i (Get-ChildItem dist\*.msi).FullName /qn | Out-Null
+          New-Item -ItemType Directory -Force C:\whyfs-vite-template | Out-Null
+          Set-Content C:\whyfs-vite-template\package.json '{"name":"whyfs-vite-fixture","private":true,"type":"module"}'
+          Push-Location C:\whyfs-vite-template; npm install --no-audit --no-fund vite@5.4.21; Pop-Location
+          "WHYFS_VITE_TEMPLATE=C:\whyfs-vite-template" >> $env:GITHUB_ENV
+      - name: install for the gates; shared A-H corpus; live secret gate; functional + 20-pair performance gate
+        shell: pwsh
+        run: |
+          Start-Process msiexec.exe -ArgumentList "/i `"$((Get-ChildItem dist\*.msi).FullName)`" /qn /norestart" -Wait
           python scripts\run_corpus.py --out results\corpus
+          python scripts\secret_gate.py --installed --out results\secret-gate
           python scripts\win_gate.py --out results\win-gate --pairs 20
+      - name: checksums
+        if: always()
+        shell: pwsh
+        run: Get-ChildItem dist\*.msi | Get-FileHash -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Set-Content dist\SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "windows-${{ matrix.arch }}", path: "results/\ndist/" }

@@ -34,6 +34,16 @@ privileged ETW work on their behalf and writes only into workspaces they own.
 
 ## Validation record (x64, frozen)
 
+Frozen at commit **43e69dd**.  Every gate below ran against these exact binaries (hashes of the tested
+MSI and of the files it installed):
+
+```
+629f60d33c329f7f5f338fb88625a8cc2fef955f2adb35a2cff6388a4fd23896  whyfs-0.9.0.dev1-x64.msi
+747f0d024ff768db6a6608e8417656958eefd4b29c7d14ee3b0fc245c4f44d34  whyfs-collect-win.exe (x64)
+87ea955b2a562bf9a92cee3081bc9be838497e0ef4ab7c63191f3c74bd190a78  whyfs-svc.exe (x64)
+1c77c0d6d982e4a6fb94062893e8873824ca323e688a34f0adfdd57c6f96b055  whyfs.exe (x64 launcher)
+```
+
 Machine: Windows 11 Home 10.0.26200, Intel Core i5-14400F, 32 GB, Defender real-time
 protection **on** (never disabled for any measurement).  Toolchain: MSVC Build Tools 2022,
 Windows SDK 10.0.26100.  Runtime bundled in the MSI: CPython 3.13.5.
