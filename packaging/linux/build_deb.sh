@@ -26,8 +26,9 @@ file "$PKG/usr/lib/whyfs/whyfs-collect" | grep -q -E "ELF 64-bit.*($( [ "$ARCH" 
 
 cat > "$PKG/usr/bin/whyfs" <<'EOF'
 #!/usr/bin/python3
-from whyfs.cli import main
-main()
+# the package's __main__: its fast path answers `whyfs why|label FILE` without loading the full CLI
+import runpy
+runpy.run_module("whyfs", run_name="__main__", alter_sys=True)
 EOF
 chmod 755 "$PKG/usr/bin/whyfs"
 
