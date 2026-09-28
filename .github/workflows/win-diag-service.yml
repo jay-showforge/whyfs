@@ -22,6 +22,15 @@ jobs:
       - uses: actions/setup-python@v5
         id: py313
         with: { python-version: "3.13", architecture: "${{ inputs.arch }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", architecture: "${{ inputs.arch }}" }
+      - name: Vite fixture template (as native-validation)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force C:\whyfs-vite-template | Out-Null
+          Set-Content C:\whyfs-vite-template\package.json '{"name":"whyfs-vite-fixture","private":true,"type":"module"}'
+          Push-Location C:\whyfs-vite-template; npm install --no-audit --no-fund vite@5.4.21; Pop-Location
+          "WHYFS_VITE_TEMPLATE=C:\whyfs-vite-template" >> $env:GITHUB_ENV
       - name: locate MSVC, build, package
         shell: pwsh
         run: |
