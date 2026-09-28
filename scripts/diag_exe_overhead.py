@@ -96,6 +96,23 @@ def main():
                         "collector_cpu_ms_median": round(statistics.median(ccpu) * 1000, 1), "pairs": paired}
         print(f"{name:16s} overhead {report[name]['median_paired_overhead_percent']:+.2f}%   "
               f"collector CPU {report[name]['collector_cpu_ms_median']:.0f} ms / 300 execs", flush=True)
+    # one profiled pass: where the events come from (callbacks per process, per-record-type time)
+    c = subprocess.Popen([a.collector, "--machine", "--root", root, "--run-id", "diag-prof", "--session", "whyfs-diag",
+                          "--scope", sc], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         text=True, env=dict(os.environ, WHYFS_PROF="1"))
+    c.stdout.readline()
+    time.sleep(1)
+    for _ in range(3):
+        workload()
+    time.sleep(8)
+    c.stdin.write("stop
+")
+    c.stdin.flush()
+    so, se = c.communicate(timeout=180)
+    prof = [l for l in se.splitlines() if l.startswith('{"prof"')]
+    stats = [l for l in so.splitlines() if l.startswith("{")]
+    report["profile_3x300"] = {"prof": json.loads(prof[-1]) if prof else None, "stats": json.loads(stats[-1]) if stats else None}
+    print(json.dumps(report["profile_3x300"])[:3000], flush=True)
     if a.out:
         pathlib.Path(a.out).write_text(json.dumps(report, indent=1))
 
