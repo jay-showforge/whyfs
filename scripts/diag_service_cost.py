@@ -11,6 +11,7 @@ Service variants (the collector reads them from the service's environment):
   normal    the product
   no_write  everything except the SQLite writes (WHYFS_DIAG_NO_WRITE)
   discard   events delivered and counted, nothing processed (WHYFS_DIAG_DISCARD)
+  discard_no_vamap / discard_no_kfile / discard_no_sys   the same, without one event source
 
   python scripts\\diag_service_cost.py --out DIR [--pairs 10] [--variants normal,no_write,discard]
 Needs an elevated shell, the MSI installed, and WHYFS_VCVARS for the workload build.
@@ -38,7 +39,11 @@ ntdll, k32 = ctypes.windll.ntdll, ctypes.windll.kernel32
 k32.OpenThread.restype = wintypes.HANDLE
 k32.OpenProcess.restype = wintypes.HANDLE
 SVC_KEY = r"SYSTEM\CurrentControlSet\Services\whyfs"
-VARIANTS = {"normal": [], "no_write": ["WHYFS_DIAG_NO_WRITE=1"], "discard": ["WHYFS_DIAG_DISCARD=1"]}
+VARIANTS = {"normal": [], "no_write": ["WHYFS_DIAG_NO_WRITE=1"], "discard": ["WHYFS_DIAG_DISCARD=1"],
+            # kernel-side cost of each event source (nothing processed in user space)
+            "discard_no_vamap": ["WHYFS_DIAG_DISCARD=1", "WHYFS_DIAG_NO_VAMAP=1"],
+            "discard_no_kfile": ["WHYFS_DIAG_DISCARD=1", "WHYFS_DIAG_NO_KFILE=1"],
+            "discard_no_sys": ["WHYFS_DIAG_DISCARD=1", "WHYFS_DIAG_NO_SYS=1"]}
 
 
 # ---------------------------------------------------------------- counters

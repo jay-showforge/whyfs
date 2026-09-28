@@ -904,6 +904,7 @@ static int descends_from(uint64_t k, uint64_t ancestor) {
 }
 // ---- WHYFS_PROF: time spent per record type (diagnostics; off by default)
 static int prof_on;
+static volatile LONG diag_file_id[64], diag_sys_op[256];  // WHYFS_PROF: events by Kernel-File id / system-logger opcode
 static int64_t prof_ticks[16], prof_n[16], prof_cb_ticks[2];
 static void process_rec_inner(rec_t *r);
 static void process_rec(rec_t *r) {
@@ -1540,7 +1541,10 @@ static void WINAPI on_file_event(PEVENT_RECORD ev) {
 static DWORD self_pid;
 static void on_file_event_inner(PEVENT_RECORD ev) {
     InterlockedIncrement64(&n_cb_file);
-    if (prof_on) InterlockedIncrement(&diag_pid_file[(ev->EventHeader.ProcessId >> 2) & 0xFFFF]);
+    if (prof_on) {
+        InterlockedIncrement(&diag_pid_file[(ev->EventHeader.ProcessId >> 2) & 0xFFFF]);
+        InterlockedIncrement(&diag_file_id[ev->EventHeader.EventDescriptor.Id & 63]);
+    }
     if (diag_discard) return;
     if (ev->EventHeader.ProcessId == self_pid) return;  // our own I/O (e.g. 8.3 name lookups) is never evidence
     const GUID *g = &ev->EventHeader.ProviderId;
@@ -1630,7 +1634,10 @@ static void WINAPI on_sys_event(PEVENT_RECORD ev) {
 }
 static void on_sys_event_inner(PEVENT_RECORD ev) {
     InterlockedIncrement64(&n_cb_sys);
-    if (prof_on) InterlockedIncrement(&diag_pid_sys[(ev->EventHeader.ProcessId >> 2) & 0xFFFF]);
+    if (prof_on) {
+        InterlockedIncrement(&diag_pid_sys[(ev->EventHeader.ProcessId >> 2) & 0xFFFF]);
+        InterlockedIncrement(&diag_sys_op[ev->EventHeader.EventDescriptor.Opcode]);
+    }
     if (diag_discard) return;
     if (ev->EventHeader.ProcessId == self_pid && ev->EventHeader.EventDescriptor.Opcode == 37) return;
     const GUID *g = &ev->EventHeader.ProviderId;
@@ -1820,6 +1827,11 @@ static void print_prof(void) {
     for (int t = 0; t < 16; t++) if (prof_n[t]) fprintf(stderr, ",\"t%d_ms\":%.1f,\"t%d_n\":%lld", t, prof_ticks[t] * 1e3 / f.QuadPart, t, (long long)prof_n[t]);
     fprintf(stderr, ",\"fobjs\":%zu,\"fkeys\":%zu,\"proc_rows\":%zu,\"pkey\":%zu,\"image\":%zu,\"users_sid\":%zu",
             fobjs.count, fkeys.count, proc_rows.count, pkey.count, image.count, users_sid.count);
+    fprintf(stderr, ",\"file_ids\":{");
+    for (int i = 0, first = 1; i < 64; i++) if (diag_file_id[i]) { fprintf(stderr, "%s\"%d\":%ld", first ? "" : ",", i, (long)diag_file_id[i]); first = 0; }
+    fprintf(stderr, "},\"sys_ops\":{");
+    for (int i = 0, first = 1; i < 256; i++) if (diag_sys_op[i]) { fprintf(stderr, "%s\"%d\":%ld", first ? "" : ",", i, (long)diag_sys_op[i]); first = 0; }
+    fprintf(stderr, "}");
     fprintf(stderr, ",\"top_pids\":[");
     for (int k = 0, first = 1; k < 12; k++) {  // the busiest pids (file + sys callbacks), with their image if still running
         int best = -1; long bv = 0;
