@@ -23,6 +23,25 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
 
+## Authoritative release-candidate run 36449450012 (commit 80dabe3): **FAIL on one contract check**
+
+Judged by the 1.0 contract, frozen in 80dabe3 before the run
+([BENCHMARK.md, section 7](../BENCHMARK.md#7-the-authoritative-run-under-the-contract-run-36449450012-commit-80dabe3----fail-contract-a-windows-arm64)).
+`results/release-1.0.0-final/`.
+- **Every functional gate** passed on all four platforms.
+- **Contract B (spawn stress)** passed on all four:
+  - zero loss;
+  - 300/300 stress outputs correct;
+  - WhyFS CPU inside its ceiling;
+  - WhyFS's own share not above the bound.
+- **Contract A (real workloads < 5 %)** passed on Windows x64, Linux x86-64 and Linux ARM64.  It
+  **failed on Windows ARM64: MSVC +5.18 %** (CI90 1.44..12.36).  The same code measured +1.01 %
+  and +0.72 % in the two previous runs, and that runner's baseline alone moves by up to 30 %
+  within a run.
+- **The historical total-< 5 % spawn rule** was met on Windows x64 (−0.07 %), Windows ARM64 and
+  Linux x86-64, and not met on Linux ARM64 (+5.10 %).
+- Not released; no artifact approved ([RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md)).
+
 ## 1.0 performance methodology (read this first)
 
 The performance record below is complete, including every failed run.  WhyFS 1.0 judges

@@ -157,6 +157,43 @@ The total is still reported every time, next to the floor.
 +1.7 to +2.7 pp, mostly the store writer.  It is within the contract, but it is the first place
 to look for future optimization.
 
+### 7. The authoritative run under the contract: run 36449450012 (commit 80dabe3) -- **FAIL (contract A, Windows ARM64)**
+
+The contract above was committed before this run (80dabe3).  One run, not repeated.
+`results/release-1.0.0-final/`.
+
+| Platform | A. real workloads < 5 % | B. spawn stress | Historical spawn rule (total < 5 %) |
+|---|---|---|---|
+| Windows x64 | **PASS**: MSVC +1.01 % (CI90 0.45..6.71), Vite +1.37 %; idle 0.0 %; CLI 68 / 71 ms; lost 0 | **PASS**: total −6.73 %, floor +2.74 %, WhyFS-controlled −9.46 pp (−21.14..+1.85: a noisy runner); CPU 49.8 ms ≤ 80.2 (merge 16.3, writer 19.3); 300/300; lost 0 | met (−0.07 %) |
+| Windows ARM64 | **FAIL: MSVC +5.18 %** (CI90 1.44..12.36); Vite −0.13 %; idle 0.10 %; CLI 83 / 85 ms; lost 0 | **PASS**: total +4.72 %, floor +1.49 %, WhyFS-controlled +3.23 pp (−9.88..+15.36); CPU 84.6 ms ≤ 129.3; 300/300; lost 0 | met (+2.32 %) |
+| Linux x86-64 | **PASS**: make -j8 +3.82 %, Vite +0.30 %; idle 0.11 %; CLI 27 / 29 ms; lost 0 | **PASS**: total +4.40 %, floor +2.60 %, WhyFS-controlled +1.81 pp (+0.43..+2.82); CPU 30.9 ms ≤ 42.1; 300/300; lost 0 | met (+4.37 %) |
+| Linux ARM64 | **PASS**: make -j8 +2.37 %, Vite −0.06 %; idle 0.11 %; CLI 24 / 25 ms; lost 0 | **PASS**: total +3.62 %, floor +4.44 %, WhyFS-controlled −0.82 pp (−2.99..+0.87); CPU 23.1 ms ≤ 32.9; 300/300; lost 0 | **not met (+5.10 %)** |
+
+Every functional gate passed on all four platforms in the same run:
+- tests: Windows 108 + 108, Linux 246 + 246 per platform;
+- MSI 32/32 and upgrade 16/16; `.deb` 24/24;
+- product 47/47 and 48/48; outage 16/16 and 13/13;
+- all corpora 79/79 with lost 0; secret 22/22;
+- functional and graduation PASS; process decoding 0 mismatches.
+
+**The failure.**  Windows ARM64 MSVC /MP8 measured **+5.18 %** against the part A criterion of
+< 5 %.  Two facts from the raw data (`machine_perf.json`, every pair kept):
+- **Identical code, earlier runs.**  The same product code (ec52053) measured +1.01 % and
+  +0.72 % in the two previous runs.  Across all six hosted runs the figures were +2.40, +2.55,
+  +3.96, +1.01, +0.72 and +5.18 %.
+- **The runner itself is unstable.**
+  - Its baseline (WhyFS off) moves between levels within a run: about 5.6, 6.5 and 7.3 s.
+  - Single pairs therefore range from −14 % to +43 %.
+  - The CI90 of the median spans 11 percentage points.
+  - WhyFS's CPU during a build was 0.06–0.10 s of a 6–7 s build.
+
+Contract A as frozen has no exception for a workload that cannot be measured precisely on its
+runner.  Adding one after seeing this result would be changing the criterion to obtain a pass,
+so this run is recorded as a failure.  Resolving it needs a decision:
+- measure MSVC on dedicated ARM64 hardware;
+- or state, before the next run, a measurability condition for part A (for example a maximum
+  CI90 width) and how a workload that fails it is judged.
+
 ---
 
 # v0.1 development benchmark

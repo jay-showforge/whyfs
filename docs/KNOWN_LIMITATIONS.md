@@ -74,6 +74,9 @@ loss and query latency, under the 1.0 contract ([BENCHMARK.md](../BENCHMARK.md#w
   +5.90 % by itself there.  WhyFS's own share is about 0.7 percentage points.  On a 10-core
   desktop the same workload costs −0.70 % (no measurable overhead).  Linux x86-64 measured
   +5.50 % once; WhyFS's own share there is larger than on Windows (+1.7 to +2.7 pp).  Builds cost 0.1–2.8 % on every platform.
+- **Windows ARM64 build overhead is not measured precisely on the hosted runner.**  MSVC
+  measured +0.72 to +5.18 % with identical code, because that runner's own build time moves by
+  up to 30 % within a run.  The authoritative run's +5.18 % is over the < 5 % criterion.
 - **Query latency** is dominated by process start-up: about 25–30 ms on Linux, 65 ms on Windows
   x64, and 88–92 ms median on Windows ARM64 (Cobalt 100), where the 95th percentile exceeds
   100 ms.  The API itself answers in milliseconds.

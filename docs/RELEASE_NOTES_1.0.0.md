@@ -1,9 +1,8 @@
 # WhyFS 1.0.0: release notes (draft for the release review; not published)
 
-> **Status: release candidate, not published.**  Performance is judged by the 1.0 contract
-> (BENCHMARK.md).  The historical total-< 5 % rule failed for the process-spawn stress test on
-> hosted runners (Windows x64 +6.48 %, Linux x86-64 +5.50 %) and passes on the dedicated
-> desktop; every result is kept.
+> **Status: not releasable as is.**  The authoritative run failed one check of the 1.0
+> performance contract: Windows ARM64 MSVC +5.18 % (< 5 % required).  See BENCHMARK.md
+> section 7.  Every other gate passed.
 
 **Know why a file exists.**  WhyFS automatically labels files with their provenance: what
 created them, when, how, which inputs contributed and, when it is reliably known, which person

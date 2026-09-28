@@ -1,0 +1,248 @@
+{
+ "platform": "Windows-11-10.0.26200-SP0",
+ "machine": "ARM64",
+ "checks": {
+  "service_starts_with_the_os": true,
+  "service_restarts_after_a_crash": true,
+  "A_complete_before_the_outage": true,
+  "observer_was_down_when_B_appeared": true,
+  "observer_recovered_automatically": true,
+  "A_labelled_with_complete_origin": true,
+  "A_lists_the_outage_as_a_later_gap": true,
+  "B_has_no_fabricated_creator": true,
+  "B_explicitly_incomplete": true,
+  "B_appeared_during_the_recorded_gap": true,
+  "C_labelled_complete_after_recovery": true,
+  "service_reports_the_gap": true,
+  "human_label_explains_B": true,
+  "workspace_capture_does_not_blind_the_machine_collector": true,
+  "externally_stopped_session_restarts_the_collector": true,
+  "labels_resume_after_the_session_restart": true
+ },
+ "failed": [],
+ "detail": {
+  "service_starts_with_the_os": {
+   "auto_start": true,
+   "restart_on_failure": true,
+   "sc_qc": [
+    "        START_TYPE         : 2   AUTO_START",
+    "        ERROR_CONTROL      : 1   NORMAL",
+    "        BINARY_PATH_NAME   : \"C:\\Program Files\\whyfs\\whyfs-svc.exe\"",
+    "        LOAD_ORDER_GROUP   : ",
+    "        TAG                : 0",
+    "        DISPLAY_NAME       : whyfs file provenance collector",
+    "        DEPENDENCIES       : ",
+    "        SERVICE_START_NAME : LocalSystem"
+   ],
+   "sc_qfailure": [
+    "        REBOOT_MESSAGE               : ",
+    "        COMMAND_LINE                 : ",
+    "        FAILURE_ACTIONS              : RESTART -- Delay = 5000 milliseconds.",
+    "                                       RESTART -- Delay = 30000 milliseconds."
+   ]
+  },
+  "service_restarts_after_a_crash": {
+   "auto_start": true,
+   "restart_on_failure": true,
+   "sc_qc": [
+    "        START_TYPE         : 2   AUTO_START",
+    "        ERROR_CONTROL      : 1   NORMAL",
+    "        BINARY_PATH_NAME   : \"C:\\Program Files\\whyfs\\whyfs-svc.exe\"",
+    "        LOAD_ORDER_GROUP   : ",
+    "        TAG                : 0",
+    "        DISPLAY_NAME       : whyfs file provenance collector",
+    "        DEPENDENCIES       : ",
+    "        SERVICE_START_NAME : LocalSystem"
+   ],
+   "sc_qfailure": [
+    "        REBOOT_MESSAGE               : ",
+    "        COMMAND_LINE                 : ",
+    "        FAILURE_ACTIONS              : RESTART -- Delay = 5000 milliseconds.",
+    "                                       RESTART -- Delay = 30000 milliseconds."
+   ]
+  },
+  "A_complete_before_the_outage": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [
+    "the process chain begins where whyfs started observing: earlier ancestors had already exited"
+   ],
+   "observing_since": "2026-09-28T09:15:37-07:00"
+  },
+  "observer_was_down_when_B_appeared": {
+   "down_after_kill": true,
+   "down_after_B": true
+  },
+  "observer_recovered_automatically": {
+   "after_s": 4.9,
+   "pids_after": [
+    6792
+   ],
+   "pids_before": [
+    7344
+   ]
+  },
+  "A_labelled_with_complete_origin": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [
+    "whyfs was not recording from 2026-09-28T09:17:07-07:00 to 2026-09-28T09:17:14-07:00 (the observer stopped unexpectedly)"
+   ],
+   "file_time_in_gap": null,
+   "notes": [
+    "the process chain begins where whyfs started observing: earlier ancestors had already exited"
+   ],
+   "observing_since": "2026-09-28T09:15:37-07:00"
+  },
+  "A_lists_the_outage_as_a_later_gap": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [
+    "whyfs was not recording from 2026-09-28T09:17:07-07:00 to 2026-09-28T09:17:14-07:00 (the observer stopped unexpectedly)"
+   ],
+   "file_time_in_gap": null,
+   "notes": [
+    "the process chain begins where whyfs started observing: earlier ancestors had already exited"
+   ],
+   "observing_since": "2026-09-28T09:15:37-07:00"
+  },
+  "B_has_no_fabricated_creator": {
+   "status": "no-record",
+   "created_by": null,
+   "note": "whyfs has no observed origin for this file (created before whyfs was running, excluded by the scope policy, or not visible to you)"
+  },
+  "B_explicitly_incomplete": {
+   "complete": false,
+   "gaps": [
+    "this file's origin was not observed",
+    "the file was created at 2026-09-28T09:17:09-07:00, while whyfs was not recording (was not recording from 2026-09-28T09:17:07-07:00 to 2026-09-28T09:17:14-07:00 (the observer stopped unexpectedly))"
+   ],
+   "later_gaps": [],
+   "file_time_in_gap": {
+    "time": "2026-09-28T09:17:09-07:00",
+    "which": "created",
+    "gap_from": "2026-09-28T09:17:07-07:00",
+    "gap_to": "2026-09-28T09:17:14-07:00",
+    "after_crash": true
+   },
+   "notes": [],
+   "observing_since": "2026-09-28T09:15:37-07:00"
+  },
+  "B_appeared_during_the_recorded_gap": {
+   "complete": false,
+   "gaps": [
+    "this file's origin was not observed",
+    "the file was created at 2026-09-28T09:17:09-07:00, while whyfs was not recording (was not recording from 2026-09-28T09:17:07-07:00 to 2026-09-28T09:17:14-07:00 (the observer stopped unexpectedly))"
+   ],
+   "later_gaps": [],
+   "file_time_in_gap": {
+    "time": "2026-09-28T09:17:09-07:00",
+    "which": "created",
+    "gap_from": "2026-09-28T09:17:07-07:00",
+    "gap_to": "2026-09-28T09:17:14-07:00",
+    "after_crash": true
+   },
+   "notes": [],
+   "observing_since": "2026-09-28T09:15:37-07:00"
+  },
+  "C_labelled_complete_after_recovery": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [
+    "the process chain begins where whyfs started observing: earlier ancestors had already exited"
+   ],
+   "observing_since": "2026-09-28T09:15:37-07:00"
+  },
+  "service_reports_the_gap": [
+   {
+    "from": "2026-09-28T09:17:07-07:00",
+    "to": "2026-09-28T09:17:14-07:00",
+    "seconds": 7.4,
+    "after_crash": true
+   },
+   {
+    "from": "2026-09-28T09:16:15-07:00",
+    "to": "2026-09-28T09:16:35-07:00",
+    "seconds": 20.8,
+    "after_crash": false
+   }
+  ],
+  "human_label_explains_B": " does not mean it is safe to remove: whyfs only knows the activity it observed. Evidence is incomplete: this file's origin was not observed; the file was created at 2026-09-28T09:17:09-07:00, while whyfs was not recording (was not recording from 2026-09-28T09:17:07-07:00 to 2026-09-28T09:17:14-07:00 (the observer stopped unexpectedly)).\nProvenance: incomplete \u00e2\u20ac\u201d this file's origin was not observed; the file was created at 2026-09-28T09:17:09-07:00, while whyfs was not recording (was not recording from 2026-09-28T09:17:07-07:00 to 2026-09-28T09:17:14-07:00 (the observer stopped unexpectedly))\n",
+  "workspace_capture_does_not_blind_the_machine_collector": {
+   "status": "labelled",
+   "note": null
+  },
+  "externally_stopped_session_restarts_the_collector": {
+   "logman_rc": 0,
+   "pid_before": 10204,
+   "pid_after": 6632,
+   "after_s": 5.2
+  },
+  "labels_resume_after_the_session_restart": {
+   "status": "labelled",
+   "observation": {
+    "complete": true,
+    "gaps": [],
+    "later_gaps": [],
+    "file_time_in_gap": null,
+    "notes": [
+     "the process chain begins where whyfs started observing: earlier ancestors had already exited"
+    ],
+    "observing_since": "2026-09-28T09:15:37-07:00"
+   }
+  }
+ },
+ "timeline": {
+  "A_ns": 1790612216536354200,
+  "kill": {
+   "pids_before": [
+    7344
+   ],
+   "how": "taskkill /F /T /PID 7344 (service process, its Python host and the collector)",
+   "rc": 0,
+   "at_ns": 1790612229231782400
+  },
+  "B_ns": 1790612229948779000,
+  "recovered_after_s": 4.9,
+  "C_ns": 1790612237044906900
+ },
+ "service_config": {
+  "auto_start": true,
+  "restart_on_failure": true,
+  "sc_qc": [
+   "        START_TYPE         : 2   AUTO_START",
+   "        ERROR_CONTROL      : 1   NORMAL",
+   "        BINARY_PATH_NAME   : \"C:\\Program Files\\whyfs\\whyfs-svc.exe\"",
+   "        LOAD_ORDER_GROUP   : ",
+   "        TAG                : 0",
+   "        DISPLAY_NAME       : whyfs file provenance collector",
+   "        DEPENDENCIES       : ",
+   "        SERVICE_START_NAME : LocalSystem"
+  ],
+  "sc_qfailure": [
+   "        REBOOT_MESSAGE               : ",
+   "        COMMAND_LINE                 : ",
+   "        FAILURE_ACTIONS              : RESTART -- Delay = 5000 milliseconds.",
+   "                                       RESTART -- Delay = 30000 milliseconds."
+  ]
+ },
+ "recording_gaps": [
+  {
+   "from": "2026-09-28T09:17:07-07:00",
+   "to": "2026-09-28T09:17:14-07:00",
+   "seconds": 7.4,
+   "after_crash": true
+  },
+  {
+   "from": "2026-09-28T09:16:15-07:00",
+   "to": "2026-09-28T09:16:35-07:00",
+   "seconds": 20.8,
+   "after_crash": false
+  }
+ ],
+ "finished": "2026-09-28T09:18:04-0700"
+}

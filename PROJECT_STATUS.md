@@ -1,17 +1,17 @@
 # whyfs project status
 
-## Current (2026-09-28): WhyFS 1.0.0 release candidate; the 1.0 performance contract frozen
+## Current (2026-09-28): WhyFS 1.0.0 NOT COMPLETE: one contract check failed (Windows ARM64 MSVC)
 
-- **Functional gates:** every one passes natively on all four platforms.
-- **The historical pre-1.0 performance rule** (every workload, total < 5 %) failed on the hosted
-  Windows x64 runner for the process-spawn stress test (+6.48 %; +4.17 % with identical code in
-  an earlier run).  It passes on the dedicated development desktop (−0.70 %).
-- **The observation floor.**  The required kernel events alone have cost up to +5.90 % on that
-  runner.
-- **The 1.0 contract** keeps < 5 % for real development workloads, and judges the spawn stress
-  test by the observation floor and WhyFS's own cost, always reporting the total.  See
-  [BENCHMARK.md](BENCHMARK.md#whyfs-10-performance-contract) and
-  [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+The authoritative release-candidate run (36449450012, commit 80dabe3) was judged by the 1.0
+performance contract frozen before it ([BENCHMARK.md](BENCHMARK.md#whyfs-10-performance-contract)).
+- **Passed on all four native platforms:**
+  - every functional gate;
+  - the spawn stress contract (zero loss, 300/300 correct, WhyFS CPU and own share within
+    bounds);
+  - real workloads on Windows x64 and both Linux platforms.
+- **Failed:** Windows ARM64 MSVC measured **+5.18 %** against < 5 %.  The same code measured
+  +1.01 % and +0.72 % in earlier runs on an unstable runner.
+- **The dedicated desktop:** the original unchanged campaign passes (spawn ×300 −0.70 %).
 - Not released.
 
 **Product:** WhyFS automatically labels files with their provenance: where, when, how, and what
