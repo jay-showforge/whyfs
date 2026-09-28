@@ -1193,6 +1193,12 @@ static void flush_pending(void) {
 static char *norm_store(const char *p, uint32_t n) { char *s = xmalloc(n + 1); memcpy(s, p, n); s[n] = 0; char *r = norm_path(s); free(s); return r; }
 static DWORD WINAPI writer_main(LPVOID arg) {
     (void)arg;
+    // The store writer yields to the user's work: on a one-core machine its inserts otherwise
+    // compete with the very processes being observed (native_exe_x300 on a hosted runner: pairs
+    // with a busy writer +10..15%).  The ETW consumers keep normal priority, so nothing is lost;
+    // rows wait in the bounded queue (QUEUE_RECORDS; overflow is counted), and the scheduler's
+    // starvation boost keeps the writer progressing under sustained load.
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
     if (user_token && !ImpersonateLoggedOnUser(user_token)) { writer_failed = 1; fprintf(stderr, "impersonation failed %lu\n", GetLastError()); return 1; }
     sqlite3 *db = NULL;
     // 0x2 READWRITE, 0x01000000 NOFOLLOW (refuse a symlinked database file)

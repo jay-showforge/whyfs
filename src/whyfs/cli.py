@@ -49,7 +49,7 @@ def raw_process_events(*args, **kw):
 
 
 ROOT_MARKER = ".whyfs"
-VERSION = "0.9.0.dev1"
+VERSION = "1.0.0"
 
 
 def project_root(start: Path | None = None) -> Path:

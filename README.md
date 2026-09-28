@@ -1,84 +1,39 @@
-# whyfs
+<p align="center"><img src="docs/assets/whyfs-hero.png" alt="WhyFS: know why a file exists" width="900"></p>
 
-**whyfs automatically labels files with their provenance: where, when, how, and what or who
-caused them to exist. People and software agents can then understand the files they
-encounter.**
+# WhyFS
 
-Install it once.  From then on, whenever a file is created or changed anywhere you work,
-whyfs attaches an external provenance label to it.  It records:
-- when the file was created;
-- by which user;
-- which process wrote it, and the chain of programs that led to that process;
-- which files went into it;
-- what happened to it afterwards;
-- when a known AI agent session caused it, which session.
+**Know why a file exists.**
 
-The file itself is never touched.  No metadata is embedded, and no sidecar files, extended
-attributes or Git changes are added.  The label lives in whyfs's own local store.  There is
-nothing to initialize and no folder to register.
+WhyFS automatically labels files with their provenance: what created them, when, how, and
+which inputs contributed.  When that context is reliably known, it also records which person or
+software agent caused the activity.
 
-> **Status: pre-1.0 (0.9.0.dev1), not yet released.**  Validated platforms are listed below.
+Install it once.  WhyFS runs locally in the background.  Every file you create or change gets
+an external provenance label, without touching the file.
 
-```text
-$ whyfs label dist/app.js
-File:     C:\Projects\App\dist\app.js
-Created:  2026-09-27T14:43:10-07:00
-User:     HOST\jay
-Created by: C:\Program Files\nodejs\node.exe  (pid 4121)
-  command: node node_modules/vite/bin/vite.js build
-Process chain: explorer.exe → claude.exe → powershell.exe → npm → node.exe
-Agent:    Claude Code 2.1.281   (registered: the local service verified the session's root process)
-Session:  7f3c…
-Task:     Build checkout redesign   [supplied by the agent session when it registered (not verified by whyfs)]
-Why:      app.js exists because node.exe wrote it after reading main.ts, api.ts, vite.config.ts.
-Inputs:
-  C:\Projects\App\src\main.ts
-  C:\Projects\App\src\api.ts
-  C:\Projects\App\vite.config.ts
-History:
-  2026-09-27T14:43:10-07:00  written    by node.exe
-  2026-09-27T14:45:02-07:00  read       by deploy.exe
-Evidence: OS-observed + registered agent context; identity match
-```
+- **Local-first.**  No cloud, no account, no telemetry.
+- **Files are never modified**, and **file contents are never read**.
+- **Uncertainty is explicit.**  When WhyFS was not watching, or lost events, the label says so.
+- **AI is optional.**  WhyFS works without any AI; AI agents are simply clients that can ask it.
+- **Source available** under the Business Source License 1.1.
 
-Two kinds of *why* are kept apart:
-- **Causal why** is what whyfs observed: this process wrote the file after reading those files.
-- **Intent** ("the user asked the agent to fix the checkout page") appears only when an agent
-  session supplied it, and says so.  whyfs never infers intent.
+## Right-click a file
 
-## How it works
+<p align="center"><img src="docs/assets/whyfs-explorer-menu.png" alt="Explorer context menu with the WhyFS submenu" width="620"></p>
 
-The collector, in the OS kernel's event stream, runs as a service from boot:
-- Linux: eBPF programs with a native C collector;
-- Windows: ETW with a native collector behind the `whyfs` service.
+On Windows, right-click any file and choose **WhyFS** (Windows 11: *Show more options*):
+- **Why does this file exist?**
+- **What created this file?**
+- **What depends on this file?**
+- **Show WhyFS history**
 
-It sees which processes read, write, map, rename and delete files, and how processes descend
-from each other.  A **scope policy** decides what gets a label:
-- everything a user works with, wherever it is;
-- *not* OS internals, application caches or browser profiles;
-- temp files, only when they carry data into real files.
+Linux file managers get the same menu: Files (Nautilus), Dolphin and Nemo.
 
-Each label is keyed to the file's **native identity** (Linux inode/device/generation, NTFS
-file ID) as well as its path.  So it follows renames and moves, and an old record is never
-attached to a new file that happens to reuse a path.
+## Search and read labels
 
-**Agents.**  whyfs distinguishes what the OS proves (process A started process B, which
-wrote the file) from agent context:
-- **Registered session:** an AI agent registers its session with the local service.  Every
-  descendant process and every file they produce carries that session.
-- **Detected agent:** Claude Code, Codex CLI and Gemini CLI are also recognized from their
-  installed program layout and command line.  A file name alone is never enough.
-- The real process chain is always kept; "the agent created it" never replaces "vite.exe
-  wrote it".
+<p align="center"><img src="docs/assets/whyfs-window.png" alt="The WhyFS window: search results and a file's provenance label" width="900"></p>
 
-See [docs/MACHINE_MODE.md](docs/MACHINE_MODE.md) and [docs/AGENT_PROTOCOL.md](docs/AGENT_PROTOCOL.md).
-
-## Asking
-
-**Without a terminal.**  Right-click a file in Explorer (Windows 11: *Show more options*) or in
-your Linux file manager and choose **WhyFS → Why does this file exist?**.  The WhyFS window opens
-with the file's label.  Open **WhyFS** from the Start or application menu to search every labelled
-file by:
+Open **WhyFS** from the Start or application menu to search every labelled file by:
 - name or folder;
 - the program that wrote it;
 - user;
@@ -86,94 +41,103 @@ file by:
 - time;
 - whether it was created, changed or deleted.
 
-Each label also answers *what happens if I remove or change this file*, from observed activity.
-It never claims that removal is safe, and it lists any gaps in what whyfs observed.  See
-[docs/HUMAN_INTERFACE.md](docs/HUMAN_INTERFACE.md).
+The window is a small local page in your browser.  It is served on `127.0.0.1` only, for you
+only, and it is read-only.
 
-```bash
-whyfs ui [--file FILE]        # the WhyFS window (search and labels in your browser, local only)
-whyfs search app.js           # search: --under DIR --creator python --agent "Claude Code" --since today …
-whyfs label FILE [--json]     # the provenance label (human or JSON)
-whyfs why FILE                # creator and inputs      whyfs history FILE   # what happened to it
-whyfs impact FILE             # what was built from it  whyfs recent         # recent changes and their causes
-whyfs agent files --session-id S                        # everything an agent session changed
-whyfs status [--scope]        # what whyfs records, store size, loss counters, retention
-```
+A label answers, where evidence exists:
+- **What and where:** the file, and its path.
+- **When:** created and last written.
+- **What and who:** the process that wrote it, the chain of programs that led to it, and the
+  user.
+- **Which AI agent session caused it.**  WhyFS says this only when it is known: either the
+  agent registered its session, or WhyFS recognised a known agent's program.  A task appears
+  only if the agent supplied one, and WhyFS never guesses intent.
+- **Which inputs contributed**, and **what has happened to the file since**.
+- **What depends on it, and what happens if you remove or change it.**  This comes from
+  observed activity.  WhyFS never claims a file is safe to delete.
+- **Whether the evidence is complete**, or WhyFS was not recording, or lost events.
 
-Agents do not need to scrape text.  A local API speaks one JSON request/reply per line:
+## For AI agents and tools
+
+Agents should ask WhyFS instead of guessing.  The local API speaks one JSON request and reply
+per line over:
 - Linux: `/run/whyfs/api.sock`;
 - Windows: `\\.\pipe\whyfs-api`.
 
-It offers `get_file_provenance`, `explain_file`, `get_file_history`, `get_file_inputs`,
-`get_file_dependents`, `get_recent_changes`, `search_files`, `list_agent_sessions`,
-`get_agent_session`, `get_files_by_agent`, `session_start` and `session_end`.  From any language, `whyfs api OP '{"path": "..."}'` returns
-the same JSON.
+Each caller sees only its own processes' evidence.
 
-## Platforms
+```json
+{"v": 1, "op": "get_file_provenance", "params": {"path": "C:\\Projects\\App\\dist\\app.js"}}
+```
 
-| Platform | Collector | Package | Status |
-|---|---|---|---|
-| Linux x86-64 | eBPF + native collector, `whyfs.service` | `.deb` | **Validated natively** |
-| Linux ARM64 | the same, built for arm64 | `.deb` (arm64) | **Native validation pending** |
-| Windows x64 | ETW + native collector, `whyfs` service | MSI | **Validated natively** |
-| Windows ARM64 | the same, built for ARM64 | MSI (ARM64) | MSI built and verified ARM64; **native validation pending** |
-| WSL2 | the Linux collector inside WSL2 | `.deb` | **Validated** |
+Before editing, deleting or attributing a file, an agent can check:
+- whether the file is generated (`impact.is_generated`);
+- its source `inputs`;
+- its known dependents (`impact`);
+- which agent session made it (`agent`);
+- whether the provenance is complete (`observation`).
 
-Not currently supported: **macOS** (a future/community target; contributions are welcome).
+Other operations: `search_files`, `list_agent_sessions`, `get_file_history`,
+`get_files_by_agent` and `get_recent_changes`.  Agents can register their session, with an
+optional task description, so the files they cause are attributed to it.  See
+[docs/AGENT_PROTOCOL.md](docs/AGENT_PROTOCOL.md).
 
-Evidence and what remains: [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+## Command line
+
+```bash
+whyfs label FILE [--json]          # the provenance label
+whyfs search app.js                # --under DIR --creator python --agent "Claude Code" --since today
+whyfs why | history | impact FILE  # creator and inputs / what happened / what was built from it
+whyfs ui [--file FILE]             # open the WhyFS window
+whyfs status                       # what WhyFS records, recording gaps, store size, retention
+```
 
 ## Install
 
-- **Linux (Debian/Ubuntu):** `sudo apt install ./whyfs_<version>_<arch>.deb`.  The labelling
-  service (`whyfs.service`) starts immediately and at every boot.  Check the kernel with
-  `whyfs doctor`.
-- **WSL2:** the same package inside the distribution.
-  - With `systemd=true` in `/etc/wsl.conf` the service starts by itself.  Otherwise, run
-    `sudo whyfs machine run` in the background.
-  - Linux-side tools are labelled.  For Windows-side tools, install the MSI on Windows.
-- **Windows:** run `whyfs-<version>-<arch>.msi` once as an administrator.  The `whyfs`
-  service starts labelling immediately; everything after that runs as a normal user.
+| Platform | Package | Notes |
+|---|---|---|
+| Windows 11 / 10, x64 or ARM64 | `whyfs-1.0.0-x64.msi`, `whyfs-1.0.0-arm64.msi` | Run once as an administrator.  The `whyfs` service starts at once and with Windows.  Everything after that works as a normal user. |
+| Linux x86-64 or ARM64 (Debian/Ubuntu) | `whyfs_1.0.0_amd64.deb`, `whyfs_1.0.0_arm64.deb` | `sudo apt install ./whyfs_1.0.0_<arch>.deb`.  `whyfs.service` starts at once and at every boot.  Check the kernel with `whyfs doctor`. |
+| WSL2 | the Linux package | Labels Linux-side activity.  Enable systemd in `/etc/wsl.conf`, or run `sudo whyfs machine run`. |
 
-Upgrades keep the store.
-- **Windows:** uninstalling removes the program; the provenance store stays in
-  `%ProgramData%\whyfs` until you delete it.
-- **Linux:** `apt remove` keeps it; `apt purge` deletes it.
+**macOS is not supported**; it is a possible future or community target.  Validation evidence
+for every platform is in [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 
 ## Privacy and storage
 
-- **Local only.**  No cloud, account or telemetry, and no network listener.  File contents
-  are never read.
-- **Per-user visibility.**  The store is readable only by the service.  Through the API each
-  user sees the records of their own processes; only root or an elevated administrator sees
-  everyone's.
-- **Secrets on command lines are redacted before storage**, including inside shell wrappers
-  (`--token x`, `/password:x`, `API_KEY=x`, `sh -c '…'`, `cmd /c "…"`, PowerShell
-  `$env:KEY=…`, `Authorization: Bearer x`).  Agent task text goes through the same redaction.
-- **Scope, retention and reset:**
-  - exclude paths or programs in `scope.conf`;
-  - retention defaults to 365 days for creation records and 30 days for pure reads, with a
-    store cap of 2 GiB;
-  - `whyfs forget PATH | --everything` deletes records;
-  - `whyfs status` shows what is recorded.
+- **Local only.**  The store is readable only by the service, and each user sees only their
+  own activity.  An administrator sees all.
+- **Secrets are redacted before storage.**  This covers secrets on command lines, including
+  inside shell wrappers (`--token x`, `API_KEY=x`, `cmd /c "…"`, PowerShell `$env:…`), and in
+  agent task text.
+- **You control what is kept.**
+  - Exclude paths or programs in `scope.conf`.
+  - Creation records are kept for 365 days and reads for 30 days, under a 2 GiB cap.
+  - `whyfs forget PATH | --everything` deletes records.
 
 See [SECURITY.md](SECURITY.md) and [docs/MACHINE_MODE.md](docs/MACHINE_MODE.md).
 
-## Explicit workspace captures
+## When WhyFS was not watching
 
-`whyfs init` plus `whyfs daemon start|stop` still record one directory into its own
-`.whyfs` store: an isolated capture for CI or for tests, e.g. of a single build.  It is
-optional; labels never require it.
+WhyFS starts with the operating system and restarts itself after a crash.  Downtime and lost
+events are recorded.
 
-## Development
+A file that appeared while WhyFS was not recording is never given an invented creator.  Its
+label says that its origin is unknown, and that it appeared during a gap.  Details:
+[docs/HUMAN_INTERFACE.md](docs/HUMAN_INTERFACE.md#observation-gaps).
 
-```bash
-make test                                        # Linux (as root it also runs the live eBPF tests)
-python -m unittest discover -s tests             # Windows (PYTHONPATH=src;tests)
-sudo python3 scripts/product_gate.py --user $USER --out DIR   # install-once product behaviour (Tests A-H)
-python scripts/run_corpus.py --out DIR           # shared A–H behavioural corpus
-python scripts/machine_perf.py --out DIR         # machine-wide performance and resource cost
-```
+## Documentation
+
+- [How it works](docs/ARCHITECTURE.md)
+- [Human interface](docs/HUMAN_INTERFACE.md)
+- [Agent protocol](docs/AGENT_PROTOCOL.md)
+- [Machine-wide labels](docs/MACHINE_MODE.md)
+- [Schema](docs/SCHEMA.md)
+- [Platform validation](docs/PLATFORM_VALIDATION.md)
+- [Known limitations](docs/KNOWN_LIMITATIONS.md)
+- [Changelog](CHANGELOG.md)
+- [Security](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## License
 

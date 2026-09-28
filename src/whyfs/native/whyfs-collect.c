@@ -1462,6 +1462,10 @@ static void bind_text_or_null(sqlite3_stmt *s, int i, const char *p, uint32_t n)
     if (p) sqlite3_bind_text(s, i, p, (int)n, SQLITE_TRANSIENT); else sqlite3_bind_null(s, i);
 }
 static int writer_main(const char *root, int rfd, int reply_fd, long uid, long gid) {
+    // The store writer yields to the user's work (the ring consumer keeps its priority, so
+    // nothing is lost; rows wait in the bounded queue, overflow is counted).
+    errno = 0;
+    if (nice(5) == -1 && errno) fprintf(stderr, "whyfs-collect writer: nice: %s\n", strerror(errno));  // best effort
     if (uid >= 0) {
         if (setgroups(0, NULL) || setgid((gid_t)gid) || setuid((uid_t)uid)) { perror("whyfs-collect writer: privilege drop"); return 1; }
         if (getuid() != (uid_t)uid || geteuid() != (uid_t)uid || getgid() != (gid_t)gid) { fprintf(stderr, "privilege drop failed\n"); return 1; }
