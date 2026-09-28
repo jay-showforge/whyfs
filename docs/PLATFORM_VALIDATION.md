@@ -13,7 +13,7 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 
 | Platform | Status | Native environment |
 |---|---|---|
-| Windows x64 | **Supported** | GitHub `windows-2022`: AMD EPYC 7763 (1 core), Windows Server 2022 10.0.20348.  Also a Windows 11 desktop (i5-14400F, Defender on) |
+| Windows x64 | **Functional: supported.  Performance gate: FAIL on the release run** (process spawn ×300 +5.16 %, see below) | GitHub `windows-2022`: AMD EPYC 7763 (1 core), Windows Server 2022 10.0.20348.  Also a Windows 11 desktop (i5-14400F, Defender on) |
 | Windows ARM64 | **Supported** | GitHub `windows-11-arm`: Azure Cobalt 100 (2 cores), Windows 11 Enterprise 10.0.26200 |
 | Linux x86-64 | **Supported** | GitHub `ubuntu-24.04`: kernel 6.17.0-1022-azure.  Also WSL2 (kernel 6.6.87.2) |
 | Linux ARM64 | **Supported** | GitHub `ubuntu-24.04-arm`: kernel 6.17.0-1022-azure, aarch64 |
@@ -22,6 +22,38 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
+
+## Release run 36377152638 (commit b5562df, the 1.0.0 release commit): **FAIL on one check**
+
+`results/release-1.0.0/`.  The same workflow, on the release commit, building the release
+packages.  Every functional gate passes on all four platforms.  One performance check fails:
+
+| Platform | Result |
+|---|---|
+| Windows x64 | tests 107 OK; MSI 32/32; upgrade 16/16; product 47/47; outage 16/16; corpora 79/79 + 79/79, lost 0; secret 22/22; functional PASS; decoding 0 mismatches.  **Perf FAIL:** process spawn ×300 **+5.16 %** (CI90 +4.72..+6.61; criterion < 5 %).  MSVC +1.53 %, Vite +1.51 %, idle 0.0 %, lost 0, CLI 69 / 72 ms |
+| Windows ARM64 | tests **107** OK (the redaction-parity and scope tests now run natively); MSI 32/32; upgrade 16/16; product 47/47; outage 16/16; corpora 79/79 + 79/79; secret 22/22; functional PASS.  Perf PASS: MSVC +3.96 %, Vite +1.07 %, spawn −0.25 %, idle 0.10 %, lost 0, CLI 83 / 83 ms |
+| Linux x86-64 | tests 245 + 245 OK; `.deb` 24/24; product 48/48; outage 13/13; corpora 79/79 + 79/79; secret 22/22; graduation PASS.  Perf PASS: make -j8 +4.06 %, Vite +0.25 %, static ×300 +3.19 %, idle 0.13 %, lost 0, CLI 25 / 26 ms |
+| Linux ARM64 | tests 245 + 245 OK; `.deb` 24/24; product 48/48; outage 13/13; corpora 79/79 + 79/79; secret 22/22; graduation PASS.  Perf PASS: make -j8 +1.88 %, Vite +0.14 %, static ×300 +3.63 %, idle 0.11 %, lost 0, CLI 24 / 26 ms |
+
+**The Windows x64 process-spawn overhead sits at the 5 % threshold.**  Its product code is
+identical to f2b9ca6 (below), which measured +4.54 %.  Across all native runs:
+- before the store-writer fix: 4.84, 5.22, 6.52 and 6.57 %;
+- after it: 4.54 and 5.16 %.
+
+A cost decomposition on the same runner (`results/native-ci/diag-final/`, standalone
+collector, 12 pairs) gives:
+
+| Configuration | Overhead |
+|---|---|
+| Full processing | +4.20 % |
+| Events consumed and discarded | +2.28 % |
+| Without the Kernel-File provider | +1.62 % |
+| Without mapped-file (VAMAP) events | +3.83 % |
+
+About 2.3 % is kernel-side event generation and delivery, which cannot be removed without
+dropping evidence that labels depend on.  The rest is collector processing plus the service
+and store.  The threshold was not changed, and the run was not repeated to obtain a passing
+sample.
 
 ## Native evidence: run 36374200705 (commit f2b9ca6)
 
@@ -51,7 +83,7 @@ run on that commit; see [RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md).
 ¹ In this run the Windows redaction-parity and scope-vector unit tests looked only for the x64
 collector and skipped on ARM64.  The ARM64 collector's redaction was verified live by the
 secret gate (22/22).  The tests now find the collector for the machine's architecture, and
-the release run executes them natively on ARM64.
+the release run executed them natively on ARM64 (107 tests).
 
 ### Observation integrity
 
@@ -88,7 +120,8 @@ Hosted runners cannot be rebooted mid-job.
 | `why` / `label` CLI, median (p95) | 65 / 66 ms (71 / 75) | 88 / 92 ms (106 / 102) | 29 / 31 ms | 23 / 24 ms |
 | Store after the whole campaign | 49 MB | 48 MB | 47 MB | 47 MB |
 
-Every perf gate passes.  Two margins are small and are stated plainly:
+Every perf gate passed in this run; the release run above did not (Windows x64 spawn +5.16 %).
+Two margins are small and are stated plainly:
 - **Windows x64 process spawn:** the median is 4.54 %, but its CI90 upper bound (5.91 %) is
   above 5 %.
 - **Windows ARM64 CLI:** the median is 88–92 ms against the 100 ms criterion; the p95 is over

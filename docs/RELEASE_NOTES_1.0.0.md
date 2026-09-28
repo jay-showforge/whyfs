@@ -1,5 +1,8 @@
 # WhyFS 1.0.0: release notes (draft for the release review; not published)
 
+> **Status: not releasable as is.**  The release run failed one performance check (Windows
+> x64 process spawn ×300, +5.16 % against < 5 %).  See PLATFORM_VALIDATION.md.
+
 **Know why a file exists.**  WhyFS automatically labels files with their provenance: what
 created them, when, how, which inputs contributed and, when it is reliably known, which person
 or software agent caused the activity.  It is local-first: no cloud, no telemetry, file contents

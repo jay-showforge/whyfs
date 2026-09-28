@@ -65,11 +65,13 @@ release.  Past defects and their fixes are recorded in [KNOWN_ISSUES.md](KNOWN_I
 
 The machine-wide service is measured natively on every supported platform
 ([PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)): idle cost, development workloads, event
-loss and query latency.  Every check passes; three margins are narrow:
+loss and query latency.  On the release run, one check failed (Windows x64 process spawn,
++5.16 % against < 5 %); the margins are:
 - **Process spawning.**  Workloads that start hundreds of tiny processes per second cost the
   most, because every process start is an event.  On a 1-core Windows x64 runner, 300
-  back-to-back runs of a small native program cost +4.54 % (median of 20 pairs; the 90 %
-  confidence interval reaches 5.91 %).  Builds cost 0.1–2.8 % on every platform.
+  back-to-back runs of a small native program cost +4.54 % in one run and +5.16 % in the
+  next (median of 20 pairs each), which is at the 5 % criterion.  About 2.3 % of it is kernel
+  event generation.  Builds cost 0.1–2.8 % on every platform.
 - **Query latency** is dominated by process start-up: about 25–30 ms on Linux, 65 ms on Windows
   x64, and 88–92 ms median on Windows ARM64 (Cobalt 100), where the 95th percentile exceeds
   100 ms.  The API itself answers in milliseconds.
