@@ -96,11 +96,13 @@ whyfs status                       # what WhyFS records, recording gaps, store s
 
 | Platform | Package | Notes |
 |---|---|---|
-| Windows 11 / 10, x64 or ARM64 | `whyfs-1.0.0-x64.msi`, `whyfs-1.0.0-arm64.msi` | Run once as an administrator.  The `whyfs` service starts at once and with Windows.  Everything after that works as a normal user. |
+| Windows 11 x64 or ARM64; Windows Server 2022 x64 | `whyfs-1.0.0-x64.msi`, `whyfs-1.0.0-arm64.msi` | Run once as an administrator.  The `whyfs` service starts at once and with Windows.  Everything after that works as a normal user. |
 | Linux x86-64 or ARM64 (Debian/Ubuntu) | `whyfs_1.0.0_amd64.deb`, `whyfs_1.0.0_arm64.deb` | `sudo apt install ./whyfs_1.0.0_<arch>.deb`.  `whyfs.service` starts at once and at every boot.  Check the kernel with `whyfs doctor`. |
 | WSL2 | the Linux package | Labels Linux-side activity.  Enable systemd in `/etc/wsl.conf`, or run `sudo whyfs machine run`. |
 
-**macOS is not supported**; it is a possible future or community target.  Validation evidence
+The packages are not code-signed yet: check them against the published SHA-256 sums.
+Windows 10 has not been validated separately.  **macOS is not supported**; it is a possible
+future or community target.  Validation evidence
 for every platform is in [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 
 ## Privacy and storage
@@ -135,7 +137,8 @@ label says that its origin is unknown, and that it appeared during a gap.  Detai
 - [Schema](docs/SCHEMA.md)
 - [Platform validation](docs/PLATFORM_VALIDATION.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)
-- [Changelog](CHANGELOG.md)
+- [Changelog](CHANGELOG.md) and [1.0.0 release notes](docs/RELEASE_NOTES_1.0.0.md)
+- [Release artifacts and hashes](docs/RELEASE_ARTIFACTS.md)
 - [Security](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (release candidate, not yet published)
+## 1.0.0 (not yet published)
 
 WhyFS automatically labels files with their provenance: what created them, when, how, which
 inputs contributed and, when reliably known, which person or software agent caused the activity.
@@ -63,6 +63,12 @@ inputs contributed and, when reliably known, which person or software agent caus
   cut per-process collector cost on small machines.  A self-check requires agreement with TDH.
 - Linux: derived temporaries are recorded only when they bridge into a labelled file.  This
   cut collector CPU per short-lived process by about 75%.
+- Windows: the store writer committed every ~100 ms handoff separately; it now group-commits
+  at most once per second (spawn-heavy workloads on 1-core machines: +6.6 % → +4.5 %).
+- Windows: 8.3 expansion asks the file system only for directories, not every new file.
+- The `why`/`label` fast path no longer imports the `json` package (Windows ARM64 CLI
+  100 → 88 ms), with byte-identical output.
+- Windows: `whyfs label FILE` crashed when its output was piped.
 - `status` wrote a file as a side effect.
 - Label: "created" means since the path last existed; there is no invented working folder.
 

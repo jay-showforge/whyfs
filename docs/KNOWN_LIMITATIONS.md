@@ -36,6 +36,9 @@ release.  Past defects and their fixes are recorded in [KNOWN_ISSUES.md](KNOWN_I
 
 - **Supported:** Windows x64, Windows ARM64, Linux x86-64, Linux ARM64 and WSL2
   ([PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)).
+- **Validated OS builds:** Windows 11 (x64 desktop, ARM64 runner), Windows Server 2022 (x64),
+  Ubuntu 24.04 (x86-64, ARM64, WSL2).  Windows 10 and other Linux distributions have not been
+  validated separately.
 - **Not supported:** macOS, a future/community target.  Other architectures are not supported.
 - **Linux requirements.**
   - A kernel with BTF and BPF trampolines (fentry), 5.x or later as shipped by current
@@ -60,10 +63,26 @@ release.  Past defects and their fixes are recorded in [KNOWN_ISSUES.md](KNOWN_I
 
 ## Performance
 
-The machine-wide service is measured on every supported platform (PLATFORM_VALIDATION.md):
-idle cost, development workloads, event loss and query latency.  Two points apply:
+The machine-wide service is measured natively on every supported platform
+([PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)): idle cost, development workloads, event
+loss and query latency.  Every check passes; three margins are narrow:
 - **Process spawning.**  Workloads that start hundreds of tiny processes per second cost the
-  most, because every process start is an event.  On small machines (one or two CPU cores)
-  that is where the overhead comes closest to the 5% budget.
-- **Query latency** is dominated by process start-up: about 20–30 ms on Linux, 80–90 ms on
-  Windows.  The API answers in milliseconds.
+  most, because every process start is an event.  On a 1-core Windows x64 runner, 300
+  back-to-back runs of a small native program cost +4.54 % (median of 20 pairs; the 90 %
+  confidence interval reaches 5.91 %).  Builds cost 0.1–2.8 % on every platform.
+- **Query latency** is dominated by process start-up: about 25–30 ms on Linux, 65 ms on Windows
+  x64, and 88–92 ms median on Windows ARM64 (Cobalt 100), where the 95th percentile exceeds
+  100 ms.  The API itself answers in milliseconds.
+- **Labels are not instant.**  A new file's label appears a few seconds after it is written:
+  the Windows collector orders kernel events in a 5-second window and commits at most once
+  per second.
+
+## Distribution
+
+- **The packages are not code-signed.**  Windows SmartScreen may warn before the MSI runs.
+  Verify the SHA-256 against the published sums.  Signing is a release-process step, outside
+  this validation.
+- **No package repository.**  The packages are installed from files: an MSI, or a `.deb` via
+  `apt install ./…`; there is no apt repository, winget or PyPI package.
+- **Unattended upgrades.**  MSI major upgrade (0.9 → 1.0) is tested.  `.deb` upgrades use
+  dpkg's normal replace path; only a clean install, removal and purge are gated.

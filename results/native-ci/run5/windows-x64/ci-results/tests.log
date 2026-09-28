@@ -1,0 +1,45 @@
+...........----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 60170)
+Traceback (most recent call last):
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\http\server.py", line 297, in parse_request
+    raise ValueError
+ValueError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\http\server.py", line 453, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\http\server.py", line 429, in handle_one_request
+    if not self.parse_request():
+           ~~~~~~~~~~~~~~~~~~^^
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\http\server.py", line 316, in parse_request
+    self.send_error(
+    ~~~~~~~~~~~~~~~^
+        HTTPStatus.BAD_REQUEST,
+        ^^^^^^^^^^^^^^^^^^^^^^^
+        "Bad request version (%r)" % version)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\http\server.py", line 506, in send_error
+    self.wfile.write(body)
+    ~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\hostedtoolcache\windows\Python\3.13.15\x64\Lib\socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+...ssssss..ss.......................s...................ss.......s...........................
+----------------------------------------------------------------------
+Ran 104 tests in 7.242s
+
+OK (skipped=12)

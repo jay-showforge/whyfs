@@ -111,14 +111,13 @@ class LinuxNativeTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "nt", "Windows native collector")
 class WindowsNativeTests(unittest.TestCase):
-    EXE = HERE.parent / "src" / "whyfs" / "_bin" / "win-x64" / "whyfs-collect-win.exe"
-
     @classmethod
     def setUpClass(cls):
-        exe = os.environ.get("WHYFS_COLLECT_WIN") or str(cls.EXE)
-        if not Path(exe).exists():
+        from nativebin import win_collector  # the collector for this machine's architecture
+        exe = win_collector()
+        if not exe:
             raise unittest.SkipTest("whyfs-collect-win.exe not built")
-        cls.exe = exe
+        cls.exe = str(exe)
 
     def _run(self, *args):
         return subprocess.run([self.exe, *args], capture_output=True, check=True).stdout.decode("utf-8")

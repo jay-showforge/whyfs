@@ -1,8 +1,8 @@
 # whyfs project status
 
-## Current (2026-09-27): whyfs 1.0 program, pre-1.0 (0.9.0.dev1), not released
+## Current (2026-09-28): WhyFS 1.0.0, validated natively, not released
 
-**Product:** whyfs automatically labels files with their provenance: where, when, how, and what
+**Product:** WhyFS automatically labels files with their provenance: where, when, how, and what
 or who caused them to exist.
 - **Machine-wide.**  No `init`; the label is external and files are never modified.
 - **Agents.**  AI agent sessions are first-class, registered or detected.
@@ -10,14 +10,15 @@ or who caused them to exist.
 - **Interfaces.**  People use the WhyFS window with the Explorer / file-manager menu, agents use
   the local API, and power users use the CLI.  All three read the same records.
 
-Scope: Linux x86-64, Linux ARM64, Windows x64, Windows ARM64, WSL2.  macOS is not in scope.
+Support matrix (frozen): Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.  macOS is
+not supported.
 
-| Platform | Status (commit 3dc9266) |
+| Platform | Native evidence (run 36374200705, commit f2b9ca6) |
 |---|---|
-| Linux x86-64 / WSL2 | PASS: product gate 46/46, .deb 24/24, corpora 79/79, secret gate 22/22, machine perf PASS (idle 0.29 % of a core, workloads within noise, lost 0, CLI 21 ms) |
-| Windows x64 | PASS, frozen: MSI 32/32, upgrade 16/16, product gate 44/44, corpora 79/79, secret gate 22/22, functional gate PASS, machine perf PASS (idle 0.068 %, MSVC +3.4 %, lost 0, CLI 82 ms) |
-| Linux ARM64 | native run pending (no native ARM64 host); emulated supplement only |
-| Windows ARM64 | native run pending; ARM64 MSI built from 3dc9266 (all images ARM64), never executed |
+| Windows x64 | PASS: MSI 32/32, upgrade 16/16, product gate 47/47, outage gate 16/16, corpora 79/79, secret gate 22/22, functional gate 23/23, perf PASS (idle 0.005 %, MSVC +1.76 %, Vite +2.11 %, spawn ×300 +4.54 %, lost 0, CLI 65 ms) |
+| Windows ARM64 | PASS: MSI 32/32, upgrade 16/16, product gate 47/47, outage gate 16/16, corpora 79/79, secret gate 22/22, functional gate 23/23, perf PASS (idle 0.068 %, MSVC +2.55 %, Vite +2.73 %, spawn ×300 −0.76 %, lost 0, CLI 88 ms) |
+| Linux x86-64 / WSL2 | PASS: .deb 24/24, product gate 48/48, outage gate 13/13, corpora 79/79, secret gate 22/22, graduation 46/46, perf PASS (idle 0.12 %, make −j8 +2.79 %, Vite +0.30 %, static ×300 +3.68 %, lost 0, CLI 29 ms) |
+| Linux ARM64 | PASS: .deb 24/24, product gate 48/48, outage gate 13/13, corpora 79/79, secret gate 22/22, graduation 46/46, perf PASS (idle 0.10 %, make −j8 +2.21 %, Vite +0.07 %, static ×300 +4.24 %, lost 0, CLI 23 ms) |
 
 Details, exact environments and commands: [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 The history below is the v0.2 record, kept as it was written.

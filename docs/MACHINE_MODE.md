@@ -187,15 +187,26 @@ Each label also carries:
   never "safe to remove";
 - `observation`: whether whyfs was watching, without loss, since the file was created.
 
-## Measured cost (frozen commit 3dc9266)
+## Measured cost (native runners, run 36374200705, commit f2b9ca6)
 
-| | Windows x64 (`results/win-r5/machine-perf`) | Linux x86-64 / WSL2 (`results/linux-r4/machine-perf`) |
-|---|---|---|
-| Idle collector CPU (10 min) | 0.068 % of one core, 73 MB | 0.29 % of one core, 255 MB (BCC's Python/LLVM runtime plus the collector) |
-| Development workloads | MSVC +3.40 %, Vite −3.34 %, exe ×300 −0.97 % | make -j8 −4.33 %, Vite −1.64 %, static ×300 −1.79 % |
-| Events lost | 0 | 0 |
-| `why` / `label` CLI | 82 / 84 ms median | 21 / 22 ms median |
-| Store | 300 MB after the full campaign (hundreds of thousands of events) | 62 MB |
+Median paired overhead over 20 counterbalanced pairs (the full table, with confidence
+intervals: [PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md#performance-20-counterbalanced-pairs-threshold-median-paired-overhead--5-)).
+
+| | Windows x64 | Windows ARM64 | Linux x86-64 | Linux ARM64 |
+|---|---|---|---|---|
+| Idle collector CPU (10 min) | 0.005 % of a core, 48 MB | 0.068 %, 48 MB | 0.12 %, 260 MB¹ | 0.10 %, 271 MB¹ |
+| Build | MSVC +1.76 % | MSVC +2.55 % | make -j8 +2.79 % | make -j8 +2.21 % |
+| Vite | +2.11 % | +2.73 % | +0.30 % | +0.07 % |
+| Process spawn ×300 | +4.54 % | −0.76 % | +3.68 % | +4.24 % |
+| Events lost | 0 | 0 | 0 | 0 |
+| `why` / `label` CLI | 65 / 66 ms | 88 / 92 ms | 29 / 31 ms | 23 / 24 ms |
+| Store after the campaign | 49 MB | 48 MB | 47 MB | 47 MB |
+
+¹ BCC's Python/LLVM runtime plus the native collector.
+
+Labels appear a few seconds after the activity: the Windows collector orders ETW events in a
+5 s window and the store writer commits at most once per second; on Linux the ring buffer is
+drained and batched within about a second.
 
 Store growth when idle is small, since idle desktops write few in-scope files.  Growth is
 bounded by retention (365 days for strong records, 30 days for pure reads) and by the

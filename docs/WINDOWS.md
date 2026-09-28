@@ -1,8 +1,9 @@
 # whyfs on Windows
 
-Status: **Windows x64: COMPLETE, validated natively.  The machine-labels product is frozen at
-commit 3dc9266.**  Windows ARM64 is built and packaged from the same sources; its native
-runtime validation is pending (see [PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)).
+Status: **Windows x64 and Windows ARM64: supported, validated natively** (GitHub
+`windows-2022` and `windows-11-arm` runners, run 36374200705 on commit f2b9ca6; see
+[PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)).  The desktop validation record below
+(x64, commit 3dc9266) is kept as it was written.
 
 ## How it works
 
@@ -34,7 +35,7 @@ privileged ETW work on their behalf and writes only into workspaces they own.
 * **Command lines** are the raw Windows command line (cmd.exe and PowerShell parse their own
   line), with secret values replaced by `<redacted>` (see *Privacy*).
 
-## Validation record: the machine-labels product (x64, frozen at 3dc9266)
+## Desktop validation record (x64, commit 3dc9266, before the native CI runs)
 
 Every gate below ran on commit **3dc9266** against the MSI built from it and installed
 (`results/win-r5/`).  Machine: Windows 11 Home 10.0.26200, Intel Core i5-14400F, 32 GB,

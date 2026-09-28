@@ -76,9 +76,11 @@ class LinuxNativeTests(unittest.TestCase):
 @unittest.skipUnless(os.name == "nt", "Windows native collector")
 class WindowsNativeTests(unittest.TestCase):
     def test_vectors(self):
-        exe = os.environ.get("WHYFS_COLLECT_WIN") or str(HERE.parent / "src" / "whyfs" / "_bin" / "win-x64" / "whyfs-collect-win.exe")
-        if not Path(exe).exists():
+        from nativebin import win_collector  # the collector for this machine's architecture
+        exe = win_collector()
+        if not exe:
             self.skipTest("collector not built")
+        exe = str(exe)
         for run in _native(exe, nt=True, extra=V["windows_extra"]):
             for p, want in V["windows"]:
                 self.assertEqual(run("--scope-classify", p), want, p)

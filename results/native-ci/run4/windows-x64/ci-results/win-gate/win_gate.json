@@ -1,0 +1,1480 @@
+{
+  "started": "2026-09-28T02:04:50+0000",
+  "environment": {
+    "platform": "Windows-2022Server-10.0.20348-SP0",
+    "machine": "AMD64",
+    "python": "3.13.15",
+    "cpu": "Name=AMD EPYC 7763 64-Core Processor",
+    "memory_gb": 8.0,
+    "node": "v22.23.2",
+    "service": "STATE              : 4  RUNNING"
+  },
+  "functional": {
+    "checks": {
+      "creator_attribution_ge_99pct": true,
+      "useful_input_recall_ge_95pct": true,
+      "no_unlabelled_false_lineage": true,
+      "msvc_header_impact_reaches_all_includers_and_app": true,
+      "msvc_header_impact_excludes_non_includer": true,
+      "msvc_source_impact_reaches_its_object_and_app": true,
+      "msvc_source_impact_other_objects_only_as_labelled_shared": true,
+      "incremental_rebuild_history": true,
+      "rename_chain_steps_recorded": true,
+      "rename_impact_reaches_final_name": true,
+      "recreate_history_two_writes": true,
+      "parent_child_parent_is_cmd": true,
+      "vite_human_view_hides_node_modules": true,
+      "vite_raw_view_retains_dependency_reads": true,
+      "vite_transitive_impact_to_postbuild": true,
+      "paths_absolute_dos_and_in_scope": true,
+      "no_state_dir_evidence": true,
+      "zero_loss": true,
+      "secret_arguments_redacted": true,
+      "case_insensitive_query": true,
+      "outside_workspace_not_stored": true,
+      "mmap_reads_attributed_to_link": true,
+      "no_foreign_file_object_attribution": true
+    },
+    "accuracy": {
+      "tested_outputs": 64,
+      "creator_attribution": 1.0,
+      "expected_inputs": 142,
+      "found_inputs": 142,
+      "useful_input_recall": 1.0,
+      "unlabelled_false_inputs": 0,
+      "foreign_file_objects_rejected": 9
+    },
+    "outputs": [
+      {
+        "fixture": "native exe",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\native\\out.txt",
+        "creator": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\native\\copy.exe",
+        "creator_ok": true,
+        "inputs": [
+          "raw.txt"
+        ],
+        "expected_inputs": [
+          "raw.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": ".\\copy.exe  raw.txt out.txt"
+      },
+      {
+        "fixture": "powershell pipeline",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\ps\\up.txt",
+        "creator": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in.txt"
+        ],
+        "expected_inputs": [
+          "in.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "powershell  -NoProfile -Command \"Get-Content in.txt | ForEach-Object { $_.ToUpper() } | Set-Content up.txt\""
+      },
+      {
+        "fixture": "python",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\py\\summary.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "gen.py",
+          "data.csv"
+        ],
+        "expected_inputs": [
+          "data.csv",
+          "gen.py"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe\"  gen.py"
+      },
+      {
+        "fixture": "rename/move",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\mv\\final.dat",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "src.txt"
+        ],
+        "expected_inputs": [
+          "src.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe\"  -c \"open('tmp.dat','w').write(open('src.txt').read())\""
+      },
+      {
+        "fixture": "delete/recreate",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\recreate\\out.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "b.txt"
+        ],
+        "expected_inputs": [
+          "b.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe\"  -c \"open('out.txt','w').write(open('b.txt').read())\""
+      },
+      {
+        "fixture": "parent/child",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\multi\\gen.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "child.py",
+          "cfg.txt"
+        ],
+        "expected_inputs": [
+          "cfg.txt",
+          "child.py"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe\"  child.py"
+      },
+      {
+        "fixture": "reopen",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\reopen\\out.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in.txt"
+        ],
+        "expected_inputs": [
+          "in.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "\"C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe\"  -c \"d=[open('in.txt').read() for _ in range(3)]; open('out.txt','w').write(''.join(d))\""
+      },
+      {
+        "fixture": "msvc link",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\app.exe",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\link.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.obj",
+          "u00.obj",
+          "u01.obj",
+          "u02.obj",
+          "u03.obj",
+          "u04.obj",
+          "u05.obj",
+          "u06.obj",
+          "u07.obj",
+          "u08.obj",
+          "u09.obj",
+          "u10.obj",
+          "u11.obj",
+          "u12.obj",
+          "u13.obj",
+          "u14.obj",
+          "u15.obj",
+          "u16.obj",
+          "u17.obj",
+          "u18.obj",
+          "u19.obj",
+          "u20.obj",
+          "u21.obj",
+          "u22.obj",
+          "u23.obj",
+          "u24.obj",
+          "u25.obj",
+          "u26.obj",
+          "u27.obj",
+          "u28.obj",
+          "u29.obj",
+          "u30.obj",
+          "u31.obj",
+          "u32.obj",
+          "u33.obj",
+          "u34.obj",
+          "u35.obj"
+        ],
+        "expected_inputs": [
+          "u00.obj",
+          "u01.obj",
+          "u02.obj",
+          "u03.obj",
+          "u04.obj",
+          "u05.obj",
+          "u06.obj",
+          "u07.obj",
+          "u08.obj",
+          "u09.obj",
+          "u10.obj",
+          "u11.obj",
+          "u12.obj",
+          "u13.obj",
+          "u14.obj",
+          "u15.obj",
+          "u16.obj",
+          "u17.obj",
+          "u18.obj",
+          "u19.obj",
+          "u20.obj",
+          "u21.obj",
+          "u22.obj",
+          "u23.obj",
+          "u24.obj",
+          "u25.obj",
+          "u26.obj",
+          "u27.obj",
+          "u28.obj",
+          "u29.obj",
+          "u30.obj",
+          "u31.obj",
+          "u32.obj",
+          "u33.obj",
+          "u34.obj",
+          "u35.obj",
+          "main.obj"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 1,
+        "command": "link  /nologo *.obj /OUT:app.exe "
+      },
+      {
+        "fixture": "msvc u00",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u00.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u00.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u01",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u01.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u01.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u02",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u02.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u02.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u03",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u03.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u03.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u04",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u04.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u04.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u05",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u05.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u05.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /O2 /c u05.c  "
+      },
+      {
+        "fixture": "msvc u06",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u06.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u06.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u07",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u07.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u07.c"
+        ],
+        "expected_inputs": [
+          "u07.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c"
+        ],
+        "shared_by_outputs": 5,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u08",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u08.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u08.c"
+        ],
+        "expected_inputs": [
+          "u08.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u09",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u09.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u09.c"
+        ],
+        "expected_inputs": [
+          "u09.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u10",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u10.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h",
+          "u10.c"
+        ],
+        "expected_inputs": [
+          "u10.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u04.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u11",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u11.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u11.c"
+        ],
+        "expected_inputs": [
+          "u11.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u12",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u12.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h",
+          "u12.c"
+        ],
+        "expected_inputs": [
+          "u12.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u03.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u13",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u13.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u07.c",
+          "u13.c"
+        ],
+        "expected_inputs": [
+          "u13.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c",
+          "u07.c"
+        ],
+        "shared_by_outputs": 5,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u14",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u14.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u09.c",
+          "u14.c"
+        ],
+        "expected_inputs": [
+          "u14.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c",
+          "u09.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u15",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u15.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u08.c",
+          "u15.c"
+        ],
+        "expected_inputs": [
+          "u15.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c",
+          "u08.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u16",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u16.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.c",
+          "u16.c",
+          "common.h"
+        ],
+        "expected_inputs": [
+          "u16.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "main.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u17",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u17.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h",
+          "u17.c"
+        ],
+        "expected_inputs": [
+          "u17.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u00.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u18",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u18.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u11.c",
+          "u18.c"
+        ],
+        "expected_inputs": [
+          "u18.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c",
+          "u11.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u19",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u19.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h",
+          "u12.c",
+          "u19.c"
+        ],
+        "expected_inputs": [
+          "u19.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u03.c",
+          "u12.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u20",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u20.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u07.c",
+          "u13.c",
+          "u20.c"
+        ],
+        "expected_inputs": [
+          "u20.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c",
+          "u07.c",
+          "u13.c"
+        ],
+        "shared_by_outputs": 5,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u21",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u21.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h",
+          "u10.c",
+          "u21.c"
+        ],
+        "expected_inputs": [
+          "u21.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u04.c",
+          "u10.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u22",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u22.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u09.c",
+          "u14.c",
+          "u22.c"
+        ],
+        "expected_inputs": [
+          "u22.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c",
+          "u09.c",
+          "u14.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u23",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u23.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u08.c",
+          "u15.c",
+          "u23.c"
+        ],
+        "expected_inputs": [
+          "u23.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c",
+          "u08.c",
+          "u15.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u24",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u24.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.c",
+          "u16.c",
+          "common.h",
+          "u24.c"
+        ],
+        "expected_inputs": [
+          "u24.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "main.c",
+          "u16.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u25",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u25.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u11.c",
+          "u18.c",
+          "u25.c"
+        ],
+        "expected_inputs": [
+          "u25.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c",
+          "u11.c",
+          "u18.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u26",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u26.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h",
+          "u17.c",
+          "u26.c"
+        ],
+        "expected_inputs": [
+          "u26.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u00.c",
+          "u17.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u27",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u27.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u03.c",
+          "common.h",
+          "u12.c",
+          "u19.c",
+          "u27.c"
+        ],
+        "expected_inputs": [
+          "u27.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u03.c",
+          "u12.c",
+          "u19.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u28",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u28.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u07.c",
+          "u13.c",
+          "u20.c",
+          "u28.c"
+        ],
+        "expected_inputs": [
+          "u28.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c",
+          "u07.c",
+          "u13.c",
+          "u20.c"
+        ],
+        "shared_by_outputs": 5,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u29",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u29.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u04.c",
+          "common.h",
+          "u10.c",
+          "u21.c",
+          "u29.c"
+        ],
+        "expected_inputs": [
+          "u29.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u04.c",
+          "u10.c",
+          "u21.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u30",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u30.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u05.c",
+          "common.h",
+          "u09.c",
+          "u14.c",
+          "u22.c",
+          "u30.c"
+        ],
+        "expected_inputs": [
+          "u30.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u05.c",
+          "u09.c",
+          "u14.c",
+          "u22.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u31",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u31.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u06.c",
+          "common.h",
+          "u08.c",
+          "u15.c",
+          "u23.c",
+          "u31.c"
+        ],
+        "expected_inputs": [
+          "u31.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u06.c",
+          "u08.c",
+          "u15.c",
+          "u23.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u32",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u32.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.c",
+          "u16.c",
+          "common.h",
+          "u24.c",
+          "u32.c"
+        ],
+        "expected_inputs": [
+          "u32.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "main.c",
+          "u16.c",
+          "u24.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u33",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u33.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u01.c",
+          "common.h",
+          "u11.c",
+          "u18.c",
+          "u25.c",
+          "u33.c"
+        ],
+        "expected_inputs": [
+          "u33.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u01.c",
+          "u11.c",
+          "u18.c",
+          "u25.c"
+        ],
+        "shared_by_outputs": 4,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u34",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u34.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u00.c",
+          "common.h",
+          "u17.c",
+          "u26.c",
+          "u34.c"
+        ],
+        "expected_inputs": [
+          "u34.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u00.c",
+          "u17.c",
+          "u26.c"
+        ],
+        "shared_by_outputs": 3,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc u35",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\u35.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "u02.c",
+          "common.h",
+          "u07.c",
+          "u13.c",
+          "u20.c",
+          "u28.c",
+          "u35.c"
+        ],
+        "expected_inputs": [
+          "u35.c",
+          "common.h"
+        ],
+        "missing": [],
+        "extra": [
+          "u02.c",
+          "u07.c",
+          "u13.c",
+          "u20.c",
+          "u28.c"
+        ],
+        "shared_by_outputs": 5,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "msvc main",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\msvc\\main.obj",
+        "creator": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "creator_ok": true,
+        "inputs": [
+          "main.c"
+        ],
+        "expected_inputs": [
+          "main.c"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "cl  /nologo /MP8 /O2 /c *.c  "
+      },
+      {
+        "fixture": "parallel 0",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_0.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_0.txt"
+        ],
+        "expected_inputs": [
+          "in_0.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_0.txt','w').write(open('in_0.txt').read())"
+      },
+      {
+        "fixture": "parallel 1",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_1.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_1.txt"
+        ],
+        "expected_inputs": [
+          "in_1.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_1.txt','w').write(open('in_1.txt').read())"
+      },
+      {
+        "fixture": "parallel 2",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_2.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_2.txt"
+        ],
+        "expected_inputs": [
+          "in_2.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_2.txt','w').write(open('in_2.txt').read())"
+      },
+      {
+        "fixture": "parallel 3",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_3.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_3.txt"
+        ],
+        "expected_inputs": [
+          "in_3.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_3.txt','w').write(open('in_3.txt').read())"
+      },
+      {
+        "fixture": "parallel 4",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_4.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_4.txt"
+        ],
+        "expected_inputs": [
+          "in_4.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_4.txt','w').write(open('in_4.txt').read())"
+      },
+      {
+        "fixture": "parallel 5",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_5.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_5.txt"
+        ],
+        "expected_inputs": [
+          "in_5.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_5.txt','w').write(open('in_5.txt').read())"
+      },
+      {
+        "fixture": "parallel 6",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_6.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_6.txt"
+        ],
+        "expected_inputs": [
+          "in_6.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_6.txt','w').write(open('in_6.txt').read())"
+      },
+      {
+        "fixture": "parallel 7",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_7.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_7.txt"
+        ],
+        "expected_inputs": [
+          "in_7.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_7.txt','w').write(open('in_7.txt').read())"
+      },
+      {
+        "fixture": "parallel 8",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_8.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_8.txt"
+        ],
+        "expected_inputs": [
+          "in_8.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_8.txt','w').write(open('in_8.txt').read())"
+      },
+      {
+        "fixture": "parallel 9",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_9.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_9.txt"
+        ],
+        "expected_inputs": [
+          "in_9.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_9.txt','w').write(open('in_9.txt').read())"
+      },
+      {
+        "fixture": "parallel 10",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_10.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_10.txt"
+        ],
+        "expected_inputs": [
+          "in_10.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_10.txt','w').write(open('in_10.txt').read())"
+      },
+      {
+        "fixture": "parallel 11",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_11.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_11.txt"
+        ],
+        "expected_inputs": [
+          "in_11.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_11.txt','w').write(open('in_11.txt').read())"
+      },
+      {
+        "fixture": "parallel 12",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_12.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_12.txt"
+        ],
+        "expected_inputs": [
+          "in_12.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_12.txt','w').write(open('in_12.txt').read())"
+      },
+      {
+        "fixture": "parallel 13",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_13.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_13.txt"
+        ],
+        "expected_inputs": [
+          "in_13.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_13.txt','w').write(open('in_13.txt').read())"
+      },
+      {
+        "fixture": "parallel 14",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_14.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_14.txt"
+        ],
+        "expected_inputs": [
+          "in_14.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_14.txt','w').write(open('in_14.txt').read())"
+      },
+      {
+        "fixture": "parallel 15",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\par\\out_15.txt",
+        "creator": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe",
+        "creator_ok": true,
+        "inputs": [
+          "in_15.txt"
+        ],
+        "expected_inputs": [
+          "in_15.txt"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.13.15\\x64\\python.exe -c open('out_15.txt','w').write(open('in_15.txt').read())"
+      },
+      {
+        "fixture": "vite js",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\web\\dist\\assets\\index-C42TDZxa.js",
+        "creator": "C:\\hostedtoolcache\\windows\\node\\22.23.2\\x64\\node.exe",
+        "creator_ok": true,
+        "inputs": [
+          "package.json",
+          "vite.config.js",
+          "index.html",
+          "src/main.js",
+          "src/util.js",
+          "src/data.json",
+          "src/style.css"
+        ],
+        "expected_inputs": [
+          "src/main.js",
+          "src/util.js",
+          "src/data.json",
+          "index.html"
+        ],
+        "missing": [],
+        "extra": [
+          "package.json",
+          "vite.config.js",
+          "src/style.css"
+        ],
+        "shared_by_outputs": 3,
+        "command": "node  node_modules/vite/bin/vite.js build --logLevel warn"
+      },
+      {
+        "fixture": "vite css",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\web\\dist\\assets\\index-BrLSULct.css",
+        "creator": "C:\\hostedtoolcache\\windows\\node\\22.23.2\\x64\\node.exe",
+        "creator_ok": true,
+        "inputs": [
+          "package.json",
+          "vite.config.js",
+          "index.html",
+          "src/main.js",
+          "src/util.js",
+          "src/data.json",
+          "src/style.css"
+        ],
+        "expected_inputs": [
+          "src/style.css"
+        ],
+        "missing": [],
+        "extra": [
+          "package.json",
+          "vite.config.js",
+          "index.html",
+          "src/main.js",
+          "src/util.js",
+          "src/data.json"
+        ],
+        "shared_by_outputs": 3,
+        "command": "node  node_modules/vite/bin/vite.js build --logLevel warn"
+      },
+      {
+        "fixture": "vite postbuild",
+        "output": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func\\web\\dist\\report.json",
+        "creator": "C:\\hostedtoolcache\\windows\\node\\22.23.2\\x64\\node.exe",
+        "creator_ok": true,
+        "inputs": [
+          "postbuild.mjs",
+          "dist/assets/index-C42TDZxa.js"
+        ],
+        "expected_inputs": [
+          "postbuild.mjs",
+          "dist/assets/index-C42TDZxa.js"
+        ],
+        "missing": [],
+        "extra": [],
+        "shared_by_outputs": 0,
+        "command": "node  postbuild.mjs"
+      }
+    ],
+    "collector_stats": {
+      "buffers_lost_file": 0,
+      "buffers_lost_sys": 0,
+      "cb_file": 38427,
+      "cb_sys": 30942,
+      "excluded_image": 0,
+      "filtered": 5030,
+      "foreign_file_object": 9,
+      "image_maps_skipped": 2794,
+      "kernel_drops": 0,
+      "late_records": 0,
+      "lost_file": 0,
+      "lost_sys": 0,
+      "max_lag_file_ms": 1052,
+      "max_lag_sys_ms": 1096,
+      "other_user": 0,
+      "pending_exec": 127,
+      "proc_fallbacks": 0,
+      "proc_fast": 396,
+      "proc_mismatch": 0,
+      "proc_slow": 3,
+      "queue_drops": 0,
+      "received": 38399,
+      "submitted": 481,
+      "unmapped_paths": 0,
+      "user_late": 0,
+      "user_unresolved": 0,
+      "writer_batches": 1,
+      "writer_failed": 0,
+      "writer_max_batch": 481,
+      "writer_rows": 481,
+      "stored_events": 412,
+      "stored_processes": 69
+    },
+    "workspace": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\whyfs-wingate\\func"
+  },
+  "checks": {
+    "functional.creator_attribution_ge_99pct": true,
+    "functional.useful_input_recall_ge_95pct": true,
+    "functional.no_unlabelled_false_lineage": true,
+    "functional.msvc_header_impact_reaches_all_includers_and_app": true,
+    "functional.msvc_header_impact_excludes_non_includer": true,
+    "functional.msvc_source_impact_reaches_its_object_and_app": true,
+    "functional.msvc_source_impact_other_objects_only_as_labelled_shared": true,
+    "functional.incremental_rebuild_history": true,
+    "functional.rename_chain_steps_recorded": true,
+    "functional.rename_impact_reaches_final_name": true,
+    "functional.recreate_history_two_writes": true,
+    "functional.parent_child_parent_is_cmd": true,
+    "functional.vite_human_view_hides_node_modules": true,
+    "functional.vite_raw_view_retains_dependency_reads": true,
+    "functional.vite_transitive_impact_to_postbuild": true,
+    "functional.paths_absolute_dos_and_in_scope": true,
+    "functional.no_state_dir_evidence": true,
+    "functional.zero_loss": true,
+    "functional.secret_arguments_redacted": true,
+    "functional.case_insensitive_query": true,
+    "functional.outside_workspace_not_stored": true,
+    "functional.mmap_reads_attributed_to_link": true,
+    "functional.no_foreign_file_object_attribution": true
+  },
+  "failed_checks": [],
+  "verdict": "PASS",
+  "finished": "2026-09-28T02:04:56+0000"
+}
