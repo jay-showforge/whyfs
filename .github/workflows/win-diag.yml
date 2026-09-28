@@ -6,6 +6,7 @@ on:
     inputs:
       runner: { description: "runner label", default: "windows-2022" }
       arch: { description: "x64 or arm64", default: "x64" }
+      only: { description: "configurations", default: "" }
 jobs:
   diag:
     runs-on: ${{ inputs.runner }}
@@ -26,7 +27,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force ci-results | Out-Null
           Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | Format-List | Tee-Object ci-results\platform.txt
-          python scripts\diag_exe_overhead.py src\whyfs\_bin\win-${{ inputs.arch }}\whyfs-collect-win.exe --pairs 12 --out ci-results\diag.json
+          python scripts\diag_exe_overhead.py src\whyfs\_bin\win-${{ inputs.arch }}\whyfs-collect-win.exe --pairs 12 --out ci-results\diag.json --only "${{ inputs.only }}"
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "win-diag-${{ inputs.arch }}", path: "ci-results/" }

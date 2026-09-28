@@ -26,7 +26,9 @@ from whyfs.store import connect  # noqa: E402
 k32 = ctypes.windll.kernel32
 k32.OpenProcess.restype = wintypes.HANDLE
 CONFIGS = {"normal": {}, "no_vamap": {"WHYFS_DIAG_NO_VAMAP": "1"}, "no_kfile": {"WHYFS_DIAG_NO_KFILE": "1"},
-           "discard": {"WHYFS_DIAG_DISCARD": "1"}, "kfile_no_fileio": {"WHYFS_DIAG_KFILE_KW": "1F90"}}
+           "discard": {"WHYFS_DIAG_DISCARD": "1"}, "kfile_no_fileio": {"WHYFS_DIAG_KFILE_KW": "1F90"},
+           "kfile_no_filename": {"WHYFS_DIAG_KFILE_KW": "1FA0"}, "kfile_no_name_no_fileio": {"WHYFS_DIAG_KFILE_KW": "1F80"},
+           "kfile_create_rw_only": {"WHYFS_DIAG_KFILE_KW": "0380"}}
 
 
 def cpu(pid):
@@ -43,6 +45,7 @@ def main():
     ap.add_argument("collector")
     ap.add_argument("--pairs", type=int, default=12)
     ap.add_argument("--out")
+    ap.add_argument("--only", help="comma-separated configuration names")
     a = ap.parse_args()
     work = pathlib.Path(tempfile.mkdtemp(prefix="whyfs-exe-", dir=os.path.expanduser("~")))
     (work / "copy.c").write_text('#include <stdio.h>\nint main(int c,char**v){FILE*i=fopen(v[1],"rb"),*o=fopen(v[2],"wb");'
@@ -63,6 +66,8 @@ def main():
     open(sc, "w").write(defaults_text(True))
     report = {}
     for name, env in CONFIGS.items():
+        if a.only and name not in a.only.split(","):
+            continue
         paired, ccpu = [], []
         for i in range(a.pairs + 2):
             order = ("off", "on") if i % 2 == 0 else ("on", "off")
