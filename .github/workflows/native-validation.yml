@@ -161,6 +161,11 @@ jobs:
         run: |
           python -m unittest discover -s tests 2>&1 | Tee-Object ci-results\tests.log
           if ($LASTEXITCODE -ne 0) { exit 1 }
+      - id: procdecode
+        name: collector process-record decoding agrees with TDH (every record decoded both ways)
+        continue-on-error: true
+        shell: pwsh
+        run: python scripts\check_proc_decode.py src\whyfs\_bin\win-${{ matrix.arch }}\whyfs-collect-win.exe --out ci-results\proc-decode
       - name: MSIs (this version, and a lower version for the upgrade test)
         shell: pwsh
         run: |
@@ -240,7 +245,7 @@ jobs:
         shell: pwsh
         env:
           OUTCOMES: >-
-            tests=${{ steps.tests.outcome }} msi=${{ steps.msi.outcome }} upgrade=${{ steps.upgrade.outcome }}
+            tests=${{ steps.tests.outcome }} procdecode=${{ steps.procdecode.outcome }} msi=${{ steps.msi.outcome }} upgrade=${{ steps.upgrade.outcome }}
             product=${{ steps.product.outcome }} outage=${{ steps.outage.outcome }}
             corpus_machine=${{ steps.corpus_machine.outcome }} corpus_workspace=${{ steps.corpus_workspace.outcome }}
             secret=${{ steps.secret.outcome }} functional=${{ steps.functional.outcome }} perf=${{ steps.perf.outcome }}

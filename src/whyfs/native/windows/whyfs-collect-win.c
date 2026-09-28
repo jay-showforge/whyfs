@@ -1395,6 +1395,95 @@ static int get_prop(PEVENT_RECORD ev, const wchar_t *name, void *out, ULONG outs
 }
 
 static volatile LONG64 n_cb_file, n_cb_sys, early_filtered, image_maps_skipped;
+// ---- process records without TDH name lookups
+// Every process start costs one Kernel-Process and one system-logger record; decoding them with
+// TdhGetProperty (by property name) cost ~100 us per short-lived process on a 1-core runner
+// (results/native-ci: win-diag).  The two layouts are fixed and versioned, so they are decoded
+// directly, with bounds checks; any other version, or anything unexpected, falls back to TDH.
+// WHYFS_DIAG_CHECK_PROC=1 decodes every record both ways and counts disagreements.
+static int check_proc;
+static volatile LONG64 proc_fast, proc_slow, proc_mismatch;
+typedef struct { ULONG pid, ppid; const BYTE *sid; ULONG sidlen; int has_sid_field; wchar_t *cmd; int has_cmd; } sysproc_t;
+static uint64_t rd_uint(const BYTE *p, int n) { uint64_t v = 0; memcpy(&v, p, (size_t)n); return v; }
+// Wide NUL-terminated string at p (possibly unaligned): a fresh copy, or NULL if it runs past e.
+static wchar_t *copy_wstr(const BYTE *p, const BYTE *e, const BYTE **after) {
+    size_t n = 0;
+    for (;;) {
+        if (p + 2 * n + 2 > e) return NULL;
+        if (p[2 * n] == 0 && p[2 * n + 1] == 0) break;
+        n++;
+    }
+    wchar_t *w = xmalloc((n + 1) * sizeof(wchar_t));
+    memcpy(w, p, n * 2); w[n] = 0;
+    if (after) *after = p + 2 * n + 2;
+    return w;
+}
+// System logger Process (v4): UniqueProcessKey, ProcessId, ParentId, SessionId, ExitStatus,
+// DirectoryTableBase, Flags, UserSID (TOKEN_USER then the SID; a NULL pointer: no SID),
+// ImageFileName (ANSI), CommandLine (UTF-16), ...
+static int decode_sys_process(PEVENT_RECORD ev, int with_details, sysproc_t *o) {
+    memset(o, 0, sizeof *o);
+    if (ev->EventHeader.EventDescriptor.Version != 4) return 0;
+    int psz = (ev->EventHeader.Flags & EVENT_HEADER_FLAG_32_BIT_HEADER) ? 4 : 8;
+    const BYTE *p = ev->UserData, *e = p + ev->UserDataLength;
+    if (!p || e - p < psz + 16 + psz + 4 + psz) return 0;
+    p += psz;
+    o->pid = (ULONG)rd_uint(p, 4); p += 4;
+    o->ppid = (ULONG)rd_uint(p, 4); p += 4;
+    p += 8 + psz + 4;
+    if (!with_details) return 1;
+    uint64_t sidptr = rd_uint(p, psz);
+    o->has_sid_field = 1;
+    if (sidptr == 0) p += psz;
+    else {
+        if (e - p < 2 * psz + 8) return 0;
+        const BYTE *sid = p + 2 * psz;
+        size_t sl = 8 + 4 * (size_t)sid[1];
+        if (sid[0] != 1 || sid[1] > 15 || sid + sl > e) return 0;
+        o->sid = sid; o->sidlen = (ULONG)sl;
+        p = sid + sl;
+    }
+    const BYTE *z = memchr(p, 0, (size_t)(e - p));
+    if (!z) return 0;
+    p = z + 1;
+    o->cmd = copy_wstr(p, e, NULL);
+    if (!o->cmd) return 0;
+    o->has_cmd = 1;
+    return 1;
+}
+// Kernel-Process ProcessStart: ProcessID first; ParentProcessID and ImageName follow at offsets
+// that depend on the manifest version (alignment).  They are learned from TDH per version: the
+// first records of a version are decoded with TDH and the offsets located by value; the fast path
+// is used only once three records agree on the same offsets.  ProcessStop: ProcessID first.
+typedef struct { int learned, samples, ppid_off, img_off; } kproc_layout_t;
+static kproc_layout_t kproc_layouts[16];  // by version (callback thread only)
+static int decode_kproc(PEVENT_RECORD ev, int start, ULONG *pid, ULONG *ppid, wchar_t **img_out) {
+    UCHAR v = ev->EventHeader.EventDescriptor.Version;
+    const BYTE *p = ev->UserData, *e = p + ev->UserDataLength;
+    if (!p || e - p < 4) return 0;
+    *pid = (ULONG)rd_uint(p, 4);
+    if (!start) return 1;
+    kproc_layout_t *L = v < 16 ? &kproc_layouts[v] : NULL;
+    if (!L || L->learned != 1) return 0;
+    if (L->ppid_off + 4 > e - p || L->img_off >= e - p) return 0;
+    *ppid = (ULONG)rd_uint(p + L->ppid_off, 4);
+    *img_out = copy_wstr(p + L->img_off, e, NULL);
+    return *img_out != NULL;
+}
+// Called with TDH's values for a start record whose layout is not learned yet.
+static void learn_kproc(PEVENT_RECORD ev, ULONG ppid, const wchar_t *img) {
+    UCHAR v = ev->EventHeader.EventDescriptor.Version;
+    if (v >= 16 || kproc_layouts[v].learned) return;
+    kproc_layout_t *L = &kproc_layouts[v];
+    const BYTE *p = ev->UserData; size_t n = ev->UserDataLength;
+    size_t il = wcslen(img) * 2 + 2;
+    int po = -1, io = -1;
+    for (size_t o = 4; o + 4 <= n && o < 64; o += 4) if (rd_uint(p + o, 4) == ppid) { po = (int)o; break; }
+    for (size_t o = 4; o + il <= n && o < 128; o += 2) if (!memcmp(p + o, img, il)) { io = (int)o; break; }
+    if (po < 0 || io < 0 || (L->samples && (po != L->ppid_off || io != L->img_off))) { L->learned = -1; return; }
+    L->ppid_off = po; L->img_off = io;
+    if (++L->samples >= 3) L->learned = 1;
+}
 static uint32_t maplog_pid; static FILE *maplog_fp;
 static ULONG lost_a, lost_b, bufs_lost_a, bufs_lost_b;
 static volatile LONG64 max_lag_file, max_lag_sys;  // delivery lag (arrival - event time), ns
@@ -1428,18 +1517,35 @@ static void on_file_event_inner(PEVENT_RECORD ev) {
         USHORT id = ev->EventHeader.EventDescriptor.Id;
         if (id != 1 && id != 2) return;
         ULONG child = 0, parent = 0; ULONG got;
-        get_prop(ev, L"ProcessID", &child, 4, &got);
+        wchar_t *fast_img = NULL;
+        int fast = decode_kproc(ev, id == 1, &child, &parent, &fast_img);
+        if (!fast || check_proc) {
+            ULONG c2 = 0, p2 = 0;
+            get_prop(ev, L"ProcessID", &c2, 4, &got);
+            wchar_t img[1024] = {0}; ULONG isz = 0;
+            int have_img = 0;
+            if (id == 1) { get_prop(ev, L"ParentProcessID", &p2, 4, &got); have_img = get_prop(ev, L"ImageName", img, sizeof img - 2, &isz); }
+            if (fast && (c2 != child || (id == 1 && (p2 != parent || !have_img || wcscmp(img, fast_img))))) {
+                if (InterlockedIncrement64(&proc_mismatch) <= 5)
+                    fprintf(stderr, "kproc mismatch v%u id%u: pid %lu/%lu ppid %lu/%lu img [%ls]/[%ls]\n",
+                            ev->EventHeader.EventDescriptor.Version, id, child, c2, parent, p2, fast_img ? fast_img : L"-", have_img ? img : L"-");
+            }
+            if (!fast) {
+                child = c2; parent = p2; free(fast_img); fast_img = have_img ? _wcsdup(img) : NULL;
+                if (id == 1 && have_img) learn_kproc(ev, p2, img);
+            }
+        }
+        InterlockedIncrement64(fast ? &proc_fast : &proc_slow);
         rec_t *r = rec_alloc();
         r->ts = ts; r->pid = child; r->user_ok = 2;  // 2: unknown here (the system-logger record says)
         if (id == 1) {
-            get_prop(ev, L"ParentProcessID", &parent, 4, &got);
-            wchar_t img[1024] = {0}; ULONG isz = 0;
-            if (get_prop(ev, L"ImageName", img, sizeof img - 2, &isz)) {
-                char *nt = utf8_from_w(img, -1), *dos = dos_path(nt);
+            if (fast_img) {
+                char *nt = utf8_from_w(fast_img, -1), *dos = dos_path(nt);
                 r->s1 = dos ? norm_path(dos) : NULL; free(nt); free(dos);
             }
             r->type = R_PROC_START; r->ppid = parent;
         } else r->type = R_PROC_END;
+        free(fast_img);
         push_rec(r);
         return;
     }
@@ -1518,26 +1624,49 @@ static void on_sys_event_inner(PEVENT_RECORD ev) {
     if (!IsEqualGUID(g, &SYS_PROCESS)) return;
     if (op != 1 && op != 3 && op != 2) return;  // Start, DCStart (rundown of existing processes), End
     ULONG pid = 0, parent = 0, got;
-    get_prop(ev, L"ProcessId", &pid, 4, &got);
+    sysproc_t fp;
+    int fast = decode_sys_process(ev, op != 2, &fp);
+    if (fast && !check_proc) { pid = fp.pid; parent = fp.ppid; }
+    else get_prop(ev, L"ProcessId", &pid, 4, &got);
+    if (fast && check_proc && pid != fp.pid) InterlockedIncrement64(&proc_mismatch);
+    InterlockedIncrement64(fast ? &proc_fast : &proc_slow);
     rec_t *r = rec_alloc();
     r->ts = ts; r->pid = pid;
     if (op == 2) { r->type = R_PROC_END; push_rec(r); return; }
-    get_prop(ev, L"ParentId", &parent, 4, &got);
-    BYTE sidbuf[512]; ULONG sidsz = 0;
     r->user_ok = 0;
-    if (get_prop(ev, L"UserSID", sidbuf, sizeof sidbuf, &sidsz)) {
-        int psz = (ev->EventHeader.Flags & EVENT_HEADER_FLAG_32_BIT_HEADER) ? 4 : 8;
-        PSID sid = sidbuf + 2 * psz;  // TOKEN_USER prefix, then the SID
-        if (sidsz > (ULONG)(2 * psz) && IsValidSid(sid)) {
+    if (fast && !check_proc) {
+        if (fp.sid && IsValidSid((PSID)fp.sid)) {
+            PSID sid = (PSID)fp.sid;
             if (!requester_sid || EqualSid(sid, requester_sid)) r->user_ok = 1;
             char *ss = NULL;
             if (ConvertSidToStringSidA(sid, &ss)) { r->s3 = xstrdup(ss); LocalFree(ss); }
+        } else if (!fp.has_sid_field && !requester_sid) r->user_ok = 1;
+        if (fp.has_cmd) r->s2 = redact_cmdline_w(fp.cmd);
+    } else {
+        get_prop(ev, L"ParentId", &parent, 4, &got);
+        BYTE sidbuf[512]; ULONG sidsz = 0;
+        if (get_prop(ev, L"UserSID", sidbuf, sizeof sidbuf, &sidsz)) {
+            int psz = (ev->EventHeader.Flags & EVENT_HEADER_FLAG_32_BIT_HEADER) ? 4 : 8;
+            PSID sid = sidbuf + 2 * psz;  // TOKEN_USER prefix, then the SID
+            if (sidsz > (ULONG)(2 * psz) && IsValidSid(sid)) {
+                if (!requester_sid || EqualSid(sid, requester_sid)) r->user_ok = 1;
+                char *ss = NULL;
+                if (ConvertSidToStringSidA(sid, &ss)) { r->s3 = xstrdup(ss); LocalFree(ss); }
+            }
+        } else if (!requester_sid) r->user_ok = 1;
+        ULONG csz = 0;
+        wchar_t *cmd = xmalloc(65536);
+        if (get_prop(ev, L"CommandLine", cmd, 65534, &csz) && csz >= 2) { cmd[csz / 2] = 0; r->s2 = redact_cmdline_w(cmd); }
+        if (fast && check_proc) {  // the fast decode must agree with TDH on every field it provides
+            int same = parent == fp.ppid && (fp.has_cmd ? (csz >= 2 && !wcscmp(cmd, fp.cmd)) : csz < 2);
+            if (fp.sid) same = same && sidsz > 16 && !memcmp(sidbuf + 2 * ((ev->EventHeader.Flags & EVENT_HEADER_FLAG_32_BIT_HEADER) ? 4 : 8), fp.sid, fp.sidlen);
+            if (!same) { if (InterlockedIncrement64(&proc_mismatch) <= 5)
+                fprintf(stderr, "sysproc mismatch v%u op%u: pid %lu ppid %lu/%lu sid %u cmd csz=%lu tdh=[%.80ls] fast=[%.80ls]\n",
+                        ev->EventHeader.EventDescriptor.Version, op, pid, parent, fp.ppid, fp.sidlen, csz, csz >= 2 ? cmd : L"-", fp.cmd ? fp.cmd : L"-"); }
         }
-    } else if (!requester_sid) r->user_ok = 1;
-    ULONG csz = 0;
-    wchar_t *cmd = xmalloc(65536);
-    if (get_prop(ev, L"CommandLine", cmd, 65534, &csz) && csz >= 2) { cmd[csz / 2] = 0; r->s2 = redact_cmdline_w(cmd); }
-    free(cmd);
+        free(cmd);
+    }
+    free(fp.cmd);
     r->ppid = parent;
     // Start: the Kernel-Process record creates the process; this one completes it (and its user).
     // DCStart: an existing process (rundown) -- create it here if nothing else did.
@@ -1679,11 +1808,11 @@ static void print_stats(void) {
     printf("{\"received\":%llu,\"submitted\":%llu,\"filtered\":%llu,\"other_user\":%llu,\"unmapped_paths\":%llu,"
            "\"kernel_drops\":%llu,\"queue_drops\":%llu,\"proc_fallbacks\":%llu,\"writer_rows\":%llu,\"writer_batches\":%llu,"
            "\"writer_max_batch\":%llu,\"writer_failed\":%d,\"pending_exec\":%zu,\"user_unresolved\":%llu,\"foreign_file_object\":%llu,\"cb_file\":%lld,\"cb_sys\":%lld,"
-           "\"lost_file\":%lu,\"lost_sys\":%lu,\"buffers_lost_file\":%lu,\"buffers_lost_sys\":%lu,\"max_lag_file_ms\":%.1f,\"max_lag_sys_ms\":%.1f,\"late_records\":%llu,\"excluded_image\":%llu,\"user_late\":%llu,\"image_maps_skipped\":%lld}\n",
+           "\"lost_file\":%lu,\"lost_sys\":%lu,\"buffers_lost_file\":%lu,\"buffers_lost_sys\":%lu,\"max_lag_file_ms\":%.1f,\"max_lag_sys_ms\":%.1f,\"late_records\":%llu,\"excluded_image\":%llu,\"user_late\":%llu,\"image_maps_skipped\":%lld,\"proc_fast\":%lld,\"proc_slow\":%lld,\"proc_mismatch\":%lld}\n",
            st.received, st.submitted, st.filtered, st.other_user, st.unmapped_paths, st.kernel_lost, st.queue_drops, st.proc_fallbacks,
            w_rows, w_batches, w_max, writer_failed, pending_exec.count, st.user_unresolved, st.foreign_fo, (long long)n_cb_file, (long long)n_cb_sys,
            lost_a, lost_b, bufs_lost_a, bufs_lost_b, max_lag_file / 1e6, max_lag_sys / 1e6, late_records,
-           st.excluded_image, st.user_late, (long long)image_maps_skipped);
+           st.excluded_image, st.user_late, (long long)image_maps_skipped, (long long)proc_fast, (long long)proc_slow, (long long)proc_mismatch);
     fflush(stdout);
 }
 
@@ -1716,6 +1845,7 @@ int main(int argc, char **argv) {
     self_pid = GetCurrentProcessId();
     map_init(&longnames, 1, 4096, free);
     prof_on = getenv("WHYFS_PROF") != NULL;
+    check_proc = getenv("WHYFS_DIAG_CHECK_PROC") != NULL;
     if (getenv("WHYFS_DIAG_MAPLOG")) {
         char *spec = xstrdup(getenv("WHYFS_DIAG_MAPLOG")), *comma = strchr(spec, ',');
         if (comma) { *comma = 0; maplog_pid = (uint32_t)atoi(spec); maplog_fp = fopen(comma + 1, "a"); }
