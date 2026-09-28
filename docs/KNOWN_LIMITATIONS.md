@@ -65,14 +65,15 @@ release.  Past defects and their fixes are recorded in [KNOWN_ISSUES.md](KNOWN_I
 
 The machine-wide service is measured natively on every supported platform
 ([PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)): idle cost, development workloads, event
-loss and query latency.  One workload does not reliably meet its criterion:
+loss and query latency, under the 1.0 contract ([BENCHMARK.md](../BENCHMARK.md#whyfs-10-performance-contract)):
 - **Process spawning.**  Workloads that start hundreds of tiny processes per second cost the
   most, because every process start is an event.  On a 1-core Windows x64 runner, 300
   back-to-back runs of a small native program cost between +4.17 % and +6.48 % with identical
-  code (median of 20 pairs, on two runners; criterion < 5 %).  The kernel generating the file
-  and mapping events that labels require costs +3.25 to +5.90 % by itself.  No user-space
-  change can lower that floor.  Linux x86-64 measured +5.50 % once for its equivalent
-  workload.  Builds cost 0.1–2.8 % on every platform.
+  code (median of 20 pairs, on two runners).  That is over the historical < 5 % rule in some
+  runs.  The kernel generating the file and mapping events that labels require costs +3.25 to
+  +5.90 % by itself there.  WhyFS's own share is about 0.7 percentage points.  On a 10-core
+  desktop the same workload costs −0.70 % (no measurable overhead).  Linux x86-64 measured
+  +5.50 % once; WhyFS's own share there is larger than on Windows (+1.7 to +2.7 pp).  Builds cost 0.1–2.8 % on every platform.
 - **Query latency** is dominated by process start-up: about 25–30 ms on Linux, 65 ms on Windows
   x64, and 88–92 ms median on Windows ARM64 (Cobalt 100), where the 95th percentile exceeds
   100 ms.  The API itself answers in milliseconds.

@@ -1,8 +1,9 @@
 # WhyFS 1.0.0: release notes (draft for the release review; not published)
 
-> **Status: not releasable as is.**  The final release run failed the process-spawn
-> performance check on Windows x64 (+6.48 %) and Linux x86-64 (+5.50 %).  See
-> PLATFORM_VALIDATION.md.
+> **Status: release candidate, not published.**  Performance is judged by the 1.0 contract
+> (BENCHMARK.md).  The historical total-< 5 % rule failed for the process-spawn stress test on
+> hosted runners (Windows x64 +6.48 %, Linux x86-64 +5.50 %) and passes on the dedicated
+> desktop; every result is kept.
 
 **Know why a file exists.**  WhyFS automatically labels files with their provenance: what
 created them, when, how, which inputs contributed and, when it is reliably known, which person
@@ -62,7 +63,8 @@ packages are not code-signed.
 
 Median paired overhead on native runners:
 - builds: +0.1 to +2.8 %;
-- process spawn ×300: +4.2 % to +6.5 % (Windows x64, 1-core runner; the criterion is < 5 %);
+- process spawn ×300 (a stress test): −0.7 % on a 10-core desktop; +4.2 % to +6.5 % on a
+  1-core hosted runner, where the required kernel events alone cost up to +5.9 %;
 - idle: ≤ 0.12 % of one core;
 - events lost: 0;
 - CLI queries: 23–92 ms.

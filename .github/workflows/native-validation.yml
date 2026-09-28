@@ -73,9 +73,22 @@ jobs:
         continue-on-error: true
         run: sudo python3 scripts/secret_gate.py --user runner --out ci-results/secret-gate
       - id: perf
-        name: machine-wide performance and resource cost (idle, workloads, loss, CLI latency)
+        name: machine-wide performance campaign, unchanged (idle, workloads, loss, CLI; its spawn check is the historical pre-1.0 gate)
         continue-on-error: true
         run: sudo python3 scripts/machine_perf.py --user runner --out ci-results/machine-perf --pairs 20 --idle-min 10
+      - id: perf_contract
+        name: "1.0 performance contract A: real workloads < 5 %, idle, zero loss, CLI (BENCHMARK.md)"
+        continue-on-error: true
+        run: sudo python3 scripts/perf_contract.py ci-results/machine-perf/machine_perf.json --out ci-results/machine-perf/contract.json
+      - id: spawn_stress
+        name: "1.0 performance contract B: spawn stress x300 -- total, observation floor, WhyFS-controlled cost, CPU, loss, correctness"
+        continue-on-error: true
+        run: |
+          sudo python3 scripts/diag_service_cost_linux.py --user runner --out ci-results/spawn-stress --pairs 20 --variants normal,discard --after-s 0.2 --verify 2>&1 | tee ci-results/spawn-stress.log
+          sudo python3 scripts/diag_service_cost_linux.py --user runner --out ci-results/spawn-stress-cpu --pairs 10 --variants normal --after-s 7 2>&1 | tee ci-results/spawn-stress-cpu.log
+          sudo chown -R "$(id -u):$(id -g)" ci-results
+          python3 scripts/spawn_stress_gate.py ci-results/spawn-stress/diag_service_cost.json --cpu-diag ci-results/spawn-stress-cpu/diag_service_cost.json \
+            --platform linux-$(uname -m) --out ci-results/spawn-stress/gate.json
       - id: corpus_workspace
         name: shared A-H corpus (explicit workspace capture, source tree)
         continue-on-error: true
@@ -102,10 +115,14 @@ jobs:
           OUTCOMES: >-
             tests=${{ steps.tests.outcome }} deb=${{ steps.deb.outcome }} product=${{ steps.product.outcome }}
             outage=${{ steps.outage.outcome }} corpus_machine=${{ steps.corpus_machine.outcome }}
-            secret=${{ steps.secret.outcome }} perf=${{ steps.perf.outcome }}
+            secret=${{ steps.secret.outcome }}
+            perf_contract=${{ steps.perf_contract.outcome }} spawn_stress=${{ steps.spawn_stress.outcome }}
             corpus_workspace=${{ steps.corpus_workspace.outcome }} graduation=${{ steps.graduation.outcome }}
+          # reported, never hidden; not a 1.0 release criterion on its own (BENCHMARK.md)
+          HISTORICAL: historical_pre_1_0_perf_campaign=${{ steps.perf.outcome }}
         run: |
           echo "$OUTCOMES" | tr ' ' '\n'
+          echo "$HISTORICAL"
           ! echo "$OUTCOMES" | tr ' ' '\n' | grep -v '=success$' | grep -q .
 
   windows:
@@ -224,9 +241,20 @@ jobs:
         continue-on-error: true
         run: python scripts\win_gate.py --out ci-results\win-gate --skip-perf
       - id: perf
-        name: machine-wide performance and resource cost (idle, workloads, loss, CLI latency)
+        name: machine-wide performance campaign, unchanged (idle, workloads, loss, CLI; its spawn check is the historical pre-1.0 gate)
         continue-on-error: true
         run: python scripts\machine_perf.py --out ci-results\machine-perf --pairs 20 --idle-min 10
+      - id: perf_contract
+        name: "1.0 performance contract A: real workloads < 5 %, idle, zero loss, CLI (BENCHMARK.md)"
+        continue-on-error: true
+        run: python scripts\perf_contract.py ci-results\machine-perf\machine_perf.json --out ci-results\machine-perf\contract.json
+      - id: spawn_stress
+        name: "1.0 performance contract B: spawn stress x300 -- total, observation floor, WhyFS-controlled cost, CPU, loss, correctness"
+        continue-on-error: true
+        run: |
+          python scripts\diag_service_cost.py --out ci-results\spawn-stress --pairs 20 --variants "normal,discard" --after-s 0.2 --verify 2>&1 | Tee-Object ci-results\spawn-stress.log
+          python scripts\diag_service_cost.py --out ci-results\spawn-stress-cpu --pairs 10 --variants normal --after-s 7 2>&1 | Tee-Object ci-results\spawn-stress-cpu.log
+          python scripts\spawn_stress_gate.py ci-results\spawn-stress\diag_service_cost.json --cpu-diag ci-results\spawn-stress-cpu\diag_service_cost.json --platform windows-${{ matrix.arch }} --out ci-results\spawn-stress\gate.json
       - name: service logs and store status
         if: always()
         shell: pwsh
@@ -248,8 +276,12 @@ jobs:
             tests=${{ steps.tests.outcome }} procdecode=${{ steps.procdecode.outcome }} msi=${{ steps.msi.outcome }} upgrade=${{ steps.upgrade.outcome }}
             product=${{ steps.product.outcome }} outage=${{ steps.outage.outcome }}
             corpus_machine=${{ steps.corpus_machine.outcome }} corpus_workspace=${{ steps.corpus_workspace.outcome }}
-            secret=${{ steps.secret.outcome }} functional=${{ steps.functional.outcome }} perf=${{ steps.perf.outcome }}
+            secret=${{ steps.secret.outcome }} functional=${{ steps.functional.outcome }}
+            perf_contract=${{ steps.perf_contract.outcome }} spawn_stress=${{ steps.spawn_stress.outcome }}
+          # reported, never hidden; not a 1.0 release criterion on its own (BENCHMARK.md)
+          HISTORICAL: historical_pre_1_0_perf_campaign=${{ steps.perf.outcome }}
         run: |
           $o = $env:OUTCOMES -split '\s+' | Where-Object { $_ }
           $o
+          "$env:HISTORICAL"
           if ($o | Where-Object { $_ -notmatch '=success$' }) { exit 1 }

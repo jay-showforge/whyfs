@@ -76,6 +76,12 @@ inputs contributed and, when reliably known, which person or software agent caus
 - `status` wrote a file as a side effect.
 - Label: "created" means since the path last existed; there is no invented working folder.
 
+### Performance methodology
+- The 1.0 performance contract ([BENCHMARK.md](BENCHMARK.md#whyfs-10-performance-contract)):
+  real development workloads < 5 % total, and a spawn stress test judged by the observation
+  floor and WhyFS's own cost, always reporting the total.  The historical total-< 5 % rule and
+  every run that failed it are kept.
+
 ### Licensing
 - Source available under the Business Source License 1.1, with Apache 2.0 as the Change License.
 - The Additional Use Grant covers personal non-commercial use and non-commercial educational or

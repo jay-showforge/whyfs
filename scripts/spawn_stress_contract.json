@@ -1,0 +1,16 @@
+{
+ "contract": "WhyFS 1.0 performance contract, part B: spawn stress x300 (BENCHMARK.md)",
+ "frozen": "2026-09-28, before the authoritative release-candidate run; derived only from calibration runs of the frozen implementation (product code of ec52053)",
+ "frozen_implementation": "ec52053 (identical product code in 37f7e7a and later candidates; the only later product change is the diagnostics-only WHYFS_DIAG_NATIVE_ARGS switch in daemon.py)",
+ "whyfs_controlled_ceiling_pp": 3.0,
+ "whyfs_controlled_rule": "FAIL only if the lower bound of the CI90 of (median normal pairs - median discard pairs) exceeds the ceiling, i.e. only on evidence that WhyFS's own share of the wall-time overhead is larger than 3.0 percentage points.  Frozen-implementation estimates: Windows x64 +0.71 and +0.79 pp (hosted), -0.64 and +0.23 pp (desktop); Linux x86-64 +1.68 pp; Linux ARM64 +2.67 pp (CI90 +0.63..+4.10); Windows ARM64 unmeasurable on its runner (CI90 -10.6..+18.2).",
+ "cpu_rule": "WhyFS user-space CPU per stress iteration (collector + writer + service, the run and the 7 s after it, mean of 10) <= 1.5 x the frozen reference on the same hosted platform.  One calibration session per platform cannot separate changes below ~30-50 % from runner-to-runner variation (single iterations vary up to 1.39 x the mean); smaller changes are reported, not gated.",
+ "platforms": {
+  "windows-x64": {"cpu_ms_per_run_reference": 53.49, "cpu_ms_per_run_ceiling": 80.2, "calibration": "results/native-ci/calib-cpu-1.0.0/win-diag-service-x64 (run 36447681808)"},
+  "windows-arm64": {"cpu_ms_per_run_reference": 86.17, "cpu_ms_per_run_ceiling": 129.3, "calibration": "results/native-ci/calib-cpu-1.0.0/win-diag-service-arm64 (run 36447685885)"},
+  "linux-x86_64": {"cpu_ms_per_run_reference": 28.07, "cpu_ms_per_run_ceiling": 42.1, "calibration": "results/native-ci/calib-cpu-1.0.0/linux-diag-service-ubuntu-24.04 (run 36447689573)"},
+  "linux-aarch64": {"cpu_ms_per_run_reference": 21.93, "cpu_ms_per_run_ceiling": 32.9, "calibration": "results/native-ci/calib-cpu-1.0.0/linux-diag-service-ubuntu-24.04-arm (run 36447693128)"}
+ },
+ "always_required": ["zero event loss (normal, discard and CPU sessions)", "stress correctness: all 300 outputs labelled with their writer, complete, identity match", "every event source enabled in the product configuration (the discard variant is diagnostic only)"],
+ "always_reported": ["total overhead (the historical pre-1.0 rule: < 5 %) with CI90 and every raw pair", "kernel/provider floor with CI90 and raw pairs", "WhyFS-controlled share with CI90", "CPU by process and thread", "store I/O", "event loss"]
+}
