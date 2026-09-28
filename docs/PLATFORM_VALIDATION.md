@@ -23,6 +23,15 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
 
+## Measurability rule for real workloads (frozen before the next authoritative run)
+
+A real-workload result is judged against 5 % only when its CI90 can resolve the threshold:
+PASS, FAIL or **UNMEASURABLE ON THIS RUNNER** (never a pass).  Every real workload now runs
+150 pairs on every platform.  The rule and the sample count come only from the historical
+measurements ([BENCHMARK.md section 8](../BENCHMARK.md#8-measurability-of-real-workload-results-frozen-before-the-next-authoritative-run)).
+Windows ARM64 MSVC was never resolvable at 20 pairs: CI90 7.4–14 pp wide in all 8 hosted runs.
+The run below stays recorded as a failure under the contract that was frozen for it.
+
 ## Authoritative release-candidate run 36449450012 (commit 80dabe3): **FAIL on one contract check**
 
 Judged by the 1.0 contract, frozen in 80dabe3 before the run

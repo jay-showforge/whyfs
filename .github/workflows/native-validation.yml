@@ -73,9 +73,9 @@ jobs:
         continue-on-error: true
         run: sudo python3 scripts/secret_gate.py --user runner --out ci-results/secret-gate
       - id: perf
-        name: machine-wide performance campaign, unchanged (idle, workloads, loss, CLI; its spawn check is the historical pre-1.0 gate)
+        name: machine-wide performance campaign, unchanged script, 150 pairs (scripts/real_workload_contract.json; its spawn check is the historical pre-1.0 gate)
         continue-on-error: true
-        run: sudo python3 scripts/machine_perf.py --user runner --out ci-results/machine-perf --pairs 20 --idle-min 10
+        run: sudo python3 scripts/machine_perf.py --user runner --out ci-results/machine-perf --pairs 150 --idle-min 10
       - id: perf_contract
         name: "1.0 performance contract A: real workloads < 5 %, idle, zero loss, CLI (BENCHMARK.md)"
         continue-on-error: true
@@ -241,9 +241,9 @@ jobs:
         continue-on-error: true
         run: python scripts\win_gate.py --out ci-results\win-gate --skip-perf
       - id: perf
-        name: machine-wide performance campaign, unchanged (idle, workloads, loss, CLI; its spawn check is the historical pre-1.0 gate)
+        name: machine-wide performance campaign, unchanged script, 150 pairs (scripts/real_workload_contract.json; its spawn check is the historical pre-1.0 gate)
         continue-on-error: true
-        run: python scripts\machine_perf.py --out ci-results\machine-perf --pairs 20 --idle-min 10
+        run: python scripts\machine_perf.py --out ci-results\machine-perf --pairs 150 --idle-min 10
       - id: perf_contract
         name: "1.0 performance contract A: real workloads < 5 %, idle, zero loss, CLI (BENCHMARK.md)"
         continue-on-error: true

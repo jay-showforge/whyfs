@@ -1,0 +1,18 @@
+{
+ "contract": "WhyFS 1.0 performance contract, part A: real development workloads, with the measurability rule (BENCHMARK.md section 8)",
+ "frozen": "2026-09-28, before the next authoritative run; derived only from pre-existing measurements (results/measurability-calibration.json: 45 historical real-workload measurements, 8 hosted native runs x 4 platforms plus desktop campaigns)",
+ "threshold_percent": 5.0,
+ "ci_width_limit_pp": 5.0,
+ "ci": "CI90 of the median paired overhead: machine_perf's bootstrap (4000 resamples, seed 1)",
+ "pairs_required": 150,
+ "workloads": ["msvc_240_units_mp8", "vite_build", "make_j8_36_units"],
+ "rules": {
+  "PASS": "CI90 upper bound < 5 %; or CI90 contains 5 %, CI90 width <= 5 pp and median < 5 %",
+  "FAIL": "CI90 lower bound >= 5 %; or CI90 contains 5 %, CI90 width <= 5 pp and median >= 5 %",
+  "UNMEASURABLE ON THIS RUNNER": "CI90 contains 5 % and CI90 width > 5 pp: the measurement cannot resolve the threshold.  Never a PASS; always reported with its raw pairs.",
+  "INVALID": "fewer than pairs_required pairs"
+ },
+ "why_width_5pp": "A CI90 half-width of at most 2.5 pp (half the budget) bounds the judgment error of a median read against the 5 % threshold to half the budget.  On well-behaved hosted runners 20 pairs give widths of 0.25 to 2.5 pp (60 of 64 hosted measurements <= 5 pp); the noisy exceptions (6.26, 21.6 pp; Windows ARM64 MSVC 7.4 to 14.0 pp in all 8 runs) are the cases the rule must not judge.",
+ "why_150_pairs": "Resampling each historical measurement's own pairs (scripts/measurability_calibration.py): P(CI90 width <= 5 pp) for Windows ARM64 MSVC is 0.11 at 20 pairs, 0.42 at 60, 0.62 at 100 and 0.79 at 150 (worst historical run 0.56); Windows x64 MSVC reaches >= 0.98 from 100 pairs; Vite and Linux make are >= 0.94 in every historical run from 100 pairs except one pathological Linux x86-64 make run (width 21.6 pp at 20 pairs) that no practical sample resolves.  At the measured ~1.1 min per pair (Windows ARM64) and ~0.95 (Windows x64), 150 pairs keeps every native job within its 330-minute limit (ARM64 about 3.4 h).  Applied to every workload on every platform; fixed before the run, never adapted to the data.",
+ "not_changed": ["the 5 % threshold", "the workloads", "WhyFS on/off behaviour", "security software (Defender stays on)", "machine_perf.py"]
+}

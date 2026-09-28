@@ -194,6 +194,82 @@ so this run is recorded as a failure.  Resolving it needs a decision:
 - or state, before the next run, a measurability condition for part A (for example a maximum
   CI90 width) and how a workload that fails it is judged.
 
+### 8. Measurability of real-workload results (frozen before the next authoritative run)
+
+Section 7's +5.18 % stays a failure under the contract that was frozen for that run.  This
+section adds what that contract lacked: a rule for when a measurement is precise enough to be
+judged against the 5 % threshold.  It was derived **only from pre-existing measurements**:
+- the 45 historical real-workload results in `results/` (8 hosted native runs × 4 platforms,
+  plus the desktop campaigns);
+- analysed by `scripts/measurability_calibration.py`, output in
+  `results/measurability-calibration.json`.
+
+It applies to every real workload on every platform.  The machine-readable form is
+`scripts/real_workload_contract.json`, evaluated by `scripts/perf_contract.py`.
+
+**What the history shows (CI90 width of the median paired overhead, 20 pairs):**
+
+| Hosted workload | Measurements with CI90 width ≤ 5 pp | Widths (pp) | Notes |
+|---|---|---|---|
+| Windows x64 MSVC | 7/8 | 0.25–2.29; one run 6.26 | baseline CV 0.4–1.2 % |
+| Windows x64 Vite | 8/8 | 1.04–2.47 | |
+| **Windows ARM64 MSVC** | **0/8** | **7.42–14.0** | baseline CV 5.2–8.8 %; baseline bimodality coefficient > 0.555 in 4 of 8 runs; single pairs −14 % to +43 % |
+| Windows ARM64 Vite | 8/8 | 0.66–3.63 | |
+| Linux x86-64 make -j8 | 7/8 | 0.79–4.74; one run 21.6 | |
+| Linux x86-64 Vite | 8/8 | 0.83–2.45 | |
+| Linux ARM64 make -j8 | 8/8 | 0.95–2.78 | |
+| Linux ARM64 Vite | 7/8 | 1.17–5.70 | |
+| Desktop MSVC (not a gate) | 0/5 | 5.89–11.15 | Defender and a busy desktop |
+
+Windows ARM64 MSVC has never been precise enough on its hosted runner.  That holds for runs
+whose medians looked like passes (+0.72, +1.01 %) as much as for the +5.18 % failure.
+
+**The rule.**  With the CI90 of the median paired overhead (machine_perf's bootstrap) and the
+5 % threshold:
+- **PASS:** the CI90 lies entirely below 5 %; or it contains 5 %, is at most 5 pp wide, and the
+  median is below 5 %.
+- **FAIL:** the CI90 lies entirely at or above 5 %; or it contains 5 %, is at most 5 pp wide,
+  and the median is at or above 5 %.
+- **UNMEASURABLE ON THIS RUNNER:** the CI90 contains 5 % and is wider than 5 pp.  The
+  measurement cannot resolve the threshold.  **This is never a pass**; it is reported with every
+  raw pair.
+- **INVALID:** fewer pairs than required.
+
+**Why 5 pp.**  A half-width of at most 2.5 pp, half the budget, bounds the error of reading the
+median against the threshold to half the budget.  Well-behaved hosted runners give 0.25–2.5 pp
+at 20 pairs.  Only the noisy exceptions exceed 5 pp.
+
+**Sample count: 150 pairs**, for every workload on every platform, fixed before the run and
+never adapted to the data.  The calibration resamples each historical measurement's own pairs:
+
+| P(CI90 width ≤ 5 pp) | 20 | 60 | 100 | 150 pairs |
+|---|---|---|---|---|
+| Windows ARM64 MSVC (mean / worst historical run) | 0.11 / 0.05 | 0.42 / 0.20 | 0.62 / 0.34 | **0.79 / 0.56** |
+| Windows x64 MSVC | 0.94 / 0.57 | 0.98 / 0.88 | 1.0 / 0.98 | 1.0 / 0.98 |
+| Vite (all hosted), Linux ARM64 make | ≥ 0.90 / ≥ 0.39 | ≥ 0.97 / ≥ 0.77 | ≥ 0.99 / ≥ 0.94 | 1.0 / 1.0 |
+| Linux x86-64 make | 0.81 / 0.0 | 0.88 / 0.03 | 0.88 / 0.07 | 0.89 / 0.09 (one pathological run) |
+
+On time:
+- The campaign costs about 1.1 minutes per pair on Windows ARM64 and 0.95 on Windows x64
+  (run 36449450012).
+- At 150 pairs every native job stays inside its 330-minute limit; Windows ARM64 needs about
+  3.4 hours.
+- More pairs would not fit.
+
+Even at 150 pairs, Windows ARM64 MSVC may remain unmeasurable (about a 1-in-5 chance).  If it
+does, it is recorded as **hosted runner inconclusive**, not as a pass, and a definitive number
+needs dedicated ARM64 hardware.
+
+**Unchanged:**
+- the 5 % threshold;
+- the workloads;
+- WhyFS's on/off behaviour;
+- security software (Defender stays on);
+- `machine_perf.py` itself (only its `--pairs` argument is 150).
+
+The spawn workload runs in the same campaign, so the historical total-< 5 % spawn rule is now
+reported at 150 pairs too.
+
 ---
 
 # v0.1 development benchmark

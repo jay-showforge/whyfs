@@ -1,17 +1,17 @@
 # whyfs project status
 
-## Current (2026-09-28): WhyFS 1.0.0 NOT COMPLETE: one contract check failed (Windows ARM64 MSVC)
+## Current (2026-09-28): WhyFS 1.0.0 release candidate; measurability rule frozen, authoritative run pending
 
-The authoritative release-candidate run (36449450012, commit 80dabe3) was judged by the 1.0
-performance contract frozen before it ([BENCHMARK.md](BENCHMARK.md#whyfs-10-performance-contract)).
-- **Passed on all four native platforms:**
-  - every functional gate;
-  - the spawn stress contract (zero loss, 300/300 correct, WhyFS CPU and own share within
-    bounds);
-  - real workloads on Windows x64 and both Linux platforms.
-- **Failed:** Windows ARM64 MSVC measured **+5.18 %** against < 5 %.  The same code measured
-  +1.01 % and +0.72 % in earlier runs on an unstable runner.
-- **The dedicated desktop:** the original unchanged campaign passes (spawn ×300 −0.70 %).
+- **The previous authoritative run** (36449450012, 80dabe3) failed one precommitted check:
+  Windows ARM64 MSVC +5.18 %, CI90 1.44..12.36.  It stays recorded as a failure.
+- **Every hosted Windows ARM64 MSVC result** so far has been too imprecise to judge (CI90
+  7.4–14 pp wide), whatever its median.
+- **Frozen before the next run:**
+  - a general measurability rule for real workloads: PASS, FAIL, or UNMEASURABLE ON THIS RUNNER
+    (never a pass);
+  - 150 pairs for every workload on every platform.
+
+  See [BENCHMARK.md section 8](BENCHMARK.md#8-measurability-of-real-workload-results-frozen-before-the-next-authoritative-run).
 - Not released.
 
 **Product:** WhyFS automatically labels files with their provenance: where, when, how, and what
