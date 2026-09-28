@@ -47,13 +47,13 @@ def roles() -> dict[str, int]:
         parts = ln.split(None, 2)
         if len(parts) == 3:
             procs.append((int(parts[0]), int(parts[1]), parts[2]))
+    service = [pid for pid, ppid, args in procs if "whyfs machine run" in args and "python" in args]
     for pid, ppid, args in procs:
-        if "whyfs machine run" in args and "python" in args:
-            r["daemon"] = pid
-    for pid, ppid, args in procs:
-        if "whyfs-collect" in args.split()[0]:
-            if ppid == r.get("daemon"):
-                r["collector"] = pid
+        if "whyfs-collect" in args.split()[0] and ppid in service:
+            r["collector"], r["daemon"] = pid, ppid
+    for pid in service:  # the daemon's forked helper (Store: runs, stats, heartbeats) has the same command line
+        if pid != r.get("daemon"):
+            r["store"] = pid
     for pid, ppid, args in procs:
         if "whyfs-collect" in args.split()[0] and ppid == r.get("collector"):
             r["writer"] = pid
@@ -175,7 +175,7 @@ def main() -> int:
                 "ci90": mp.bootstrap_ci(paired) if len(paired) > 2 else None,
                 "off_seconds_median": med([r["seconds"] for r in offs]), "on_seconds_median": med([r["seconds"] for r in ons]),
                 "per_on_run": {role: {k: med([tot(r, role, k) for r in ons]) for k in ("cpu_ms", "ctx", "write_ops", "write_bytes", "read_ops")}
-                               for role in ("collector", "writer", "daemon")},
+                               for role in ("collector", "writer", "daemon", "store")},
                 "lost": lost, "collector_stats": per,
             }
             report["variants"][vname] = {"summary": summary, "runs": rows, "verify": verify}
