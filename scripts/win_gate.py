@@ -455,7 +455,7 @@ def main() -> int:
         raise SystemExit("Windows gate")
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    base = Path(os.environ["TEMP"]) / "whyfs-wingate"
+    base = Path(os.path.realpath(os.environ["TEMP"])) / "whyfs-wingate"  # long names (TEMP may be 8.3: C:\Users\RUNNER~1)
     if base.exists():
         shutil.rmtree(base, ignore_errors=True)
     base.mkdir()

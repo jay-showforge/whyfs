@@ -189,6 +189,40 @@ static int norm_needed(const char *p) {  // anything norm_path would change beyo
     }
     return 0;
 }
+// The long form of a path with 8.3 components, or NULL.  Records are processed after a reorder
+// delay, when the file itself may already be gone (renamed away, deleted: atomic saves, temp
+// files), so a path that no longer exists is expanded through its longest existing directory
+// and keeps its tail as given.  Directory expansions are memoized.
+static char *long_name(const char *r) {
+    char *hit = map_get(&longnames, 0, r);
+    if (hit) return xstrdup(hit);
+    size_t n = strlen(r);
+    for (size_t cut = n; cut > 3; ) {  // cut: length of the prefix tried (the whole path first)
+        char *prefix = xstrndup(r, cut);
+        if (!has_short_name(prefix)) { free(prefix); return NULL; }  // the 8.3 part is in the tail
+        char *pl = map_get(&longnames, 0, prefix);
+        char *lp = pl ? xstrdup(pl) : NULL;
+        if (!lp) {
+            wchar_t *w = w_from_utf8(prefix), longp[1024];
+            DWORD m = GetLongPathNameW(w, longp, 1024);
+            free(w);
+            if (m > 0 && m < 1024) {
+                lp = utf8_from_w(longp, -1);
+                map_put(&longnames, 0, prefix, xstrdup(lp));
+            }
+        }
+        free(prefix);
+        if (lp) {
+            if (cut == n) return lp;
+            buf_t o = {0}; b_str(&o, lp); b_str(&o, r + cut);
+            free(lp);
+            return b_take(&o);
+        }
+        while (cut > 3 && r[cut - 1] != '\\') cut--;  // drop the last component
+        if (cut > 3) cut--;                            // and its separator
+    }
+    return NULL;
+}
 static char *norm_path(const char *p) {
     if (!p) return NULL;
     if (p[0] && p[1] == ':' && p[2] == '\\' && !norm_needed(p)) {  // fast path: an already-clean drive path
@@ -214,17 +248,9 @@ static char *norm_path(const char *p) {
     if (!nc && !is_unc) b_ch(&o, '\\');
     free(comps); free(copy);
     char *r = b_take(&o);
-    if (has_short_name(r)) {  // an 8.3 short name component: ask the file system once (works while it exists)
-        char *hit = map_get(&longnames, 0, r);
-        if (hit) { free(r); return xstrdup(hit); }
-        wchar_t *w = w_from_utf8(r), longp[1024];
-        DWORD m = GetLongPathNameW(w, longp, 1024);
-        free(w);
-        if (m > 0 && m < 1024) {
-            char *l = utf8_from_w(longp, -1);
-            map_put(&longnames, 0, r, xstrdup(l));
-            free(r); r = l;
-        }
+    if (has_short_name(r)) {  // an 8.3 short name component: ask the file system (memoized)
+        char *l = long_name(r);
+        if (l) { free(r); r = l; }
     }
     return r;
 }
@@ -1378,6 +1404,8 @@ static void note_lag(volatile LONG64 *m, int64_t ts) {
     while (lag > cur) { LONG64 prev = InterlockedCompareExchange64(m, lag, cur); if (prev == cur) break; cur = prev; }
 }
 static int diag_discard;
+// WHYFS_PROF also counts callbacks per process (pid / 4 buckets) to show where event volume comes from
+static volatile LONG diag_pid_file[1 << 16], diag_pid_sys[1 << 16];
 static void on_file_event_inner(PEVENT_RECORD ev);
 static void WINAPI on_file_event(PEVENT_RECORD ev) {
     if (!prof_on) { on_file_event_inner(ev); return; }
@@ -1389,6 +1417,7 @@ static void WINAPI on_file_event(PEVENT_RECORD ev) {
 static DWORD self_pid;
 static void on_file_event_inner(PEVENT_RECORD ev) {
     InterlockedIncrement64(&n_cb_file);
+    if (prof_on) InterlockedIncrement(&diag_pid_file[(ev->EventHeader.ProcessId >> 2) & 0xFFFF]);
     if (diag_discard) return;
     if (ev->EventHeader.ProcessId == self_pid) return;  // our own I/O (e.g. 8.3 name lookups) is never evidence
     const GUID *g = &ev->EventHeader.ProviderId;
@@ -1461,6 +1490,7 @@ static void WINAPI on_sys_event(PEVENT_RECORD ev) {
 }
 static void on_sys_event_inner(PEVENT_RECORD ev) {
     InterlockedIncrement64(&n_cb_sys);
+    if (prof_on) InterlockedIncrement(&diag_pid_sys[(ev->EventHeader.ProcessId >> 2) & 0xFFFF]);
     if (diag_discard) return;
     if (ev->EventHeader.ProcessId == self_pid && ev->EventHeader.EventDescriptor.Opcode == 37) return;
     const GUID *g = &ev->EventHeader.ProviderId;
@@ -1624,8 +1654,24 @@ static void print_prof(void) {
     LARGE_INTEGER f; QueryPerformanceFrequency(&f);
     fprintf(stderr, "{\"prof\":true,\"cb_file_ms\":%.1f,\"cb_sys_ms\":%.1f", prof_cb_ticks[0] * 1e3 / f.QuadPart, prof_cb_ticks[1] * 1e3 / f.QuadPart);
     for (int t = 0; t < 16; t++) if (prof_n[t]) fprintf(stderr, ",\"t%d_ms\":%.1f,\"t%d_n\":%lld", t, prof_ticks[t] * 1e3 / f.QuadPart, t, (long long)prof_n[t]);
-    fprintf(stderr, ",\"fobjs\":%zu,\"fkeys\":%zu,\"proc_rows\":%zu,\"pkey\":%zu,\"image\":%zu,\"users_sid\":%zu}\n",
+    fprintf(stderr, ",\"fobjs\":%zu,\"fkeys\":%zu,\"proc_rows\":%zu,\"pkey\":%zu,\"image\":%zu,\"users_sid\":%zu",
             fobjs.count, fkeys.count, proc_rows.count, pkey.count, image.count, users_sid.count);
+    fprintf(stderr, ",\"top_pids\":[");
+    for (int k = 0, first = 1; k < 12; k++) {  // the busiest pids (file + sys callbacks), with their image if still running
+        int best = -1; long bv = 0;
+        for (int i = 0; i < (1 << 16); i++) { long v = diag_pid_file[i] + diag_pid_sys[i]; if (v > bv) { bv = v; best = i; } }
+        if (best < 0) break;
+        wchar_t img[MAX_PATH] = L"(exited)"; DWORD n = MAX_PATH;
+        HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)best << 2);
+        if (h) { if (!QueryFullProcessImageNameW(h, 0, img, &n)) wcscpy_s(img, MAX_PATH, L"?"); CloseHandle(h); }
+        char *u = utf8_from_w(img, -1);
+        for (char *c = u; *c; c++) if (*c == '\\' || *c == '"') *c = '/';
+        fprintf(stderr, "%s{\"pid\":%d,\"file\":%ld,\"sys\":%ld,\"image\":\"%s\"}", first ? "" : ",", best << 2,
+                (long)diag_pid_file[best], (long)diag_pid_sys[best], u);
+        free(u); first = 0;
+        diag_pid_file[best] = diag_pid_sys[best] = 0;
+    }
+    fprintf(stderr, "]}\n");
     fflush(stderr);
 }
 static void print_stats(void) {
@@ -1750,6 +1796,7 @@ int main(int argc, char **argv) {
         // Diagnostics for cost decomposition only (never set by the service):
         //   WHYFS_DIAG_DISCARD  callbacks count and return   WHYFS_DIAG_NO_VAMAP  no mapped-view events
         //   WHYFS_DIAG_NO_SYS   system logger without flags  WHYFS_DIAG_NO_KFILE  Kernel-File not enabled
+        //   WHYFS_DIAG_KFILE_KW=hex  Kernel-File keywords instead of KFILE_KEYWORDS
         diag_discard = getenv("WHYFS_DIAG_DISCARD") != NULL;
         ULONG sys_flags = getenv("WHYFS_DIAG_NO_SYS") ? 0 : EVENT_TRACE_FLAG_PROCESS | (getenv("WHYFS_DIAG_NO_VAMAP") ? 0 : EVENT_TRACE_FLAG_VAMAP);
         EVENT_TRACE_PROPERTIES *pa = mkprops(EVENT_TRACE_REAL_TIME_MODE, 0);
@@ -1764,7 +1811,8 @@ int main(int argc, char **argv) {
         ENABLE_TRACE_PARAMETERS ep = {0};
         ep.Version = ENABLE_TRACE_PARAMETERS_VERSION_2; ep.EnableFilterDesc = &fd; ep.FilterDescCount = 1;
         ULONG rc = getenv("WHYFS_DIAG_NO_KFILE") ? ERROR_SUCCESS
-                   : EnableTraceEx2(sa, &KFILE, EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_VERBOSE, KFILE_KEYWORDS, 0, 0,
+                   : EnableTraceEx2(sa, &KFILE, EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_VERBOSE,
+                                    getenv("WHYFS_DIAG_KFILE_KW") ? _strtoui64(getenv("WHYFS_DIAG_KFILE_KW"), NULL, 16) : KFILE_KEYWORDS, 0, 0,
                                     getenv("WHYFS_NO_ID_FILTER") ? NULL : &ep);
         if (rc != ERROR_SUCCESS) { fprintf(stderr, "enable Kernel-File: %lu\n", rc); return 3; }
         rc = EnableTraceEx2(sa, &KPROC, EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_VERBOSE, 0x10, 0, 0, NULL);

@@ -1,0 +1,32 @@
+# Diagnostic only (not validation): decomposes the Windows collector's cost on the
+# process-spawn-heavy workload on a hosted runner.  Manual trigger.
+name: win-diag
+on:
+  workflow_dispatch:
+    inputs:
+      runner: { description: "runner label", default: "windows-2022" }
+      arch: { description: "x64 or arm64", default: "x64" }
+jobs:
+  diag:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13", architecture: "${{ inputs.arch }}" }
+      - name: locate MSVC and build
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          $vc = if ("${{ inputs.arch }}" -eq "arm64") { "vcvarsarm64.bat" } else { "vcvars64.bat" }
+          "WHYFS_VCVARS=$vs\VC\Auxiliary\Build\$vc" >> $env:GITHUB_ENV
+          powershell -ExecutionPolicy Bypass -File native\windows\build.ps1 -Arch ${{ inputs.arch }} -VsRoot $vs
+      - name: decomposition
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ci-results | Out-Null
+          Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | Format-List | Tee-Object ci-results\platform.txt
+          python scripts\diag_exe_overhead.py src\whyfs\_bin\win-${{ inputs.arch }}\whyfs-collect-win.exe --pairs 12 --out ci-results\diag.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "win-diag-${{ inputs.arch }}", path: "ci-results/" }
