@@ -100,11 +100,15 @@ def thread_info(tid: int) -> tuple[str, int]:
         c = ctypes.c_ulonglong(0)
         k32.QueryThreadCycleTime(wintypes.HANDLE(h), ctypes.byref(c))
         name = ""
-        p = ctypes.c_wchar_p()
+        p = ctypes.c_void_p()
         f = getattr(k32, "GetThreadDescription", None)
-        if f and f(wintypes.HANDLE(h), ctypes.byref(p)) == 0 and p.value is not None:
-            name = p.value
-            k32.LocalFree(p)
+        if f:
+            f.argtypes = [wintypes.HANDLE, ctypes.POINTER(ctypes.c_void_p)]
+            f.restype = ctypes.c_long  # HRESULT: success is >= 0
+            if f(wintypes.HANDLE(h), ctypes.byref(p)) >= 0 and p.value:
+                name = ctypes.wstring_at(p.value)
+                k32.LocalFree.argtypes = [ctypes.c_void_p]
+                k32.LocalFree(p)
         return name, c.value
     finally:
         k32.CloseHandle(wintypes.HANDLE(h))
