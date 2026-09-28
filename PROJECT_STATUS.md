@@ -1,15 +1,16 @@
 # whyfs project status
 
-## Current (2026-09-28): WhyFS 1.0.0 release candidate, validated natively, not released
+## Current (2026-09-28): WhyFS 1.0.0 NOT COMPLETE: the Windows x64 spawn performance floor
 
-The earlier release run failed one check: Windows x64 process spawn ×300, +5.16 %.  The cost
-was measured in service mode:
-- a +3.25 % kernel floor of required events;
-- plus user space overlapping the workload.
-
-The user-space share was halved (commit ec52053).  The unchanged campaign then passed every
-gate on all four platforms, including Windows x64 spawn **+4.17 % (CI90 3.83..4.53)**.  See
-[docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+- **Functional gates:** every one passes natively on all four platforms.
+- **Performance:** the process-spawn workload does not reliably meet < 5 % on the hosted
+  Windows x64 runner.
+  - After the user-space cost was halved (ec52053), it measured +4.17 % in run 7.  Identical
+    code measured +6.48 % on the final release run.  Linux x86-64's unchanged code measured
+    +5.50 % in the same run.
+  - The required kernel events alone, with nothing processed in user space, have measured up to
+    +5.90 %.  Lowering that would remove required provenance evidence.
+- Details: [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).  Not released.
 
 **Product:** WhyFS automatically labels files with their provenance: where, when, how, and what
 or who caused them to exist.

@@ -65,13 +65,14 @@ release.  Past defects and their fixes are recorded in [KNOWN_ISSUES.md](KNOWN_I
 
 The machine-wide service is measured natively on every supported platform
 ([PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)): idle cost, development workloads, event
-loss and query latency.  Every check passes; the margins are:
+loss and query latency.  One workload does not reliably meet its criterion:
 - **Process spawning.**  Workloads that start hundreds of tiny processes per second cost the
   most, because every process start is an event.  On a 1-core Windows x64 runner, 300
-  back-to-back runs of a small native program cost +4.17 % (median of 20 pairs, CI90
-  3.83..4.53).  +3.25 to +3.75 % of that is the kernel generating the file and mapping events
-  that labels require, a floor no user-space change can lower.  Before the collector's
-  user-space work was reduced, the same workload measured up to +5.16 %.  Builds cost 0.1–2.8 % on every platform.
+  back-to-back runs of a small native program cost between +4.17 % and +6.48 % with identical
+  code (median of 20 pairs, on two runners; criterion < 5 %).  The kernel generating the file
+  and mapping events that labels require costs +3.25 to +5.90 % by itself.  No user-space
+  change can lower that floor.  Linux x86-64 measured +5.50 % once for its equivalent
+  workload.  Builds cost 0.1–2.8 % on every platform.
 - **Query latency** is dominated by process start-up: about 25–30 ms on Linux, 65 ms on Windows
   x64, and 88–92 ms median on Windows ARM64 (Cobalt 100), where the 95th percentile exceeds
   100 ms.  The API itself answers in milliseconds.

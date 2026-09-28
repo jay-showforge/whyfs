@@ -13,7 +13,7 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 
 | Platform | Status | Native environment |
 |---|---|---|
-| Windows x64 | **Supported** (process spawn ×300 reduced from +5.16 % to +4.17 %, CI90 3.83..4.53, see below) | GitHub `windows-2022`: AMD EPYC 7763 (1 core), Windows Server 2022 10.0.20348.  Also a Windows 11 desktop (i5-14400F, Defender on) |
+| Windows x64 | **Functional: supported.  Performance gate: NOT reliably met** (process spawn ×300: +4.17 % in run 7, +6.48 % on the final release run with identical code; the kernel floor alone has measured +5.90 %, see below) | GitHub `windows-2022`: AMD EPYC 7763 (1 core), Windows Server 2022 10.0.20348.  Also a Windows 11 desktop (i5-14400F, Defender on) |
 | Windows ARM64 | **Supported** | GitHub `windows-11-arm`: Azure Cobalt 100 (2 cores), Windows 11 Enterprise 10.0.26200 |
 | Linux x86-64 | **Supported** | GitHub `ubuntu-24.04`: kernel 6.17.0-1022-azure.  Also WSL2 (kernel 6.6.87.2) |
 | Linux ARM64 | **Supported** | GitHub `ubuntu-24.04-arm`: kernel 6.17.0-1022-azure, aarch64 |
@@ -22,6 +22,61 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
+
+## Final release run 36395424116 (commit 37f7e7a, the release candidate): **FAIL**
+
+`results/release-1.0.0-rc2/`.  Release candidate 37f7e7a has product code byte-identical to
+ec52053 (run 7).  Every functional gate passed on all four platforms:
+- tests: Windows 108 + 108, Linux 246 + 246 per platform;
+- MSI 32/32 and upgrade 16/16 on both Windows architectures, `.deb` 24/24 on both Linux
+  architectures;
+- product 47/47 and 48/48, outage 16/16 and 13/13;
+- all corpora 79/79 with lost 0, secret 22/22, functional and graduation PASS.
+
+Two performance checks failed:
+
+| Platform | Failing workload | Result | Same code earlier |
+|---|---|---|---|
+| Windows x64 | `native_exe_x300` | **+6.48 %** (CI90 4.97..7.48) | +4.17 % (3.83..4.53) in run 7 |
+| Linux x86-64 | `static_binary_x300` (Linux code unchanged since graduation) | **+5.50 %** (CI90 3.58..6.74) | +3.19 to +4.06 % in runs 5–7 |
+
+- **All other workloads passed:** Windows x64 MSVC +1.42 %, Vite +2.41 %, CLI 67 / 70 ms; Linux
+  x86-64 make -j8 +1.37 %; Windows ARM64 and Linux ARM64 passed every check.
+- Events lost: 0 on all four platforms.
+- The raw Windows x64 spawn pairs were −0.58, −0.37, 1.71, 2.32, 2.39, 3.69, 4.97, 6.07, 6.29,
+  6.39, 6.56, 6.60, 7.06, 7.48, 7.60, 7.78, 8.94, 8.95, 13.74 and 15.29 %.
+
+### The floor
+
+The service-mode diagnostics measured the cost of the required kernel events alone: every
+event source on, nothing processed or stored in user space (`discard`).
+
+| Diagnostic run (hosted `windows-2022`, 1 core / 2 logical processors) | Kernel floor (discard) | CI90 |
+|---|---|---|
+| 36383973618, 10 pairs | +4.30 % | 2.66..5.23 |
+| 36385436978, 20 pairs | **+5.90 %** | 3.12..7.79 |
+| 36389288157, 20 pairs, machine_perf timing | +3.25 % | 2.42..4.12 |
+| 36391352936, 20 pairs, machine_perf timing | +3.75 % | 3.40..4.58 |
+
+The same runs split the floor by source:
+- about 1 % remains without Kernel-File;
+- about 3.1 % without VAMAP;
+- about 3.25 % without the system logger's process and VAMAP flags.
+
+The user-space share on top of the floor is now about 0.7 % (it was ~1.35 %).  So:
+- **User space cannot close the gap.**  Even at zero user-space cost, the required events alone
+  have measured above 5 % on a hosted runner.  Identical code measured +4.17 % and +6.48 % on
+  two runners.
+- **Getting below the floor would remove evidence.**
+  - Kernel-File: Create, Cleanup, Close and QueryInformation track file objects and learn file
+    keys, and Read and Write are the I/O evidence itself.
+  - The system logger: process start and end, and mapped views.
+  - The manifest ties Cleanup, Close and QueryInformation to the FILEIO keyword, so they
+    cannot be enabled more narrowly.  The unmap events cannot be separated from the map events.
+  - Removing any of these loses file identity, I/O attribution, or the MSVC linker's mapped
+    reads and writes.
+- **The threshold stays.**  It was not changed, the workload and protocol were not changed, and
+  the run was not repeated.
 
 ## Windows x64 process-spawn performance: measured and reduced (run 36391350371, commit ec52053)
 
@@ -110,7 +165,7 @@ The same `native-validation` workflow, the same `machine_perf.py` (workload, 300
 | Linux x86-64 | tests 246 + 246 OK; `.deb` 24/24; product 48/48; outage 13/13; corpora 79/79 + 79/79; secret 22/22; graduation PASS | static ×300 +4.00 % (2.81..4.67); make -j8 +2.80 %; Vite −0.22 %; idle 0.10 %; lost 0; CLI 26 / 28 ms |
 | Linux ARM64 | tests 246 + 246 OK; `.deb` 24/24; product 48/48; outage 13/13; corpora 79/79 + 79/79; secret 22/22; graduation PASS | static ×300 +3.91 % (3.06..5.91); make -j8 +1.55 %; Vite −0.83 %; idle 0.11 %; lost 0; CLI 23 / 24 ms |
 
-**Margin, stated plainly.**
+**Margin, stated plainly** (written before the final release run, which then failed; see above).
 - The Windows x64 spawn workload now passes with its whole confidence interval below 5 %.
 - The kernel floor under it (+3.25 to +3.75 %) is fixed by required evidence.  User space now
   adds about 0.7 %.
