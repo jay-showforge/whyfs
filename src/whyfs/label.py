@@ -309,7 +309,13 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
     creator_row = con.execute("SELECT * FROM processes WHERE run_id=? AND pid=?", (run_id, key)).fetchone() if run_id else None
     user = creator_row["user"] if creator_row else None
     session = agents.session_for(con, run_id, key, w["ts_ns"]) if run_id else None
-    first = con.execute("SELECT MIN(ts_ns) FROM events WHERE path=? AND (is_write=1 OR kind='rename')", (target,)).fetchone()[0]
+    # Created: the first write to, or move into, this path since the path last stopped existing
+    # (deleted or moved away) -- not the first write ever seen at a reused path.
+    gone = con.execute("SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
+                       (target, w["ts_ns"])).fetchone()[0] or 0
+    first = con.execute("SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? "
+                        "UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ts_ns>?)",
+                        (target, gone, target, gone)).fetchone()[0]
     deps = impact_details(con, target, include_noise=include_noise)[:dependents_limit]
     inputs = list(w.get("inputs") or [])
     label.update({
@@ -319,7 +325,10 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
         "created": iso(min(x for x in (first, w["ts_ns"]) if x)),
         "last_written_ns": w["ts_ns"], "last_written": iso(w["ts_ns"]),
         "user": user, "user_name": user_name(user),
-        "created_by": {"exe": w["exe"], "pid": w["pid"], "command": w.get("command"), "cwd": w.get("process_cwd"),
+        # the working folder as the collector observed it (Windows ETW does not report it: None),
+        # never the collector run's own directory
+        "created_by": {"exe": w["exe"], "pid": w["pid"], "command": w.get("command"),
+                       "cwd": creator_row["cwd"] if creator_row else None,
                        "process_key": key, "run_id": run_id},
         "process_chain": _chain(con, run_id, key) if run_id else [],
         "inputs": inputs,

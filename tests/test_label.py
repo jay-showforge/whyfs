@@ -51,6 +51,25 @@ class Store:
         ingest_events(self.con, [e])
 
 
+class CreatedTimeTests(unittest.TestCase):
+    def test_created_is_since_the_path_last_stopped_existing(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d).resolve()
+            st = Store(root)
+            f = root / "out.txt"
+            f.write_text("x")
+            p1 = st.proc("/usr/bin/cp" if os.name != "nt" else r"C:\\Windows\\cmd.exe", "old build")
+            st.ev(p1, "io", f, T0 + 1 * 10**9, write=True)
+            st.ev(p1, "unlink", f, T0 + 2 * 10**9)                     # the old file is deleted
+            p2 = st.proc("/usr/bin/cp" if os.name != "nt" else r"C:\\Windows\\cmd.exe", "new build")
+            st.ev(p2, "io", f, T0 + 5 * 10**9, write=True, file_id=label.current_file_id(str(f)))
+            st.ev(p2, "io", f, T0 + 6 * 10**9, write=True, file_id=label.current_file_id(str(f)))
+            lb = label.explain_file(st.con, str(f))
+            self.assertEqual(lb["created_ns"], T0 + 5 * 10**9)
+            self.assertEqual(lb["last_written_ns"], T0 + 6 * 10**9)
+            st.con.close()
+
+
 @unittest.skipUnless(os.name == "nt", "8.3 short names are a Windows file-system feature")
 class ShortNameTests(unittest.TestCase):
     def test_short_path_queries_find_long_path_evidence(self):
