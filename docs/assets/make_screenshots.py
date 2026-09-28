@@ -83,7 +83,7 @@ def shoot(out: Path) -> None:
     url = html.as_uri() + "#" + frag
     # headless browsers are not always available: capture a real app window (capture_window.ps1)
     subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"),
-                    "-Url", url, "-Out", str(out)], check=True, timeout=180)
+                    "-Url", url, "-Out", str(out), "-Width", "1300", "-Height", "960"], check=True, timeout=180)
     import shutil
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"wrote {out}")
