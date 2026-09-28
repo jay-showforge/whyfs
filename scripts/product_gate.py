@@ -205,6 +205,21 @@ def main() -> int:
     # F: agent B reads A's output and writes its own; no task text (H without intent)
     script_b = [f"{q(PY)} {q(gen)} {q(f_dir / 'b-out.json')} {q(e_dir / 'file.json')}"]
     g.run([PY, str(agent_py), json.dumps([wcmd, "GateAgent-B", sid_b, None, script_b])], cwd=f_dir)
+    # ---------------- E2: the documented hook form -- `whyfs agent start` with the default root
+    # (the calling shell), then work in that shell: the session must attach (on Windows the CLI's
+    # parent is the whyfs.exe launcher, not the shell)
+    e2_dir = g.mkdir(base / "e2-default-root")
+    sid_c = f"gate-c-{uuid.uuid4().hex[:8]}"
+    e2_file = e2_dir / "hook.json"
+    wq = " ".join(q(x) for x in wcmd)
+    body = (f"{wq} agent start --name GateAgent-C --session-id {sid_c} && "
+            f"{q(PY)} {q(gen)} {q(e2_file)} {q(src)} && {wq} agent end --session-id {sid_c}")
+    if NT:  # cmd.exe parses its own command line: run the steps from a batch file
+        bat = e2_dir / "hook.cmd"
+        bat.write_text("@echo off\r\n" + body + "\r\n", encoding="utf-8")
+        g.run(["cmd", "/c", str(bat)], cwd=e2_dir)
+    else:
+        g.run(["sh", "-c", body], cwd=e2_dir)
     # ---------------- G: an unregistered, agent-like program (not a known agent install)
     # a native program *named* like an agent (claude), outside any agent install layout
     g_dir = g.mkdir(base / "g-unknown")
@@ -276,6 +291,9 @@ def main() -> int:
             and le["agent"]["source"] == "registered" and le["agent"]["agent_name"] == "GateAgent-A", le.get("agent") if isinstance(le, dict) else le)
     g.check("E.evidence_says_both", labelled(le) and "OS-observed" in le["evidence"] and "registered agent" in le["evidence"])
     lf = g.label(f_dir / "b-out.json")
+    le2 = g.label(e2_file)
+    g.check("E.default_root_session_attaches", labelled(le2) and (le2.get("agent") or {}).get("session_id") == sid_c
+            and le2["agent"]["source"] == "registered", le2.get("agent") if isinstance(le2, dict) else le2)
     g.check("F.second_agent_attributed_separately", labelled(lf) and (lf.get("agent") or {}).get("session_id") == sid_b, lf.get("agent") if isinstance(lf, dict) else lf)
     fa = g.api("get_files_by_agent", session_id=sid_a).get("result") or []
     fb = g.api("get_files_by_agent", session_id=sid_b).get("result") or []

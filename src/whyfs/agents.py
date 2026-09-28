@@ -247,6 +247,20 @@ def _live_parent_and_image(pid: int) -> tuple[int | None, str | None, str | None
     return parent, exe, cmd
 
 
+LAUNCHERS = ("whyfs.exe", "whyfsw.exe")
+
+
+def caller_pid() -> int:
+    """The process that ran `whyfs`: the parent, except that on Windows the parent is the
+    whyfs.exe launcher (runtime\\python.exe is its child), whose own parent is the caller."""
+    ppid = os.getppid()
+    if os.name == "nt":
+        parent, image, _cmd = _live_parent_and_image(ppid)
+        if image and os.path.basename(image).lower() in LAUNCHERS and parent:
+            return parent
+    return ppid
+
+
 def find_agent_root(start_pid: int, max_hops: int = 32) -> int | None:
     """The nearest live ancestor of ``start_pid`` whose image (and, where readable, command
     line) matches a known agent: the process an agent hook should register as its root."""

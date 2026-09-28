@@ -415,9 +415,9 @@ def cmd_agent(a):
             raise SystemExit("whyfs agent start needs --name")
         from . import agents
         if a.root_pid in (None, "parent"):
-            root = os.getppid()
+            root = agents.caller_pid()
         elif a.root_pid == "auto":  # the nearest live ancestor that is a known agent process, else the parent
-            root = agents.find_agent_root(os.getpid()) or os.getppid()
+            root = agents.find_agent_root(os.getpid()) or agents.caller_pid()
         else:
             root = int(a.root_pid)
         r = _service("session_start", agent_name=a.name, agent_version=a.agent_version, session_id=sid,
