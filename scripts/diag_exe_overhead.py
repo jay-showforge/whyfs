@@ -105,8 +105,7 @@ def main():
     for _ in range(3):
         workload()
     time.sleep(8)
-    c.stdin.write("stop
-")
+    c.stdin.write("stop\n")
     c.stdin.flush()
     so, se = c.communicate(timeout=180)
     prof = [l for l in se.splitlines() if l.startswith('{"prof"')]
