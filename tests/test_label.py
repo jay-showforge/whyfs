@@ -51,6 +51,23 @@ class Store:
         ingest_events(self.con, [e])
 
 
+@unittest.skipUnless(os.name == "nt", "8.3 short names are a Windows file-system feature")
+class ShortNameTests(unittest.TestCase):
+    def test_short_path_queries_find_long_path_evidence(self):
+        import ctypes
+        with tempfile.TemporaryDirectory() as d:
+            longdir = Path(os.path.realpath(d)) / "a-long-directory-name"
+            longdir.mkdir()
+            (longdir / "out.txt").write_text("x")
+            buf = ctypes.create_unicode_buffer(32768)
+            n = ctypes.windll.kernel32.GetShortPathNameW(str(longdir / "out.txt"), buf, len(buf))
+            if not n or "~" not in buf.value:
+                self.skipTest("8.3 name generation is disabled on this volume")
+            self.assertEqual(normalize(buf.value), str(longdir / "out.txt"))
+            # a file that does not exist yet under a short directory name
+            self.assertEqual(normalize(os.path.join(os.path.dirname(buf.value), "new.txt")), str(longdir / "new.txt"))
+
+
 class LabelTests(unittest.TestCase):
     def setUp(self):
         self.td = tempfile.TemporaryDirectory()

@@ -144,7 +144,26 @@ def connect(root: Path, *, check_same_thread: bool = True) -> sqlite3.Connection
 
 
 def normalize(path: str | os.PathLike[str]) -> str:
-    return os.path.normpath(os.path.abspath(os.fspath(path)))
+    p = os.path.normpath(os.path.abspath(os.fspath(path)))
+    return _long_name(p) if os.name == "nt" and "~" in p else p
+
+
+def _long_name(p: str) -> str:
+    """Windows: expand 8.3 short components (C:\\Users\\LONGUS~1\\...) to the long names the
+    collectors record.  A path that does not exist yet keeps its missing tail as given."""
+    import ctypes
+    buf = ctypes.create_unicode_buffer(32768)
+    get_long = ctypes.windll.kernel32.GetLongPathNameW
+    head, tail = p, []
+    while True:
+        n = get_long(head, buf, len(buf))
+        if 0 < n < len(buf):
+            return os.path.join(buf.value, *reversed(tail)) if tail else buf.value
+        parent, leaf = os.path.split(head)
+        if not leaf or parent == head:
+            return p
+        tail.append(leaf)
+        head = parent
 
 
 def ingest_events(con: sqlite3.Connection, events: Iterable[dict]) -> int:

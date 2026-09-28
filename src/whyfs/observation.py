@@ -26,7 +26,7 @@ HEARTBEAT_STALE_NS = 45 * 10**9       # a current run whose heartbeat is older i
 GAP_MIN_NS = 5 * 10**9                # shorter pauses are not reported
 WEAK_RETENTION_DAYS = 30              # pure reads are kept this long by default (retention.py)
 LOSS_KEYS = ("kernel_drops", "queue_drops", "lost_file", "lost_sys", "buffers_lost_file", "buffers_lost_sys",
-             "late_records", "user_unresolved")
+             "late_records", "user_unresolved", "bridge_evicted")
 
 
 def iso(ns: int | None) -> str | None:

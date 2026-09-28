@@ -719,6 +719,7 @@ def _canon(p: str) -> str:
     return os.path.realpath(p)
 
 
+DEFER_LIMIT = 200_000       # machine mode: deferred temporary-bridge records held in memory
 MACHINE_MAX_ANCESTORS = 24  # machine mode: agent roots sit many levels above build tools
 
 
@@ -763,6 +764,7 @@ class CollectorStats:
     proc_fallbacks: int = 0    # cwd lookups that had to consult /proc
     unreadable_paths: int = 0  # path string could not be read
     excluded_image: int = 0    # machine mode: events of excluded images (scanners, indexers)
+    bridge_evicted: int = 0    # machine mode: deferred temporary-bridge records dropped past DEFER_LIMIT
 
 
 class _BoundedMap(OrderedDict):
@@ -894,6 +896,15 @@ class BCCCollector:
         }))
         self._read_workspace: set[int] = set()        # process keys
         self._derived = _BoundedMap(200_000)
+        # Machine mode: evidence about derived temporaries is deferred until it bridges into
+        # an in-scope file (a process that consumed a derived temporary, directly or through
+        # other temporaries, writes, renames or deletes an in-scope file).  Temporaries that
+        # never reach a labelled file cost no store writes.  Per owner process: deferred
+        # records (seq, record, consumed temp paths); per temp path: the processes that wrote it.
+        self._deferred: dict[int, list] = {}
+        self._n_deferred = 0
+        self._defer_seq = 0
+        self._temp_writers = _BoundedMap(DEFER_LIMIT)
         # whyfs's own state directory (<workspace>/.whyfs: the store, daemon.json) is
         # not workspace data: its activity is never evidence (KNOWN_ISSUES KI-1).
         # Only this exact directory; other directories named .whyfs are user data.
@@ -1053,11 +1064,62 @@ class BCCCollector:
             # make it visible in status; evidence is never silently invented.
             self.stats.queue_drops += len(batch)
 
+    def _defer(self, pid: int, ts: int, kind: str, path: str | None, consumed: tuple, wrote: str | None,
+               **extra) -> None:
+        """Machine mode: hold a derived-temporary record until it bridges into an in-scope file."""
+        k = self.key(pid)
+        if self.scope.image_excluded(self.image.get(pid, (None, None))[0]):
+            self.stats.excluded_image += 1
+            return
+        self._defer_seq += 1
+        rec = {"run_id": self.run_id, "ts_ns": ts, "kind": kind, "pid": k, "os_pid": pid, "path": path,
+               "source": "ebpf", **extra}
+        self._deferred.setdefault(k, []).append((self._defer_seq, rec, consumed))
+        self._n_deferred += 1
+        if wrote:
+            ws = self._temp_writers.get(wrote)
+            if ws is None:
+                ws = []
+            if k not in ws:
+                ws.append(k)
+            self._temp_writers.put(wrote, ws)
+        while self._n_deferred > DEFER_LIMIT:  # the oldest owner's records go first
+            _k, lst = next(iter(self._deferred.items()))
+            del self._deferred[_k]
+            self._n_deferred -= len(lst)
+            self.stats.bridge_evicted += len(lst)
+
+    def _bridge(self, k: int, paths: tuple = ()) -> None:
+        """Hand over, in their original order, the deferred records of ``k`` and of every
+        process whose derived temporaries ``k`` consumed (recursively), plus the writers of
+        any derived temporary in ``paths`` (a rename of a temporary into scope)."""
+        if not self._n_deferred:
+            return
+        out: list = []
+        seen: set = set()
+        todo = [k] + [w for p in paths if p for w in (self._temp_writers.get(p) or [])]
+        while todo:
+            o = todo.pop()
+            if o in seen:
+                continue
+            seen.add(o)
+            for item in self._deferred.pop(o, []):
+                self._n_deferred -= 1
+                out.append((item[0], o, item[1]))
+                for t in item[2]:
+                    todo.extend(self._temp_writers.get(t) or [])
+        out.sort(key=lambda x: x[0])
+        for _seq, o, rec in out:
+            self._make_relevant(o)
+            self._put(rec)
+
     def _file_event(self, pid: int, ts: int, kind: str, path: str | None, **extra) -> None:
         k = self.key(pid)
         if self.machine and self.scope.image_excluded(self.image.get(pid, (None, None))[0]):
             self.stats.excluded_image += 1
             return
+        if self.machine:  # an in-scope event: the temporaries this process consumed now matter
+            self._bridge(k, (path,) if kind == "rename" else ())
         self._make_relevant(k)
         self._put({
             "run_id": self.run_id, "ts_ns": ts, "kind": kind,
@@ -1122,11 +1184,17 @@ class BCCCollector:
                 return
             if is_write and self.key(pid) in self._read_workspace and self._is_temp(path):
                 self._derived.put(path, None)
-                self._file_event(pid, ts, "io", path, read=False, write=True, api=api + ":derived-temp", **ident)
+                if self.machine:
+                    self._defer(pid, ts, "io", path, (), path, read=False, write=True, api=api + ":derived-temp", **ident)
+                else:
+                    self._file_event(pid, ts, "io", path, read=False, write=True, api=api + ":derived-temp", **ident)
                 return
             if not is_write and path in self._derived:
                 self._read_workspace.add(self.key(pid))  # carries workspace-derived data
-                self._file_event(pid, ts, "io", path, read=True, write=False, api=api + ":derived-temp", **ident)
+                if self.machine:
+                    self._defer(pid, ts, "io", path, (path,), None, read=True, write=False, api=api + ":derived-temp", **ident)
+                else:
+                    self._file_event(pid, ts, "io", path, read=True, write=False, api=api + ":derived-temp", **ident)
                 return
             self.stats.filtered += 1
             return
@@ -1210,7 +1278,8 @@ class BCCCollector:
                     or (a in self._derived)):
                 self.stats.filtered += 1
                 return
-            if a in self._derived and b and self._is_temp(b):
+            a_derived = a in self._derived
+            if a_derived and b and self._is_temp(b):
                 self._derived.put(b, None)
             # Keep file-pointer paths consistent with the move.
             if a and b:
@@ -1219,6 +1288,9 @@ class BCCCollector:
                         self.files[fp] = b
                     elif p.startswith(a + os.sep):
                         self.files[fp] = b + p[len(a):]
+            if self.machine and a_derived and not self._in_ws(a, False) and not self._in_ws(b, False):
+                self._defer(pid, ts, "rename", a, (a,), b, path2=b, api="ebpf:rename")
+                return
             self._file_event(pid, ts, "rename", a, path2=b, api="ebpf:rename")
             return
 
@@ -1226,7 +1298,10 @@ class BCCCollector:
             a = self._resolve(pid, int(e.dirfd), int(e.file), _cstr(_field_bytes(data, size, OFF_PATH)), follow_final=False)
             if a in self._derived:
                 self._derived.pop(a, None)
-                self._file_event(pid, ts, "unlink", a, api="ebpf:unlink:derived-temp")
+                if self.machine:
+                    self._defer(pid, ts, "unlink", a, (), None, api="ebpf:unlink:derived-temp")
+                else:
+                    self._file_event(pid, ts, "unlink", a, api="ebpf:unlink:derived-temp")
                 return
             if not self._in_ws(a, self.capture_all):
                 self.stats.filtered += 1

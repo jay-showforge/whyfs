@@ -80,7 +80,7 @@ class NativeProcessPrivacyTests(base.ProcessPrivacyTests):
 
 # ---------------------------------------------------------------- differential
 STAT_KEYS = ("submitted", "filtered", "unresolved_fd", "truncated_paths", "queue_drops", "received",
-             "proc_fallbacks", "unreadable_paths", "excluded_image")
+             "proc_fallbacks", "unreadable_paths", "excluded_image", "bridge_evicted")
 
 
 def machine_rules(root: Path) -> str:
@@ -239,6 +239,62 @@ class DifferentialTests(unittest.TestCase):
         self.assertGreater(total, 2000)
         self.assertGreater(ids, 200, "I/O records must carry kernel identity")
         self.assertGreater(users, 200, "process rows must carry their user")
+
+    # Machine mode defers derived-temporary evidence until it reaches an in-scope file
+    # (exec-heavy temp workloads measured +5.2% on a 2-vCPU runner when every temp hop was stored).
+    def bridge_stream(self, final_in_scope=True, via_rename=False, extra_reader=False):
+        cc1, asm, other = base.FAKE + 1, base.FAKE + 2, base.FAKE + 3
+        tmp = str(Path(TMPDIR.name) / "ccBRIDGE.s").encode()
+        g = StreamGen(self.root, random.Random(1))
+        fu, ft, ft2, fo, fx, fy = (0xFFFF888000900000 + 0x100 * i for i in range(6))
+        raw = [g.ev(m.EV_FORK, cc1, aux=base.FAKE),
+               g.ev(m.EV_OPEN, cc1, file=fu, fd=0, path=str(self.root / "u.c").encode()), g.ev(m.EV_READ, cc1, file=fu),
+               g.ev(m.EV_OPEN, cc1, file=ft, fd=0, path=tmp, flags=os.O_WRONLY | os.O_CREAT), g.ev(m.EV_WRITE, cc1, file=ft)]
+        if extra_reader:  # reads the temporary but writes only another temporary: never bridges
+            raw += [g.ev(m.EV_FORK, other, aux=base.FAKE),
+                    g.ev(m.EV_OPEN, other, file=fx, fd=0, path=tmp), g.ev(m.EV_READ, other, file=fx),
+                    g.ev(m.EV_OPEN, other, file=fy, fd=0, path=str(Path(TMPDIR.name) / "other.tmp").encode(),
+                         flags=os.O_WRONLY | os.O_CREAT), g.ev(m.EV_WRITE, other, file=fy)]
+        if via_rename:
+            raw.append(g.ev(m.EV_RENAME, cc1, dirfd=m.AT_FDCWD, dirfd2=m.AT_FDCWD, file=0, file2=0, path=tmp,
+                            path2=str(self.root / "final.s").encode()))
+        else:
+            raw += [g.ev(m.EV_FORK, asm, aux=base.FAKE),
+                    g.ev(m.EV_OPEN, asm, file=ft2, fd=0, path=tmp), g.ev(m.EV_READ, asm, file=ft2)]
+            if final_in_scope:
+                raw += [g.ev(m.EV_OPEN, asm, file=fo, fd=0, path=str(self.root / "u.o").encode(), flags=os.O_WRONLY | os.O_CREAT),
+                        g.ev(m.EV_WRITE, asm, file=fo)]
+        return raw, tmp.decode()
+
+    def test_machine_mode_bridged_temporary_is_recorded_in_order(self):
+        raw, tmp = self.bridge_stream(extra_reader=True)
+        recs = self.compare(raw, seeds=[(base.FAKE, self.root)], machine=True)
+        io = [(r["path"], r["read"], r["write"]) for r in recs if r["kind"] == "io"]
+        self.assertEqual(io, [(str(self.root / "u.c"), True, False), (tmp, False, True), (tmp, True, False),
+                              (str(self.root / "u.o"), False, True)])
+        self.assertNotIn(str(Path(TMPDIR.name) / "other.tmp"), [r.get("path") for r in recs])
+        con = connect(self.root)
+        con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES('run',1,?,?,?,?)",
+                    (str(self.root), "t", str(self.root), "ebpf-native"))
+        from whyfs.store import ingest_events
+        from whyfs.query import why
+        ingest_events(con, recs)
+        w = why(con, str(self.root / "u.o"))
+        self.assertIn(str(self.root / "u.c"), w["inputs_via_temporaries"])
+        con.close()
+
+    def test_machine_mode_unbridged_temporary_costs_no_records(self):
+        raw, tmp = self.bridge_stream(final_in_scope=False)
+        recs = self.compare(raw, seeds=[(base.FAKE, self.root)], machine=True)
+        self.assertEqual([r for r in recs if r.get("path") == tmp], [])
+        self.assertEqual([r["path"] for r in recs if r["kind"] == "io"], [str(self.root / "u.c")])
+
+    def test_machine_mode_rename_of_temporary_into_scope_bridges(self):
+        raw, tmp = self.bridge_stream(via_rename=True)
+        recs = self.compare(raw, seeds=[(base.FAKE, self.root)], machine=True)
+        kinds = [(r["kind"], r.get("path"), r.get("path2")) for r in recs if r["kind"] in ("io", "rename")]
+        self.assertEqual(kinds, [("io", str(self.root / "u.c"), None), ("io", tmp, None),
+                                 ("rename", tmp, str(self.root / "final.s"))])
 
     def test_long_stream_with_many_processes(self):
         g = StreamGen(self.root, random.Random(12345))

@@ -55,6 +55,7 @@
 #define FILES_LIMIT 400000
 #define PROC_ROWS_LIMIT 200000
 #define DERIVED_LIMIT 200000
+#define DEFER_LIMIT 200000  // machine mode: deferred temporary-bridge records (ebpf_bcc.DEFER_LIMIT)
 
 enum { EV_OPEN = 1, EV_READ = 2, EV_WRITE = 3, EV_RENAME = 4, EV_UNLINK = 5, EV_EXEC = 6, EV_FORK = 7,
        EV_EXIT = 8, EV_MMAP_READ = 9, EV_CHDIR = 13, EV_FCHDIR = 14, EV_MMAP_WRITE = 15 };
@@ -590,7 +591,7 @@ static size_t proc_cmdline(uint32_t pid, char ***out) {
 
 // ---------------------------------------------------------------- collector state
 typedef struct { uint64_t submitted, filtered, unresolved_fd, truncated_paths, kernel_drops, queue_drops, received,
-                 proc_fallbacks, unreadable_paths, excluded_image; } stats_t;
+                 proc_fallbacks, unreadable_paths, excluded_image, bridge_evicted; } stats_t;
 static stats_t st;
 
 typedef struct {  // process row (kind 'process'); has_* mark non-None
@@ -615,6 +616,11 @@ static int64_t clock_offset;
 static uint64_t seq;
 
 static map_t files, cwdm, image, pkey, proc_rows, pending_exec, relevant, read_workspace, derived, fidm;
+// Machine mode (ebpf_bcc._defer/_bridge): derived-temporary records wait here until they bridge into
+// an in-scope file.  deferred: owner process key -> dlist_t; temp_writers: temp path -> wlist_t.
+static map_t deferred, temp_writers;
+static size_t n_deferred;
+static int64_t defer_seq;
 
 // ---------------------------------------------------------------- output (ordered handoff batches)
 // Record encoding shared by the writer pipe and --emit:
@@ -912,7 +918,22 @@ static const char *sc_last_comp(const char *p, size_t *len) {
     *len = (size_t)(end - b);
     return b;
 }
+// The rules are fixed for the collector's lifetime, so a path's class never changes: a small
+// direct-mapped memo spares the rule scan for paths seen again (an input read on every iteration,
+// the open and its I/O, the in-scope and temp tests of one event).
+#define SC_MEMO 1024
+static struct { char *path; int cls; } sc_memo[SC_MEMO];
+static int sc_classify_rules(const char *path);
 static int sc_classify(const char *path) {
+    uint64_t h = hstr(path) & (SC_MEMO - 1);
+    if (sc_memo[h].path && !strcmp(sc_memo[h].path, path)) return sc_memo[h].cls;
+    int c = sc_classify_rules(path);
+    free(sc_memo[h].path);
+    sc_memo[h].path = xstrdup(path);
+    sc_memo[h].cls = c;
+    return c;
+}
+static int sc_classify_rules(const char *path) {
     int inc = 0, tmp = 0, exc = 0;
     for (int i = 0; i < sc_n && !inc; i++) {
         const sc_rule_t *r = &sc_rules[i];
@@ -1064,12 +1085,113 @@ static void make_relevant(uint64_t k) {
         if (has_k) k = (uint64_t)row->parent_key;
     }
 }
+// ---------------------------------------------------------------- deferred temporary bridges (machine mode)
+typedef struct {
+    int64_t seq, ts, key, os_pid;
+    int kind, has_rw, rd, wr, has_path2;
+    char *path, *path2, *fid, *consumed;
+    const char *api;  // string literals only
+} drec_t;
+typedef struct { drec_t **v; size_t n, cap; } dlist_t;
+typedef struct { uint64_t *v; size_t n, cap; } wlist_t;
+static void drec_free(drec_t *r) { if (!r) return; free(r->path); free(r->path2); free(r->fid); free(r->consumed); free(r); }
+static void dlist_free(void *p) { dlist_t *l = p; if (!l) return; for (size_t i = 0; i < l->n; i++) drec_free(l->v[i]); free(l->v); free(l); }
+static void wlist_free(void *p) { wlist_t *l = p; if (!l) return; free(l->v); free(l); }
+static void make_relevant(uint64_t k);
+static void defer_rec(uint32_t pid, int64_t ts, int kind, const char *path, int has_rw, int rd, int wr,
+                      int has_path2, const char *path2, const char *api, const char *consumed, const char *wrote) {
+    uint64_t k = key_of(pid);
+    image_t *im = map_get(&image, pid, NULL);
+    if (im && sc_image_excluded(im->exe)) { st.excluded_image++; return; }
+    drec_t *r = calloc(1, sizeof *r); if (!r) die("out of memory");
+    r->seq = ++defer_seq; r->ts = ts; r->key = (int64_t)k; r->os_pid = pid; r->kind = kind;
+    r->has_rw = has_rw; r->rd = rd; r->wr = wr; r->has_path2 = has_path2;
+    r->path = path ? xstrdup(path) : NULL; r->path2 = path2 ? xstrdup(path2) : NULL; r->api = api;
+    r->fid = kind == K_IO && cur_fid ? xstrdup(cur_fid) : NULL;
+    r->consumed = consumed && *consumed ? xstrdup(consumed) : NULL;
+    ent_t *e = map_find(&deferred, k, NULL);
+    if (!e) e = map_set(&deferred, k, NULL, calloc(1, sizeof(dlist_t)));
+    dlist_t *l = e->v;
+    if (l->n == l->cap) { l->cap = l->cap ? l->cap * 2 : 4; l->v = realloc(l->v, l->cap * sizeof *l->v); if (!l->v) die("out of memory"); }
+    l->v[l->n++] = r;
+    n_deferred++;
+    if (wrote && *wrote) {
+        wlist_t *w = map_get(&temp_writers, 0, wrote);
+        if (!w) { w = calloc(1, sizeof *w); if (!w) die("out of memory"); }
+        int have = 0;
+        for (size_t i = 0; i < w->n; i++) if (w->v[i] == k) { have = 1; break; }
+        if (!have) {
+            if (w->n == w->cap) { w->cap = w->cap ? w->cap * 2 : 2; w->v = realloc(w->v, w->cap * sizeof *w->v); if (!w->v) die("out of memory"); }
+            w->v[w->n++] = k;
+        }
+        map_put(&temp_writers, 0, wrote, w);
+    }
+    while (n_deferred > DEFER_LIMIT && deferred.head) {  // the oldest owner's records go first
+        dlist_t *old = deferred.head->v;
+        n_deferred -= old->n; st.bridge_evicted += old->n;
+        map_remove_ent(&deferred, deferred.head);
+    }
+}
+static int drec_cmp(const void *a, const void *b) {
+    int64_t x = (*(drec_t *const *)a)->seq, y = (*(drec_t *const *)b)->seq;
+    return x < y ? -1 : x > y;
+}
+typedef struct { uint64_t *v; size_t n, cap; } u64v_t;
+static void u64v_push(u64v_t *s, uint64_t x) {
+    if (s->n == s->cap) { s->cap = s->cap ? s->cap * 2 : 16; s->v = realloc(s->v, s->cap * sizeof *s->v); if (!s->v) die("out of memory"); }
+    s->v[s->n++] = x;
+}
+static void push_writers(u64v_t *todo, const char *temp) {
+    wlist_t *w = temp ? map_get(&temp_writers, 0, temp) : NULL;
+    if (w) for (size_t i = 0; i < w->n; i++) u64v_push(todo, w->v[i]);
+}
+// Hand over, in their original order, the deferred records of k and of every process whose
+// derived temporaries k consumed (recursively), plus the writers of rename_src.
+static void bridge(uint64_t k, const char *rename_src) {
+    if (!n_deferred) return;
+    u64v_t todo = {0};
+    map_t seen; map_init(&seen, 0, 0, NULL);
+    drec_t **out = NULL; size_t no = 0, co = 0;
+    u64v_push(&todo, k);
+    push_writers(&todo, rename_src);
+    while (todo.n) {
+        uint64_t o = todo.v[--todo.n];
+        if (map_has(&seen, o, NULL)) continue;
+        map_set(&seen, o, NULL, NULL);
+        ent_t *e = map_find(&deferred, o, NULL);
+        if (!e) continue;
+        dlist_t *l = e->v;
+        for (size_t i = 0; i < l->n; i++) {
+            if (no == co) { co = co ? co * 2 : 16; out = realloc(out, co * sizeof *out); if (!out) die("out of memory"); }
+            out[no++] = l->v[i];
+            n_deferred--;
+            push_writers(&todo, l->v[i]->consumed);
+        }
+        l->n = 0;  // the records now belong to out
+        map_remove_ent(&deferred, e);
+    }
+    free(todo.v);
+    for (ent_t *x = seen.head, *nx; x; x = nx) { nx = x->next; map_remove_ent(&seen, x); }
+    free(seen.b);
+    if (no > 1) qsort(out, no, sizeof *out, drec_cmp);
+    const char *saved = cur_fid;
+    for (size_t i = 0; i < no; i++) {
+        drec_t *r = out[i];
+        make_relevant((uint64_t)r->key);
+        cur_fid = r->fid;
+        put_event(r->ts, r->key, r->os_pid, r->kind, 0, 0, r->has_rw, r->rd, r->wr, r->path, r->has_path2, r->path2, r->api);
+        cur_fid = saved;
+        drec_free(r);
+    }
+    free(out);
+}
 static void file_event(uint32_t pid, int64_t ts, int kind, const char *path, int has_flags, int64_t flags, int has_rw, int rd, int wr,
                        int has_path2, const char *path2, const char *api) {
     uint64_t k = key_of(pid);
     if (machine_mode) {
         image_t *im = map_get(&image, pid, NULL);
         if (im && sc_image_excluded(im->exe)) { st.excluded_image++; return; }
+        bridge(k, kind == K_RENAME ? path : NULL);  // an in-scope event: consumed temporaries now matter
     }
     make_relevant(k);
     put_event(ts, k, pid, kind, has_flags, flags, has_rw, rd, wr, path, has_path2, path2, api);
@@ -1187,10 +1309,14 @@ static int process_event(void *ctx, void *vdata, size_t size) {
             file_event(pid, ts, K_IO, path, 0, 0, 1, !is_write, is_write, 0, NULL, mm ? "ebpf:mmap" : "ebpf:rw");
         } else if (is_write && map_has(&read_workspace, key_of(pid), NULL) && is_temp(path)) {
             map_put(&derived, 0, path, NULL);
-            file_event(pid, ts, K_IO, path, 0, 0, 1, 0, 1, 0, NULL, mm ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp");
+            const char *api = mm ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp";
+            if (machine_mode) defer_rec(pid, ts, K_IO, path, 1, 0, 1, 0, NULL, api, NULL, path);
+            else file_event(pid, ts, K_IO, path, 0, 0, 1, 0, 1, 0, NULL, api);
         } else if (!is_write && map_has(&derived, 0, path)) {
             map_set(&read_workspace, key_of(pid), NULL, NULL);
-            file_event(pid, ts, K_IO, path, 0, 0, 1, 1, 0, 0, NULL, mm ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp");
+            const char *api = mm ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp";
+            if (machine_mode) defer_rec(pid, ts, K_IO, path, 1, 1, 0, 0, NULL, api, path, NULL);
+            else file_event(pid, ts, K_IO, path, 0, 0, 1, 1, 0, 0, NULL, api);
         } else st.filtered++;
         cur_fid = NULL;
         free(path);
@@ -1278,6 +1404,7 @@ static int process_event(void *ctx, void *vdata, size_t size) {
             st.filtered++; free(a); free(b); return 0;
         }
         if (a_derived && b && *b && is_temp(b)) map_put(&derived, 0, b, NULL);
+        int defer_it = machine_mode && a_derived && !within_ws(a, 0) && !within_ws(b, 0);
         if (a && *a && b && *b) {  // keep file-pointer paths consistent with the move
             size_t al = strlen(a);
             for (ent_t *x = files.head; x; x = x->next) {
@@ -1289,7 +1416,8 @@ static int process_event(void *ctx, void *vdata, size_t size) {
                 }
             }
         }
-        file_event(pid, ts, K_RENAME, a, 0, 0, 0, 0, 0, 1, b, "ebpf:rename");
+        if (defer_it) defer_rec(pid, ts, K_RENAME, a, 0, 0, 0, 1, b, "ebpf:rename", a, b);
+        else file_event(pid, ts, K_RENAME, a, 0, 0, 0, 0, 0, 1, b, "ebpf:rename");
         free(a); free(b);
         return 0;
     }
@@ -1299,7 +1427,8 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         free(raw);
         if (a && map_has(&derived, 0, a)) {
             map_pop(&derived, 0, a);
-            file_event(pid, ts, K_UNLINK, a, 0, 0, 0, 0, 0, 0, NULL, "ebpf:unlink:derived-temp");
+            if (machine_mode) defer_rec(pid, ts, K_UNLINK, a, 0, 0, 0, 0, NULL, "ebpf:unlink:derived-temp", NULL, NULL);
+            else file_event(pid, ts, K_UNLINK, a, 0, 0, 0, 0, 0, 0, NULL, "ebpf:unlink:derived-temp");
         } else if (!within_ws(a, capture_all)) st.filtered++;
         else file_event(pid, ts, K_UNLINK, a, 0, 0, 0, 0, 0, 0, NULL, "ebpf:unlink");
         free(a);
@@ -1477,12 +1606,14 @@ static void on_usr1(int s) { (void)s; stats_flag = 1; }
 static void print_stats(unsigned long long w_rows, unsigned long long w_batches, unsigned long long w_max, int w_failed) {
     printf("{\"submitted\":%llu,\"filtered\":%llu,\"unresolved_fd\":%llu,\"truncated_paths\":%llu,\"kernel_drops\":%llu,"
            "\"queue_drops\":%llu,\"received\":%llu,\"proc_fallbacks\":%llu,\"unreadable_paths\":%llu,\"excluded_image\":%llu,"
+           "\"bridge_evicted\":%llu,"
            "\"writer_rows\":%llu,\"writer_batches\":%llu,\"writer_max_batch\":%llu,\"writer_failed\":%d,"
            "\"pending_exec\":%zu,\"consumer_yields\":%llu}\n",
            (unsigned long long)st.submitted, (unsigned long long)st.filtered, (unsigned long long)st.unresolved_fd,
            (unsigned long long)st.truncated_paths, (unsigned long long)st.kernel_drops, (unsigned long long)st.queue_drops,
            (unsigned long long)st.received, (unsigned long long)st.proc_fallbacks, (unsigned long long)st.unreadable_paths,
-           (unsigned long long)st.excluded_image, w_rows, w_batches, w_max, w_failed, pending_exec.count, (unsigned long long)yields);
+           (unsigned long long)st.excluded_image, (unsigned long long)st.bridge_evicted, w_rows, w_batches, w_max, w_failed,
+           pending_exec.count, (unsigned long long)yields);
     fflush(stdout);
 }
 
@@ -1542,6 +1673,8 @@ int main(int argc, char **argv) {
     map_init(&relevant, 0, 0, NULL);
     map_init(&read_workspace, 0, 0, NULL);
     map_init(&derived, 1, DERIVED_LIMIT, NULL);
+    map_init(&deferred, 0, 0, dlist_free);
+    map_init(&temp_writers, 1, DEFER_LIMIT, wlist_free);
     for (int i = 0; i < nseeds; i++) {  // tests: a pre-existing process with a known cwd
         char *c = strchr(seeds[i], ':');
         if (!c) die("--seed PID:CWD");

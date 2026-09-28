@@ -187,6 +187,9 @@ def build_msi(stage_dir: Path, out: Path, arch: str, version: str) -> Path:
     platform = "x64" if arch == "x64" else "Arm64"
     si = db.GetSummaryInformation(20)
     si.SetProperty(msilib.PID_TEMPLATE, f"{platform};1033")
+    # The Arm64 platform needs Windows Installer schema 500 (Page Count); with msilib's default
+    # 200, msiexec refuses to open the package at all (1620).  Found on the native ARM64 runner.
+    si.SetProperty(msilib.PID_PAGECOUNT, 500 if arch == "arm64" else 200)
     si.SetProperty(msilib.PID_WORDCOUNT, 2)  # compressed, long file names
     si.SetProperty(msilib.PID_TITLE, "whyfs installer")
     si.SetProperty(msilib.PID_SUBJECT, f"whyfs {version} ({arch})")

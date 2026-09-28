@@ -105,7 +105,7 @@ class Stream:
         return out, stats
 
 
-TEMPROOT = Path(tempfile.gettempdir()) / "whyfs-model-temproot"
+TEMPROOT = Path(os.path.realpath(tempfile.gettempdir())) / "whyfs-model-temproot"  # long names, as the product passes them
 PY, CMD, CL = r"C:\Python313\python.exe", r"C:\Windows\System32\cmd.exe", r"C:\VS\cl.exe"
 SHELL = 100
 

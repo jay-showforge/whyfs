@@ -435,7 +435,7 @@ def op_status(ctx, con, params):
         "collector_ready": machine.collector_ready(),
         "collector_stats": stats,
         "lost": sum(int(stats.get(k, 0)) for k in ("kernel_drops", "queue_drops", "user_unresolved", "late_records",
-                                                    "lost_file", "lost_sys")),
+                                                    "lost_file", "lost_sys", "bridge_evicted")),
         "scope_rules": machine.effective_scope_text(),
         "heartbeat_age_s": (round((time.time_ns() - stats["heartbeat_ns"]) / 1e9, 1) if stats.get("heartbeat_ns") else None),
         "recording_gaps": _recording_gaps(con),
