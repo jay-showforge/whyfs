@@ -1,0 +1,47 @@
+# Diagnostic only (not validation): decomposes the INSTALLED service's cost on the
+# process-spawn workload (scripts/diag_service_cost.py).  Manual trigger.
+name: win-diag-service
+on:
+  workflow_dispatch:
+    inputs:
+      runner: { description: "runner label", default: "windows-2022" }
+      arch: { description: "x64 or arm64", default: "x64" }
+      pairs: { description: "pairs per variant", default: "10" }
+      variants: { description: "variants", default: "normal,no_write,discard" }
+jobs:
+  diag:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 150
+    env:
+      PYTHONPATH: "src;tests"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        id: py312
+        with: { python-version: "3.12", architecture: "${{ inputs.arch }}" }
+      - uses: actions/setup-python@v5
+        id: py313
+        with: { python-version: "3.13", architecture: "${{ inputs.arch }}" }
+      - name: locate MSVC, build, package
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          $vc = if ("${{ inputs.arch }}" -eq "arm64") { "vcvarsarm64.bat" } else { "vcvars64.bat" }
+          "WHYFS_VCVARS=$vs\VC\Auxiliary\Build\$vc" >> $env:GITHUB_ENV
+          $env:WHYFS_VCVARS = "$vs\VC\Auxiliary\Build\$vc"
+          powershell -ExecutionPolicy Bypass -File native\windows\build.ps1 -Arch ${{ inputs.arch }} -VsRoot $vs
+          $rt = Split-Path "${{ steps.py313.outputs.python-path }}"
+          & "${{ steps.py312.outputs.python-path }}" native\windows\make_msi.py --arch ${{ inputs.arch }} --runtime $rt --vcvars $env:WHYFS_VCVARS --out dist
+      - name: install the MSI
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ci-results | Out-Null
+          Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | Format-List | Tee-Object ci-results\platform.txt
+          Start-Process msiexec.exe -ArgumentList "/i `"$((Get-ChildItem dist\*.msi).FullName)`" /qn /norestart" -Wait
+          for ($i = 0; $i -lt 180; $i++) { try { if ((& "$env:ProgramFiles\whyfs\whyfs.exe" status --json | ConvertFrom-Json).collector_ready) { break } } catch {}; Start-Sleep 1 }
+      - name: service cost decomposition
+        shell: pwsh
+        run: python scripts\diag_service_cost.py --out ci-results\diag-service --pairs ${{ inputs.pairs }} --variants "${{ inputs.variants }}" 2>&1 | Tee-Object ci-results\diag-service.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "win-diag-service-${{ inputs.arch }}", path: "ci-results/" }

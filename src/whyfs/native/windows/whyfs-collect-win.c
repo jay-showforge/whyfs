@@ -1178,6 +1178,13 @@ static uint64_t w_rows, w_batches, w_max;
 static HANDLE user_token;
 static char db_path[4096];
 #define QUEUE_RECORDS 262144
+static int diag_no_write;  // WHYFS_DIAG_NO_WRITE: the writer drops its batches (cost decomposition only)
+// Thread names for profilers and scripts/diag_service_cost.py (SetThreadDescription: Windows 10 1607+).
+static void name_thread(HANDLE h, const wchar_t *name) {
+    typedef HRESULT (WINAPI *set_desc_t)(HANDLE, PCWSTR);
+    set_desc_t f = (set_desc_t)(void *)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetThreadDescription");
+    if (f && h) f(h, name);
+}
 #define GROUP_MS 1000
 #define GROUP_ROWS 16384
 
@@ -1241,6 +1248,11 @@ static DWORD WINAPI writer_main(LPVOID arg) {
         LeaveCriticalSection(&wlock);
         if (done) break;
         if (!list) continue;
+        if (diag_no_write) {  // cost decomposition only: everything up to the store, nothing written
+            for (wbatch_t *x = list, *nx; x; x = nx) { nx = x->next; w_rows += x->n; free(x->b.p); free(x); }
+            w_batches++;
+            continue;
+        }
         sq_exec(db, "BEGIN", NULL, NULL, NULL);
         uint64_t in_tx = 0;
         for (wbatch_t *x = list, *nx; x; x = nx) {
@@ -1930,7 +1942,9 @@ int main(int argc, char **argv) {
     HANDLE writer = NULL;
     if (!emit_json) {
         load_sqlite(sqlite_dll);  // NULL: System32\winsqlite3.dll
+        diag_no_write = getenv("WHYFS_DIAG_NO_WRITE") != NULL;
         writer = CreateThread(NULL, 0, writer_main, NULL, 0, NULL);
+        name_thread(writer, L"whyfs-writer");
     }
     QueryPerformanceFrequency(&qpc_freq); QueryPerformanceCounter(&qpc0); wall0 = wall_now_ns();
 
@@ -1950,6 +1964,7 @@ int main(int argc, char **argv) {
         //   WHYFS_DIAG_DISCARD  callbacks count and return   WHYFS_DIAG_NO_VAMAP  no mapped-view events
         //   WHYFS_DIAG_NO_SYS   system logger without flags  WHYFS_DIAG_NO_KFILE  Kernel-File not enabled
         //   WHYFS_DIAG_KFILE_KW=hex  Kernel-File keywords instead of KFILE_KEYWORDS
+        //   WHYFS_DIAG_NO_WRITE  everything but the store writes (read at writer start)
         diag_discard = getenv("WHYFS_DIAG_DISCARD") != NULL;
         ULONG sys_flags = getenv("WHYFS_DIAG_NO_SYS") ? 0 : EVENT_TRACE_FLAG_PROCESS | (getenv("WHYFS_DIAG_NO_VAMAP") ? 0 : EVENT_TRACE_FLAG_VAMAP);
         EVENT_TRACE_PROPERTIES *pa = mkprops(EVENT_TRACE_REAL_TIME_MODE, 0);
@@ -1972,11 +1987,13 @@ int main(int argc, char **argv) {
         if (rc != ERROR_SUCCESS) { fprintf(stderr, "enable Kernel-Process: %lu\n", rc); return 3; }
         TRACEHANDLE ha = open_rt(name_a, on_file_event), hb = open_rt(name_b, on_sys_event);
         HANDLE ta = CreateThread(NULL, 0, consume, &ha, 0, NULL), tb = CreateThread(NULL, 0, consume, &hb, 0, NULL);
+        name_thread(ta, L"whyfs-consume-file"); name_thread(tb, L"whyfs-consume-sys");
+        name_thread(GetCurrentThread(), L"whyfs-merge");
         SetConsoleCtrlHandler(on_ctrl, TRUE);
         printf("{\"ready\":true,\"pid\":%lu}\n", GetCurrentProcessId());
         fflush(stdout);
         // Any input on stdin, or its end, is a stop request (the CLI / service holds the other end).
-        CreateThread(NULL, 0, stdin_watch, NULL, 0, NULL);
+        name_thread(CreateThread(NULL, 0, stdin_watch, NULL, 0, NULL), L"whyfs-stdin");
         while (!stop_requested) {
             Sleep(100);
             // A trace session stopped by someone else ends its ProcessTrace: this collector would
