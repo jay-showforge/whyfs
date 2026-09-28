@@ -204,6 +204,9 @@ def main() -> int:
     ap.add_argument("--pairs", type=int, default=10)
     ap.add_argument("--warmups", type=int, default=1)
     ap.add_argument("--variants", default="normal,no_write,discard")
+    ap.add_argument("--after-s", type=float, default=7.0,
+                    help="wait after each measured run, counted as 'after_7s' (0.2 = machine_perf's own timing, where "
+                         "the previous run's processing overlaps the next measured run)")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -235,7 +238,7 @@ def main() -> int:
                 s1 = snapshot(rl)
                 row = {"mode": mode, "warmup": idx < 2 * a.warmups, "seconds": secs, **delta(s0, s1, rate)}
                 # the 5 s reorder window moves a run's processing into the following seconds: count it too
-                time.sleep(7)
+                time.sleep(a.after_s)
                 s2 = snapshot(rl)
                 row["after_7s"] = delta(s1, s2, rate)
                 rows.append(row)

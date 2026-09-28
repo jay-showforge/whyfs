@@ -8,6 +8,7 @@ on:
       arch: { description: "x64 or arm64", default: "x64" }
       pairs: { description: "pairs per variant", default: "10" }
       variants: { description: "variants", default: "normal,no_write,discard" }
+      after: { description: "seconds waited after each measured run (0.2 = machine_perf timing)", default: "7" }
 jobs:
   diag:
     runs-on: ${{ inputs.runner }}
@@ -50,7 +51,7 @@ jobs:
           for ($i = 0; $i -lt 180; $i++) { try { if ((& "$env:ProgramFiles\whyfs\whyfs.exe" status --json | ConvertFrom-Json).collector_ready) { break } } catch {}; Start-Sleep 1 }
       - name: service cost decomposition
         shell: pwsh
-        run: python scripts\diag_service_cost.py --out ci-results\diag-service --pairs ${{ inputs.pairs }} --variants "${{ inputs.variants }}" 2>&1 | Tee-Object ci-results\diag-service.log
+        run: python scripts\diag_service_cost.py --out ci-results\diag-service --pairs ${{ inputs.pairs }} --variants "${{ inputs.variants }}" --after-s ${{ inputs.after }} 2>&1 | Tee-Object ci-results\diag-service.log
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "win-diag-service-${{ inputs.arch }}", path: "ci-results/" }
