@@ -1,0 +1,141 @@
+{
+ "platform": "windows-arm64",
+ "total_overhead": {
+  "median": 11.3,
+  "ci90": [
+   6.17,
+   27.27
+  ],
+  "pairs": [
+   15.56,
+   23.53,
+   1.13,
+   33.09,
+   6.54,
+   4.87,
+   31.84,
+   33.75,
+   28.54,
+   27.85,
+   2.55,
+   27.27,
+   6.17,
+   19.37,
+   27.54,
+   6.46,
+   -2.64,
+   -10.72,
+   -20.49,
+   7.05
+  ],
+  "baseline_median_s": 3.85,
+  "monitored_median_s": 4.5
+ },
+ "kernel_floor": {
+  "median": 2.38,
+  "ci90": [
+   -4.45,
+   11.38
+  ],
+  "pairs": [
+   4.24,
+   26.79,
+   0.37,
+   22.02,
+   -20.92,
+   -49.22,
+   -21.51,
+   2.11,
+   -17.58,
+   -3.96,
+   -22.52,
+   -4.45,
+   26.91,
+   2.65,
+   11.04,
+   11.38,
+   23.64,
+   18.36,
+   27.49,
+   -16.03
+  ],
+  "baseline_median_s": 4.44
+ },
+ "whyfs_controlled": {
+  "median_difference": 8.93,
+  "ci90": [
+   -4.42,
+   27.04
+  ]
+ },
+ "whyfs_cpu_ms_per_run": {
+  "mean": 87.46,
+  "median": 84.66,
+  "by_process_mean": {
+   "collector": 80.83,
+   "serve": 6.55,
+   "svc": 0.08
+  },
+  "by_thread_mean": {
+   "whyfs-merge": 34.38,
+   "whyfs-writer": 31.64,
+   "whyfs-consume-file": 11.36,
+   "whyfs-consume-sys": 1.77,
+   "whyfs-stdin": 0
+  },
+  "collector_io_median": {
+   "write_ops": 3557.5,
+   "write_bytes": 7327436.0,
+   "read_ops": 655.0,
+   "ctx": 410.0
+  },
+  "runs": 10
+ },
+ "whyfs_cpu_source": "cpu session (post-run window 7 s)",
+ "whyfs_cpu_ms_per_run_machine_perf_timing": {
+  "mean": 65.27,
+  "median": 59.06,
+  "by_process_mean": {
+   "collector": 50.55,
+   "serve": 14.73,
+   "svc": 0
+  },
+  "by_thread_mean": {
+   "whyfs-merge": 15.46,
+   "whyfs-writer": 22.83,
+   "whyfs-consume-file": 9.95,
+   "whyfs-consume-sys": 1.65,
+   "whyfs-stdin": 0
+  },
+  "collector_io_median": {
+   "write_ops": 2235.0,
+   "write_bytes": 4604100.0,
+   "read_ops": 581.5,
+   "ctx": 236.5
+  },
+  "runs": 20
+ },
+ "loss": 0,
+ "verify": {
+  "checked": 300,
+  "labelled": 300,
+  "creator_ok": 300,
+  "complete": 300,
+  "identity_match": 300,
+  "failures": [],
+  "ok": true
+ },
+ "historical_total_lt_5pct": false,
+ "contract": {
+  "cpu_ms_per_run_reference": 86.17,
+  "cpu_ms_per_run_ceiling": 129.3,
+  "calibration": "results/native-ci/calib-cpu-1.0.0/win-diag-service-arm64 (run 36447685885)"
+ },
+ "checks": {
+  "zero_loss": true,
+  "stress_outputs_labelled_correctly": true,
+  "whyfs_cpu_within_regression_ceiling": true,
+  "whyfs_controlled_not_above_ceiling": true
+ },
+ "verdict": "PASS"
+}

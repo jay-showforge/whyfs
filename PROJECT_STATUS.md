@@ -1,18 +1,22 @@
 # whyfs project status
 
-## Current (2026-09-28): WhyFS 1.0.0 release candidate; measurability rule frozen, authoritative run pending
+## Current (2026-09-28): WhyFS 1.0.0 NOT COMPLETE: `label` latency on long file histories (Windows ARM64)
 
-- **The previous authoritative run** (36449450012, 80dabe3) failed one precommitted check:
-  Windows ARM64 MSVC +5.18 %, CI90 1.44..12.36.  It stays recorded as a failure.
-- **Every hosted Windows ARM64 MSVC result** so far has been too imprecise to judge (CI90
-  7.4–14 pp wide), whatever its median.
-- **Frozen before the next run:**
-  - a general measurability rule for real workloads: PASS, FAIL, or UNMEASURABLE ON THIS RUNNER
-    (never a pass);
-  - 150 pairs for every workload on every platform.
+The authoritative run under the frozen measurability rule (36462972085, commit 71bee51,
+150 pairs):
+- **Passed:**
+  - every functional gate on all four platforms;
+  - every real workload, all measurable, including Windows ARM64 MSVC at **+1.72 %** (CI90
+    0.91..2.66);
+  - the spawn stress contract everywhere.
+- **Failed:** the precommitted `label` CLI check on Windows ARM64: **108.8 ms** against < 100 ms.
+  `label`'s cost grows about linearly with the queried file's own history.  The campaign's query
+  targets had been rebuilt hundreds of times.  Measured on the desktop at +3 ms per 100
+  generations.
+- **Fix:** it needs a product change to how the label processes long histories.  Not made in
+  this pass.
 
-  See [BENCHMARK.md section 8](BENCHMARK.md#8-measurability-of-real-workload-results-frozen-before-the-next-authoritative-run).
-- Not released.
+See [BENCHMARK.md section 9](BENCHMARK.md#9-the-authoritative-run-under-the-measurability-rule-run-36462972085-commit-71bee51----fail-windows-arm64-label-cli-latency).
 
 **Product:** WhyFS automatically labels files with their provenance: where, when, how, and what
 or who caused them to exist.

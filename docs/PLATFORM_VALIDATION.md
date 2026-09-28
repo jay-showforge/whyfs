@@ -23,6 +23,19 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
 
+## Authoritative run 36462972085 (commit 71bee51, 150 pairs, measurability rule): **FAIL on one check**
+
+`results/release-1.0.0-meas/`.  Details in
+[BENCHMARK.md section 9](../BENCHMARK.md#9-the-authoritative-run-under-the-measurability-rule-run-36462972085-commit-71bee51----fail-windows-arm64-label-cli-latency).
+- **Every functional gate** passed on all four platforms.
+- **Every real workload** was measurable and PASSED.  Windows ARM64 MSVC: **+1.72 %** (CI90
+  0.91..2.66).
+- **The spawn stress contract** passed on all four platforms.
+- **Failed:** Windows ARM64 `label` CLI median **108.8 ms** (< 100 ms required).  `label`'s cost
+  grows with the queried file's own history.  The 150-pair campaign rebuilt its query targets
+  hundreds of times; on Windows x64 `label` rose from 66–72 to 93.1 ms.
+- Not released; no artifact approved.
+
 ## Measurability rule for real workloads (frozen before the next authoritative run)
 
 A real-workload result is judged against 5 % only when its CI90 can resolve the threshold:

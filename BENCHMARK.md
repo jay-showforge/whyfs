@@ -270,6 +270,72 @@ needs dedicated ARM64 hardware.
 The spawn workload runs in the same campaign, so the historical total-< 5 % spawn rule is now
 reported at 150 pairs too.
 
+### 9. The authoritative run under the measurability rule: run 36462972085 (commit 71bee51) -- **FAIL (Windows ARM64 `label` CLI latency)**
+
+The rule and the 150-pair sample count were committed before this run (71bee51).  One run,
+not repeated.  `results/release-1.0.0-meas/`.  Product code is identical to 80dabe3.
+
+**Real workloads: every one measurable, every one PASS.**
+
+| Platform | Workload | Status | Median | CI90 (width) | Baseline CV / spread | WhyFS CPU (median, s) |
+|---|---|---|---|---|---|---|
+| Windows x64 | MSVC | PASS | +1.45 % | 1.38..1.61 (0.23) | 2.3 % / 26 % | 0.078 |
+| Windows x64 | Vite | PASS | +2.34 % | 2.04..2.62 (0.58) | 6.5 % / 73 % | 0.0 |
+| **Windows ARM64** | **MSVC** | **PASS** | **+1.72 %** | **0.91..2.66 (1.75)** | 6.6 % / 43 % | 0.094 |
+| Windows ARM64 | Vite | PASS | +1.14 % | 0.79..1.38 (0.59) | 2.8 % / 17 % | 0.0 |
+| Linux x86-64 | make -j8 | PASS | +2.72 % | 1.90..3.89 (2.00) | 6.4 % / 34 % | 0.01 |
+| Linux x86-64 | Vite | PASS | +0.40 % | −0.41..0.79 (1.21) | 6.0 % / 46 % | 0.0 |
+| Linux ARM64 | make -j8 | PASS | +1.59 % | 1.25..1.86 (0.61) | 4.1 % / 46 % | 0.0 |
+| Linux ARM64 | Vite | PASS | −0.02 % | −0.47..0.57 (1.05) | 2.1 % / 17 % | 0.0 |
+
+- Each workload ran 150 pairs; every raw pair is in `machine_perf.json`, and the
+  classification is in `contract.json`.
+- Windows ARM64 MSVC, never resolvable at 20 pairs, is resolved at 150: **+1.72 %**, a PASS.
+
+**Spawn stress (part B): PASS on all four platforms.**
+- Zero loss, and 300/300 outputs correct under stress.
+- WhyFS CPU per iteration against its ceiling:
+
+  | Platform | CPU / ceiling | Frozen calibration |
+  |---|---|---|
+  | Windows x64 | 74.1 / 80.2 ms | 53.5 ms |
+  | Windows ARM64 | 87.5 / 129.3 ms | |
+  | Linux x86-64 | 24.1 / 42.1 ms | |
+  | Linux ARM64 | 21.7 / 32.9 ms | |
+
+- WhyFS's own share was not shown to exceed 3.0 pp on any platform.
+
+**The historical total-< 5 % spawn rule** (150 pairs):
+- Windows x64 +5.34 % (4.82..5.68): not met.
+- Windows ARM64 +7.14 % (4.50..10.21): not met.
+- Linux x86-64 +3.91 %: met.
+- Linux ARM64 +4.02 %: met.
+
+**Every functional gate passed on all four platforms:**
+- tests (Windows 108, Linux 246 + 246);
+- MSI 32/32, upgrade 16/16, `.deb` 24/24;
+- product 47/47 and 48/48, outage 16/16 and 13/13;
+- all corpora 79/79 with lost 0; secret 22/22;
+- functional and graduation PASS; process decoding 0 mismatches.
+
+**The failure: Windows ARM64 `label` CLI median 108.8 ms** (p95 116.9) against the precommitted
+< 100 ms (`why` 90.0 ms).
+- **It grew on Windows x64 too:** `label` 66–72 ms in the 20-pair runs, 93.1 ms here.
+- **The cause is measured, not noise.**
+  - machine_perf times `label` on files the campaign itself rebuilt many times: the MSVC
+    `app.exe` and the spawn test's `out-150.txt`.
+  - At 150 pairs those paths carry hundreds of recorded generations.
+  - `label`'s cost grows about linearly with the queried path's own history.
+  - On the dedicated desktop, one file rewritten 1, 300 and 600 times gave `label` 61.5, 69.7
+    and 81.5 ms, against `why` 55–61 ms (`results/desktop-1.0.0/label-history-probe.txt`).
+  - Total store size alone does not explain it: a new file on a 677 MB store gives 59.9 ms.
+- **The 20-pair runs never built histories this long**, which is why the effect only surfaced
+  now.
+- **It is a real product cost.**  A build output that is rebuilt hundreds of times gets a slower
+  `label`, and on the slowest supported CPU that crosses the 100 ms criterion.
+- **Not changed in this pass:** product code.  The fix belongs to the label's history
+  processing, bounded or summarised for long histories, and needs a new validation.
+
 ---
 
 # v0.1 development benchmark

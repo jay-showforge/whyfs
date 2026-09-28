@@ -1,0 +1,17 @@
+label / why latency vs. the queried file's own history length (dedicated desktop, 2026-09-28)
+
+Machine: Intel Core i5-14400F (10 cores / 16 threads), Windows 11 Home 10.0.26200, Defender on.
+WhyFS: the release-candidate MSI (whyfs 1.0.0, product code of ec52053 / 80dabe3 / 71bee51),
+installed service, machine store 677.5 MB (+4.8 MB WAL).
+Method: one in-scope file (%USERPROFILE%\whyfs-hist-probe\out.txt), recreated N times by
+`del` + `echo` in a cmd loop (each recreation is a new generation of the path); 12 s settle;
+then 11 x `whyfs why FILE --json` and 11 x `whyfs label FILE --json`, median wall time.
+
+  generations   why median   label median
+            1      55.4 ms        61.5 ms
+          300      60.5 ms        69.7 ms
+          600      58.8 ms        81.5 ms
+
+A new file on the same 677 MB store: why 54.0 ms, label 59.9 ms (15 runs each).
+Conclusion: label cost grows about linearly with the path's own recorded history
+(~3 ms per 100 generations here); total store size alone does not explain it.

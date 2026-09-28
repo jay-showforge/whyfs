@@ -74,9 +74,14 @@ loss and query latency, under the 1.0 contract ([BENCHMARK.md](../BENCHMARK.md#w
   +5.90 % by itself there.  WhyFS's own share is about 0.7 percentage points.  On a 10-core
   desktop the same workload costs −0.70 % (no measurable overhead).  Linux x86-64 measured
   +5.50 % once; WhyFS's own share there is larger than on Windows (+1.7 to +2.7 pp).  Builds cost 0.1–2.8 % on every platform.
-- **Windows ARM64 build overhead is not measured precisely on the hosted runner.**  MSVC
-  measured +0.72 to +5.18 % with identical code, because that runner's own build time moves by
-  up to 30 % within a run.  The authoritative run's +5.18 % is over the < 5 % criterion.
+- **Windows ARM64 build overhead needs a large sample on the hosted runner.**  At 20 pairs
+  MSVC measured +0.72 to +5.18 % with identical code, and its CI90 was 7–14 pp wide, because
+  that runner's own build time moves by up to 30 % within a run.  At 150 pairs it measured
+  +1.72 % (CI90 0.91..2.66).
+- **`label` slows with a file's own history.**  Its cost grows about linearly with the number
+  of recorded generations of the queried path: about 3 ms per 100 on a 10-core desktop.  A build
+  output rebuilt hundreds of times reached 108.8 ms on the Windows ARM64 runner, over the
+  100 ms criterion; `why` is much less affected.
 - **Query latency** is dominated by process start-up: about 25–30 ms on Linux, 65 ms on Windows
   x64, and 88–92 ms median on Windows ARM64 (Cobalt 100), where the 95th percentile exceeds
   100 ms.  The API itself answers in milliseconds.

@@ -1,0 +1,3160 @@
+{
+  "started": "2026-09-28T19:07:09+0000",
+  "environment": {
+    "kernel": "6.17.0-1022-azure",
+    "machine": "aarch64",
+    "python": "3.12.3",
+    "cpu": "",
+    "cpus": 2,
+    "mem": "MemTotal:        8101756 kB",
+    "bcc": "0.29.1",
+    "clang": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+    "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "node": "v22.23.2",
+    "make": "GNU Make 4.3",
+    "doctor": {
+      "linux": true,
+      "euid": 0,
+      "bcc_importable": true,
+      "bpf_fs": true,
+      "btf_vmlinux": true,
+      "kernel_headers": true,
+      "cap_bpf": true,
+      "cap_perfmon": true,
+      "bpf_fentry": true,
+      "native_collector": true,
+      "native_collector_detail": "/usr/lib/whyfs/whyfs-collect",
+      "ready": true
+    }
+  },
+  "workload_user": "runner",
+  "functional": {
+    "workspace": "/home/runner/whyfs-graduation-ws/functional",
+    "run_id": "daemon-a492355e2cad46f2b65ee16faa69d104",
+    "collector": {
+      "bridge_evicted": 0,
+      "consumer_yields": 0,
+      "excluded_image": 0,
+      "filtered": 9389,
+      "kernel_drops": 0,
+      "pending_exec": 2,
+      "proc_fallbacks": 2,
+      "queue_drops": 0,
+      "received": 11531,
+      "submitted": 1871,
+      "truncated_paths": 6,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 3,
+      "writer_failed": 0,
+      "writer_max_batch": 801,
+      "writer_rows": 1871,
+      "stored_events": 1612,
+      "stored_processes": 253
+    },
+    "static_file": "ELF 64-bit LSB executable, ARM aarch64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=84669600a36a1f58f996548e2e14963765a63012, for GNU/Linux 3.7.0, not stripped",
+    "linker_ancestry": [
+      "collect2",
+      "aarch64-linux-gnu-gcc-13",
+      "make",
+      "runuser",
+      "python3.12"
+    ],
+    "process_census": {
+      "cc1": 75,
+      "as": 75,
+      "collect2": 3,
+      "ld": 3,
+      "gcc": 78,
+      "make": 3
+    },
+    "queries": {
+      "why_static": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/static-out.txt\n\u2514\u2500\u2500 created by /home/runner/whyfs-graduation-ws/functional/static_copy  (pid 359467)\n    run: ./static_copy raw.txt static-out.txt\n    parent: /usr/sbin/runuser  (pid 359466)  \u00b7 runuser -u runner -- env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOM...\n    evidence: ebpf-native\n    inputs:\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/raw.txt\n"
+      },
+      "why_static_raw": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/static-out.txt\n\u2514\u2500\u2500 created by /home/runner/whyfs-graduation-ws/functional/static_copy  (pid 359467)\n    run: ./static_copy raw.txt static-out.txt\n    parent: /usr/sbin/runuser  (pid 359466)  \u00b7 runuser -u runner -- env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOM...\n    evidence: ebpf-native\n    inputs:\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/raw.txt\n    raw evidence (creator process, unfiltered):\n      1790622432636339238  exec    -  /usr/bin/env  [ebpf:exec]\n      1790622432636867171  exec    -  /usr/bin/bash  [ebpf:exec]\n      1790622432637546300  open    -  /home/runner/whyfs-graduation-ws/functional/static_copy  [ebpf:open]\n      1790622432637586997  io      r  /home/runner/whyfs-graduation-ws/functional/static_copy  [ebpf:rw]\n      1790622432637690696  exec    -  /home/runner/whyfs-graduation-ws/functional/static_copy  [ebpf:exec]\n      1790622432637799539  open    -  /home/runner/whyfs-graduation-ws/functional/raw.txt  [ebpf:open]\n      1790622432637834171  open    -  /home/runner/whyfs-graduation-ws/functional/static-out.txt  [ebpf:open]\n      1790622432637840732  io      r  /home/runner/whyfs-graduation-ws/functional/raw.txt  [ebpf:rw]\n      1790622432637850444  io      w  /home/runner/whyfs-graduation-ws/functional/static-out.txt  [ebpf:rw]\n"
+      },
+      "why_object": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/cproj/u05.o\n\u2514\u2500\u2500 created by /usr/bin/aarch64-linux-gnu-as  (pid 359706)\n    run: as -EL -mabi=lp64 -o u05.o /tmp/ccosnqnQ.s\n    parent: /usr/bin/aarch64-linux-gnu-gcc-13  (pid 359704)  \u00b7 cc -O2 -c u05.c -o u05.o\n    evidence: ebpf-native\n    inputs:\n      \u251c\u2500\u2500 /tmp/ccosnqnQ.s\n    via temporary /tmp/ccosnqnQ.s  (written by /usr/libexec/gcc/aarch64-linux-gnu/13/cc1, pid 359705)\n    inputs through temporaries:\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u05.c\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/common.h\n"
+      },
+      "why_app": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2514\u2500\u2500 created by /usr/bin/aarch64-linux-gnu-ld.bfd  (pid 359709)\n    run: /usr/bin/ld -plugin /usr/libexec/gcc/aarch64-linux-gnu/13/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/aarch64-linux-gnu/13/lto-wrapper -plugin-opt=-fresolution=/tmp/ccJ6jROE.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu --as-needed -dynamic-linker /lib/ld-linux-aarch64.so.1 -X -EL -maarch64linux --fix-cortex-a53-843419 -pie -z now -z relro -o a\n    parent: /usr/libexec/gcc/aarch64-linux-gnu/13/collect2  (pid 359708)  \u00b7 /usr/libexec/gcc/aarch64-linux-gnu/13/collect2 -plugin /usr/libexec/gcc/aarch64-linux-gnu/13/libl...\n    evidence: ebpf-native\n    inputs:\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u00.o\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u01.o\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u02.o\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u03.o\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u04.o\n      \u2514\u2500\u2500 +32 more\n"
+      },
+      "impact_header": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/cproj/common.h\n\u251c\u2500\u2500 /tmp/cc58VMjB.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc86R3GE.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccxlB80W.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccsIJYDU.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccbiOYUU.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc9r6nmR.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccMtqBUZ.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccYDx1Dp.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccvGN9fC.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc7SxBYH.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccQOwwoP.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccPzKv7D.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccxTwdkY.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccfhBQKp.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccmzqXBU.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccL5jTSY.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cccFdxXY.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccbruTeL.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccdlNipa.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccHWCWPn.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccVu4VTz.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccVCPcL9.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc2xMShV.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccOcEQCI.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccQ8zMI1.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc03Cihg.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc3j4iaK.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccqtZPD2.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccgi112z.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccE56ZmQ.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccuCr99h.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccLD0UKN.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccf2AjG2.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccv0w9EN.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccT9TgKg.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccwCtIOU.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/sedlYXhlm\n\u2502   via /usr/bin/sed  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccOEO89B.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccC1jhfW.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccNnXM3v.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccvdsFK1.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccw2Udbs.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccTmpfRn.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccEyesl1.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccAVnWpA.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccbRdaWz.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cczF4eWv.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccHyWRn9.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccanHayV.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccGlkJ7A.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cciq4PSp.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccyjZT3P.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cckoADbk.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc5lmA72.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccavkGcs.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cczqCYpr.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc8q213V.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cclaeNiV.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccYJ78tl.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccMBqMzP.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccKc0our.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc8Qiakz.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccsuu5Px.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccI4xMTR.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccMKv3BZ.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccuDE2w1.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/cc3PnRdJ.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccP4bD16.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccosKSeR.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccjdppLJ.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccedRFzj.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccdxTMVB.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccqZT3Zs.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /tmp/ccosnqnQ.s\n\u2502   via /usr/libexec/gcc/aarch64-linux-gnu/13/cc1  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u00.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u01.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u02.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u03.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u04.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u05.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u06.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u07.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u08.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u09.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u10.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u11.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u12.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u13.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u14.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u15.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u16.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u18.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u19.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u17.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u20.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u21.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u22.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u23.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u24.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u25.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u26.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u27.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u29.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u28.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u30.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u31.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u32.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u33.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u34.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u35.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/common.h\n\u2502   via /usr/bin/sed (rename)  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u00.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u02.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u01.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u03.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u04.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u05.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u06.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u07.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u08.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u09.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u10.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u11.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u12.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u13.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u14.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u15.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u17.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u16.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u18.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u19.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u20.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u22.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u21.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u23.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u24.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u25.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u26.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u27.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u28.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u29.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u30.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u31.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u32.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u33.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u34.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u35.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/u05.o\n\u2502   via /usr/bin/aarch64-linux-gnu-as  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n\u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/cproj/app\n\u2502   via /usr/bin/aarch64-linux-gnu-ld.bfd  [daemon-a]\n"
+      },
+      "history_object": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/cproj/u05.o\n2026-09-28 19:07:14  io       /usr/bin/aarch64-linux-gnu-as  \u00b7 as -EL -mabi=lp64 -o u05.o /tmp/ccosnqnQ.s\n2026-09-28 19:07:13  io       /usr/bin/aarch64-linux-gnu-as  \u00b7 as -EL -mabi=lp64 -o u05.o /tmp/ccTmpfRn.s\n2026-09-28 19:07:12  io       /usr/bin/aarch64-linux-gnu-as  \u00b7 as -EL -mabi=lp64 -o u05.o /tmp/cc9r6nmR.s\n"
+      },
+      "why_vite_js": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js\n\u2514\u2500\u2500 created by /usr/local/bin/node  (pid 359712)\n    run: node node_modules/vite/bin/vite.js build --logLevel warn\n    parent: /usr/bin/bash  (pid 359711)\n    evidence: ebpf-native\n    inputs (shared with 3 other outputs of this process: which input produced which output is not observable):\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/web/package.json\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/web/vite.config.js\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/web/index.html\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/web/src/main.js\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/web/src/util.js\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/web/src/data.json\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/web/src/style.css\n    (19 system/runtime/dependency reads hidden; use --raw)\n"
+      },
+      "why_vite_js_raw_json": {
+        "rc": 0,
+        "stdout": "{\n  \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js\",\n  \"run_id\": \"daemon-a492355e2cad46f2b65ee16faa69d104\",\n  \"ts_ns\": 1790622434437172153,\n  \"pid\": 359712,\n  \"process_key\": 1044741408,\n  \"exe\": \"/usr/local/bin/node\",\n  \"process_cwd\": \"/home/runner/whyfs-graduation-ws/functional/web\",\n  \"command\": \"node node_modules/vite/bin/vite.js build --logLevel warn\",\n  \"collector\": \"ebpf-native\",\n  \"inputs\": [\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/package.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/bin/vite.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/cli.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/esbuild/package.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/package.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/package.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/constants.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/esbuild/lib/main.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/parseAst.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/native.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/shared/parseAst.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@rollup/rollup-linux-arm64-gnu/package.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@rollup/rollup-linux-arm64-gnu/rollup.linux-arm64-gnu.node\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@esbuild/linux-arm64/package.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js.timestamp-1790622434322-d3909113225a2.mjs\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/rollup.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/shared/node-entry.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/index.html\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/src/main.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/src/util.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/src/data.json\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/src/style.css\"\n  ],\n  \"inputs_via_temporaries\": [],\n  \"temporaries\": [],\n  \"renamed_from\": [],\n  \"hidden_input_count\": 0,\n  \"outputs\": [\n    \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js.timestamp-1790622434322-d3909113225a2.mjs\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/dist/index.html\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js\",\n    \"/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-BrLSULct.css\"\n  ],\n  \"parent\": {\n    \"pid\": 359711,\n    \"exe\": \"/usr/bin/bash\",\n    \"command\": null\n  },\n  \"shared_by_outputs\": 3,\n  \"raw_events\": [\n    {\n      \"ts_ns\": 1790622434194545582,\n      \"kind\": \"exec\",\n      \"path\": \"/usr/local/bin/node\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:exec\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434208103605,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434208110877,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434210121856,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/bin/vite.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434210151048,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/bin/vite.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434212405441,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/cli.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434212431554,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/cli.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434214126925,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/esbuild/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434214133357,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/esbuild/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434214860383,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434214866671,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434215924218,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434215931538,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434218271741,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434218311270,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434251833452,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/constants.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434251862749,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/constants.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434257271853,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/esbuild/lib/main.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434257299838,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/esbuild/lib/main.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434283087161,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/parseAst.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434283112049,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/parseAst.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434286410341,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/native.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434286432317,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/native.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434287194928,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/shared/parseAst.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434287218129,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/shared/parseAst.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434290111026,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434290227885,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434293477903,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@rollup/rollup-linux-arm64-gnu/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434293484135,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@rollup/rollup-linux-arm64-gnu/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434293759622,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@rollup/rollup-linux-arm64-gnu/rollup.linux-arm64-gnu.node\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434293764854,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@rollup/rollup-linux-arm64-gnu/rollup.linux-arm64-gnu.node\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434296372288,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434296378784,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434309252861,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434309259445,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434309709913,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@esbuild/linux-arm64/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434309715913,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/@esbuild/linux-arm64/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434320103639,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434321506714,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434323145908,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js.timestamp-1790622434322-d3909113225a2.mjs\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434324649162,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js.timestamp-1790622434322-d3909113225a2.mjs\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 1,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434324917184,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js.timestamp-1790622434322-d3909113225a2.mjs\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434324938225,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js.timestamp-1790622434322-d3909113225a2.mjs\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434325253553,\n      \"kind\": \"unlink\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/vite.config.js.timestamp-1790622434322-d3909113225a2.mjs\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:unlink\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434326427967,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434326434751,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434328804138,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434328810235,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434344922065,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/rollup.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434344941138,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/rollup.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434345284210,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/shared/node-entry.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434345307147,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/rollup/dist/es/shared/node-entry.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434376953657,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/index.html\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434376966330,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434377087733,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/index.html\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434377100893,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/package.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434379589036,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434379610989,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434393489859,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/main.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434399166298,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/main.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434401222806,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/util.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434401230358,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/data.json\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434401263959,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/style.css\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434401569031,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/util.js\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434401598671,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/data.json\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434401628736,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/src/style.css\",\n      \"path2\": null,\n      \"is_read\": 1,\n      \"is_write\": 0,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434436927555,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/dist/index.html\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434436985220,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434437018037,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/dist/index.html\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 1,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434437172153,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 1,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434437222498,\n      \"kind\": \"open\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-BrLSULct.css\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 0,\n      \"api\": \"ebpf:open\",\n      \"source\": \"ebpf\"\n    },\n    {\n      \"ts_ns\": 1790622434438823011,\n      \"kind\": \"io\",\n      \"path\": \"/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-BrLSULct.css\",\n      \"path2\": null,\n      \"is_read\": 0,\n      \"is_write\": 1,\n      \"api\": \"ebpf:rw\",\n      \"source\": \"ebpf\"\n    }\n  ]\n}\n"
+      },
+      "why_moved": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/mv/final/result.txt\n\u251c\u2500\u2500 moved from /home/runner/whyfs-graduation-ws/functional/mv/stage2.txt  (by /usr/bin/mv, pid 359736)\n\u251c\u2500\u2500 moved from /home/runner/whyfs-graduation-ws/functional/mv/stage1.txt  (by /usr/bin/mv, pid 359738)\n\u2514\u2500\u2500 created by /usr/bin/cp  (pid 359737)\n    run: cp input.txt stage1.txt\n    parent: /usr/bin/bash  (pid 359736)\n    evidence: ebpf-native\n    inputs:\n      \u251c\u2500\u2500 /home/runner/whyfs-graduation-ws/functional/mv/input.txt\n"
+      },
+      "history_moved": {
+        "rc": 0,
+        "stdout": "/home/runner/whyfs-graduation-ws/functional/mv/final/result.txt\n2026-09-28 19:07:14  rename   /usr/bin/mv  \u00b7 mv stage2.txt final/result.txt\n"
+      }
+    },
+    "accuracy": {
+      "tested_outputs": 44,
+      "creator_attribution": 1.0,
+      "expected_meaningful_inputs": 118,
+      "found_meaningful_inputs": 118,
+      "useful_input_recall": 1.0,
+      "note": "Found = direct observed reads plus inputs reached through observed derived temporaries (gcc: cc1 -> /tmp/cc*.s -> as).  For objects, the source/header are one observed hop away."
+    },
+    "outputs": [
+      {
+        "output": "static-out.txt",
+        "path": "/home/runner/whyfs-graduation-ws/functional/static-out.txt",
+        "expected_creator": "static_copy",
+        "observed_creator": "/home/runner/whyfs-graduation-ws/functional/static_copy",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/raw.txt"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/raw.txt"
+        ],
+        "direct_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/raw.txt"
+        ],
+        "via_temporaries": []
+      },
+      {
+        "output": "cproj/u00.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u00.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u00.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u00.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccOEO89B.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u00.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u01.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u01.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u01.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u01.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccNnXM3v.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u01.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u02.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u02.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u02.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u02.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccC1jhfW.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u02.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u03.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u03.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u03.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u03.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccvdsFK1.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u03.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u04.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u04.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u04.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u04.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccw2Udbs.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u04.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u05.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u05.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u05.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u05.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccosnqnQ.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u05.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u06.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u06.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u06.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u06.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccEyesl1.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u06.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u07.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u07.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u07.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u07.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccAVnWpA.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u07.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u08.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u08.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u08.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u08.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccbRdaWz.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u08.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u09.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u09.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u09.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u09.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cczF4eWv.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u09.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u10.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u10.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u10.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u10.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccHyWRn9.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u10.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u11.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u11.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u11.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u11.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccanHayV.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u11.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u12.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u12.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u12.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u12.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccGlkJ7A.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u12.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u13.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u13.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u13.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u13.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cciq4PSp.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u13.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u14.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u14.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u14.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u14.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccyjZT3P.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u14.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u15.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u15.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u15.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u15.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cckoADbk.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u15.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u16.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u16.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u16.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u16.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccavkGcs.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u16.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u17.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u17.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u17.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u17.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cc5lmA72.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u17.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u18.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u18.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u18.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u18.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cczqCYpr.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u18.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u19.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u19.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u19.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u19.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cc8q213V.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u19.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u20.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u20.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u20.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u20.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cclaeNiV.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u20.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u21.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u21.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u21.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u21.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccMBqMzP.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u21.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u22.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u22.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u22.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u22.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccYJ78tl.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u22.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u23.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u23.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u23.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u23.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccKc0our.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u23.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u24.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u24.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u24.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u24.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cc8Qiakz.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u24.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u25.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u25.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u25.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u25.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccsuu5Px.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u25.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u26.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u26.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u26.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u26.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccI4xMTR.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u26.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u27.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u27.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u27.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u27.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccMKv3BZ.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u27.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u28.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u28.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u28.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u28.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccuDE2w1.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u28.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u29.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u29.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u29.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u29.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/cc3PnRdJ.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u29.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u30.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u30.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u30.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u30.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccP4bD16.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u30.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u31.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u31.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u31.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u31.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccosKSeR.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u31.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u32.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u32.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u32.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u32.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccjdppLJ.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u32.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u33.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u33.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u33.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u33.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccedRFzj.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u33.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u34.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u34.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u34.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u34.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccdxTMVB.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u34.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/u35.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/u35.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u35.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u35.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ],
+        "direct_inputs": [
+          "/tmp/ccqZT3Zs.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u35.c",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/common.h"
+        ]
+      },
+      {
+        "output": "cproj/main.o",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/main.o",
+        "expected_creator": "as",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-as",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/main.c"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/main.c"
+        ],
+        "direct_inputs": [
+          "/tmp/ccpP7fEx.s"
+        ],
+        "via_temporaries": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/main.c"
+        ]
+      },
+      {
+        "output": "cproj/app",
+        "path": "/home/runner/whyfs-graduation-ws/functional/cproj/app",
+        "expected_creator": "ld",
+        "observed_creator": "/usr/bin/aarch64-linux-gnu-ld.bfd",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u00.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u01.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u02.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u03.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u04.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u05.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u06.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u07.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u08.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u09.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u10.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u11.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u12.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u13.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u14.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u15.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u16.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u17.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u18.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u19.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u20.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u21.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u22.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u23.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u24.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u25.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u26.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u27.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u28.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u29.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u30.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u31.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u32.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u33.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u34.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u35.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/main.o"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u00.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u01.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u02.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u03.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u04.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u05.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u06.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u07.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u08.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u09.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u10.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u11.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u12.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u13.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u14.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u15.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u16.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u17.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u18.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u19.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u20.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u21.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u22.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u23.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u24.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u25.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u26.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u27.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u28.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u29.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u30.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u31.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u32.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u33.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u34.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u35.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/main.o"
+        ],
+        "direct_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u00.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u01.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u02.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u03.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u04.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u05.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u06.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u07.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u08.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u09.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u10.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u11.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u12.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u13.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u14.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u15.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u16.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u17.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u18.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u19.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u20.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u21.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u22.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u23.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u24.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u25.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u26.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u27.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u28.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u29.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u30.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u31.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u32.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u33.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u34.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/u35.o",
+          "/home/runner/whyfs-graduation-ws/functional/cproj/main.o"
+        ],
+        "via_temporaries": []
+      },
+      {
+        "output": "web/dist/assets/*.js",
+        "path": "/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js",
+        "expected_creator": "node",
+        "observed_creator": "/usr/local/bin/node",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/src/main.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/util.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/data.json"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/src/main.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/util.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/data.json"
+        ],
+        "direct_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/package.json",
+          "/home/runner/whyfs-graduation-ws/functional/web/vite.config.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/index.html",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/main.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/util.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/data.json",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/style.css"
+        ],
+        "via_temporaries": []
+      },
+      {
+        "output": "web/dist/assets/*.css",
+        "path": "/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-BrLSULct.css",
+        "expected_creator": "node",
+        "observed_creator": "/usr/local/bin/node",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/src/style.css"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/src/style.css"
+        ],
+        "direct_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/package.json",
+          "/home/runner/whyfs-graduation-ws/functional/web/vite.config.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/index.html",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/main.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/util.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/data.json",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/style.css"
+        ],
+        "via_temporaries": []
+      },
+      {
+        "output": "web/dist/index.html",
+        "path": "/home/runner/whyfs-graduation-ws/functional/web/dist/index.html",
+        "expected_creator": "node",
+        "observed_creator": "/usr/local/bin/node",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/index.html"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/index.html"
+        ],
+        "direct_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/package.json",
+          "/home/runner/whyfs-graduation-ws/functional/web/vite.config.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/index.html",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/main.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/util.js",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/data.json",
+          "/home/runner/whyfs-graduation-ws/functional/web/src/style.css"
+        ],
+        "via_temporaries": []
+      },
+      {
+        "output": "web/dist/report.json",
+        "path": "/home/runner/whyfs-graduation-ws/functional/web/dist/report.json",
+        "expected_creator": "node",
+        "observed_creator": "/usr/local/bin/node",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js"
+        ],
+        "direct_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/web/postbuild.mjs",
+          "/home/runner/whyfs-graduation-ws/functional/web/dist/assets/index-C42TDZxa.js"
+        ],
+        "via_temporaries": []
+      },
+      {
+        "output": "mv/final/result.txt",
+        "path": "/home/runner/whyfs-graduation-ws/functional/mv/final/result.txt",
+        "expected_creator": "cp",
+        "observed_creator": "/usr/bin/cp",
+        "creator_ok": true,
+        "expected_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/mv/input.txt"
+        ],
+        "found_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/mv/input.txt"
+        ],
+        "direct_inputs": [
+          "/home/runner/whyfs-graduation-ws/functional/mv/input.txt"
+        ],
+        "via_temporaries": []
+      }
+    ],
+    "checks": {
+      "static_binary_is_statically_linked": true,
+      "static_creator": true,
+      "static_input": true,
+      "objects_created_by_assembler": true,
+      "assembler_parentage_gcc_then_make": true,
+      "app_created_by_linker": true,
+      "linker_parentage_collect2_gcc_make": true,
+      "app_inputs_all_objects": true,
+      "compiler_subprocesses_observed": true,
+      "linker_subprocesses_observed": true,
+      "header_impact_reaches_all_includers_and_app": true,
+      "header_impact_excludes_non_includer": true,
+      "header_change_rebuilt_every_dependent_object": true,
+      "source_change_rebuilt_only_affected_object": true,
+      "source_impact_reaches_object_and_app": true,
+      "source_change_lineage_current": true,
+      "vite_outputs_exist": true,
+      "vite_js_creator_node": true,
+      "vite_js_inputs": true,
+      "vite_css_input": true,
+      "vite_html_creator_node": true,
+      "vite_human_view_hides_node_modules": true,
+      "vite_postbuild_creator_and_input": true,
+      "vite_transitive_impact_to_postbuild": true,
+      "rename_chain_creator_is_original_writer": true,
+      "rename_chain_input_preserved": true,
+      "rename_chain_steps_recorded": true,
+      "rename_impact_reaches_final_name": true,
+      "raw_mode_retains_dependency_reads": true,
+      "query_commands_succeed": true,
+      "creator_attribution_ge_99pct": true,
+      "useful_input_recall_ge_95pct": true,
+      "functional_zero_kernel_drops": true,
+      "functional_zero_queue_drops": true
+    }
+  },
+  "noise": {
+    "checks": {
+      "default_view_inputs_are_workspace_only": true,
+      "default_view_reports_hidden_count": true,
+      "raw_view_retains_system_reads": true,
+      "raw_evidence_stored": true,
+      "meaningful_input_visible": true
+    },
+    "hidden": 41,
+    "raw_inputs": 43,
+    "outside_rows_stored": 649,
+    "collector": {
+      "bridge_evicted": 0,
+      "consumer_yields": 0,
+      "excluded_image": 0,
+      "filtered": 60,
+      "kernel_drops": 0,
+      "pending_exec": 0,
+      "proc_fallbacks": 5,
+      "queue_drops": 0,
+      "received": 729,
+      "submitted": 673,
+      "truncated_paths": 0,
+      "unreadable_paths": 0,
+      "unresolved_fd": 0,
+      "writer_batches": 3,
+      "writer_failed": 0,
+      "writer_max_batch": 363,
+      "writer_rows": 673,
+      "stored_events": 658,
+      "stored_processes": 9
+    }
+  },
+  "performance": {
+    "make_j8_36_units": {
+      "command": "make -s -j8",
+      "pairs": 20,
+      "warmup_pairs": 2,
+      "runs": [
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.24518300899990209
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.2551602670000648,
+          "seconds": 0.25260133500023585,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9864,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8053,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 557056
+        },
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.25238016899993454
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.2609552670000994,
+          "seconds": 0.25235652899982597,
+          "collector_cpu_s_during_workload": 0.01,
+          "received": 9863,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8052,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 569344
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25710992099993746
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2513669480003955,
+          "seconds": 0.25261777900004745,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9864,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8053,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 581632
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.26126725300036924,
+          "seconds": 0.25368406999996296,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9866,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8055,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 569344
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25225452999984554
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2532188740001402
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2550137889998041,
+          "seconds": 0.25602129900016735,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 10382,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8571,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 573440
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25395196799991027,
+          "seconds": 0.2615045810002812,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9868,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8057,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 561152
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2507493980001527
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2535505089999788
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25595667800007504,
+          "seconds": 0.25779533500008256,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9869,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8058,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 557056
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25660805100005746,
+          "seconds": 0.287082609999743,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9864,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8053,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 561152
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24749659700000848
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24929701100018065
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2561536289999822,
+          "seconds": 0.2602785980002409,
+          "collector_cpu_s_during_workload": 0.01,
+          "received": 9865,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8054,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 577536
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25365171600014946,
+          "seconds": 0.2583420119999573,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9886,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8075,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 602112
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2573982429998978
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.27832729700003256
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25011854800004585,
+          "seconds": 0.2536186839997754,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9871,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8060,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 585728
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2583242219998283,
+          "seconds": 0.26092903100015974,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 10600,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8789,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 536576
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25827022700013913
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2570896610000091
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2650071409998418,
+          "seconds": 0.25946203099965715,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9870,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8059,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 585728
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2613207029999103,
+          "seconds": 0.25725487899990185,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9869,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8058,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 593920
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25715865599977406
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.26012122600013754
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.26499558200021056,
+          "seconds": 0.2610686660000283,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9882,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8071,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 557056
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.263987810999879,
+          "seconds": 0.26771086799999466,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9884,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8073,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 528384
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2576322499999151
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2594766970000819
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2707924900000762,
+          "seconds": 0.26032831900010933,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9887,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8076,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 577536
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2640747039999951,
+          "seconds": 0.25884438499997486,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9865,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8054,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 589824
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2547201590000441
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.260954589999983
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.26453185999980633,
+          "seconds": 0.267282960999637,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 10358,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8547,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 548864
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.26229879599986816,
+          "seconds": 0.26694545899999866,
+          "collector_cpu_s_during_workload": 0.01,
+          "received": 9870,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8059,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 552960
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2602525840002272
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.253325704999952
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2630286719995638,
+          "seconds": 0.2752943109999251,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9890,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8079,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 614400
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.258138659999986,
+          "seconds": 0.25636451099990154,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 9883,
+          "submitted": 1560,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 8072,
+          "writer_rows": 1560,
+          "writer_batches": 1,
+          "writer_max_batch": 1560,
+          "stored_events": 1323,
+          "stored_processes": 237,
+          "unreadable_paths": 0,
+          "truncated_paths": 4,
+          "db_growth_bytes": 532480
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25718783699994674
+        }
+      ],
+      "baseline_median_s": 0.25713428849985576,
+      "monitored_median_s": 0.259870314499949,
+      "paired_overheads_percent": [
+        -1.7471678970688576,
+        0.5667053828996904,
+        1.1067204255973406,
+        4.289215880838082,
+        1.6741540045988046,
+        15.994568604001124,
+        4.405021526733144,
+        0.3666571259617779,
+        -8.877538519067462,
+        1.0294659322149347,
+        0.9227792321247819,
+        0.03741775665830893,
+        0.36423017623723464,
+        3.912017226136455,
+        0.3282075076002533,
+        1.6191203774845508,
+        2.425085145907735,
+        2.5716843602081596,
+        8.672079290168067,
+        -0.32012633631868237
+      ],
+      "median_paired_overhead_percent": 1.0680931789061376,
+      "median_of_medians_overhead_percent": 1.0640455678064153,
+      "first_build_after_start_median_overhead_percent": 1.4946572159889482,
+      "builds_per_daemon_session": 2,
+      "collector_cpu_s_median": 0.0,
+      "events_received_median": 9870.5,
+      "stored_events_median": 1323.0,
+      "db_growth_bytes_median": 571392.0,
+      "kernel_drops_total": 0,
+      "queue_drops_total": 0,
+      "writer_batches_median": 1.0,
+      "writer_max_batch_max": 1560
+    },
+    "vite_build": {
+      "command": "node node_modules/vite/bin/vite.js build --logLevel warn",
+      "pairs": 20,
+      "warmup_pairs": 2,
+      "runs": [
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.256865941000342
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.25403191599980346,
+          "seconds": 0.2506178449998515,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1521,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1321,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.2467146510002749
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.2899995479997415,
+          "seconds": 0.2524045529999057,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 5678,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 5318,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2543556669997997
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2523465119998036,
+          "seconds": 0.2508500419999109,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1546,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1346,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2514528030001202,
+          "seconds": 0.2535742649997701,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 2036,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1836,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 77824
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24464589499984868
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2572145719996115
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.246992377999959,
+          "seconds": 0.24878982300015196,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1528,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1328,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25772545600011654,
+          "seconds": 0.24976925500004654,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1523,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1323,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25047818600023675
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24872094100010145
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.24802240999997593,
+          "seconds": 0.2585929669999132,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1538,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1338,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 61440
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2532211580000876,
+          "seconds": 0.25387983500013434,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1539,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1339,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 77824
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25121084900001733
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2510299569999006
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25098726900023394,
+          "seconds": 0.25908872900026836,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1545,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1345,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 69632
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25071116799972515,
+          "seconds": 0.25037162000035096,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1521,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1321,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 86016
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2512117860001126
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2522653330001958
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25666867900008583,
+          "seconds": 0.2415546790002736,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 2093,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1893,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 90112
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25479800700031774,
+          "seconds": 0.25852939000014885,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1523,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1323,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 61440
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2525513979999232
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2596498900002189
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25457426699995267,
+          "seconds": 0.25690157100007127,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1522,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1322,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.24741944799961857,
+          "seconds": 0.24868256599984306,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1519,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1319,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 90112
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2578780439998809
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24611967700002424
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25749962000008964,
+          "seconds": 0.25156270500019673,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1526,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1326,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 81920
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2622285880001982,
+          "seconds": 0.25100256299992907,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1872,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1662,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 69632
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.25048858200034374
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24797644699992816
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2505896949996895,
+          "seconds": 0.24211674299976949,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1523,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1323,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 86016
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.252808367000398,
+          "seconds": 0.25361590800002887,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 2071,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1871,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24767247999989195
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.2494281240001328
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.24794619599970247,
+          "seconds": 0.2471231509998688,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1519,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1319,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 65536
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2497677759997714,
+          "seconds": 0.2551868430000468,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1521,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1321,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 69632
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24935215200002858
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24966875900008745
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.25253048900003705,
+          "seconds": 0.24938800300014918,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1519,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1319,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 73728
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.2512060009999004,
+          "seconds": 0.2491004669996073,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 1523,
+          "submitted": 175,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1323,
+          "writer_rows": 175,
+          "writer_batches": 1,
+          "writer_max_batch": 175,
+          "stored_events": 166,
+          "stored_processes": 7,
+          "unreadable_paths": 0,
+          "truncated_paths": 0,
+          "db_growth_bytes": 69632
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.24199558700001944
+        }
+      ],
+      "baseline_median_s": 0.25048338400029024,
+      "monitored_median_s": 0.25092630249992,
+      "paired_overheads_percent": [
+        -1.3782374268435649,
+        3.6495073828755276,
+        -3.2753778038175363,
+        -0.2830310341634057,
+        3.9691173409510894,
+        1.0624485410328788,
+        3.2102829864130378,
+        -0.3344452953976007,
+        -4.245789095370434,
+        2.367039758072309,
+        -1.058471082019441,
+        -3.565824316568056,
+        2.2115371133742956,
+        0.20519138855783492,
+        -2.3630082901221594,
+        2.399712717432112,
+        -0.9241030896190217,
+        2.3399401020679944,
+        -0.11245139402409343,
+        2.935954364980753
+      ],
+      "median_paired_overhead_percent": 0.046369997266870744,
+      "median_of_medians_overhead_percent": 0.17682550137905206,
+      "first_build_after_start_median_overhead_percent": 0.8449063728376838,
+      "builds_per_daemon_session": 2,
+      "collector_cpu_s_median": 0.0,
+      "events_received_median": 1524.5,
+      "stored_events_median": 166.0,
+      "db_growth_bytes_median": 73728.0,
+      "kernel_drops_total": 0,
+      "queue_drops_total": 0,
+      "writer_batches_median": 1.0,
+      "writer_max_batch_max": 175
+    },
+    "static_binary_x300": {
+      "command": "for i in $(seq 1 300); do ./static_copy raw.txt out-$i.txt; done",
+      "pairs": 20,
+      "warmup_pairs": 2,
+      "runs": [
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.13852387999986604
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.1446434920003412,
+          "seconds": 0.1423690199999328,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6975,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1234,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4323,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1875968
+        },
+        {
+          "mode": "off",
+          "warmup": true,
+          "seconds": 0.14151991900007488
+        },
+        {
+          "mode": "on",
+          "warmup": true,
+          "first_build_after_start_seconds": 0.1440070530002231,
+          "seconds": 0.14039403400010997,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6960,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1219,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4176,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1847296
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.1357460699996409
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.14075206899997283,
+          "seconds": 0.14206135099993844,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6958,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1217,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4234,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1830912
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13702410299993062,
+          "seconds": 0.13537234099976558,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6956,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1215,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4359,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1863680
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.1357919279998896
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13635041399993497
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13756275500008996,
+          "seconds": 0.14056828699995094,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6960,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1219,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4491,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1843200
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13956702999985282,
+          "seconds": 0.13724659500030612,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 7551,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1810,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4173,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1851392
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13927388599995538
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13813907400026437
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.14118976899999325,
+          "seconds": 0.13817981300007887,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6957,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1216,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4233,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1851392
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13927719999992405,
+          "seconds": 0.1400607650002712,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6957,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1216,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4366,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1871872
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13769129699994664
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13297121799996603
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13827662800031248,
+          "seconds": 0.1363433630003783,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6961,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1220,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4296,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1839104
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13985869099997217,
+          "seconds": 0.13818044900017412,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6957,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1216,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4554,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1839104
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.14033788699998695
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13582907699992575
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13739483200015457,
+          "seconds": 0.13887767799997164,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 7513,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1772,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4106,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1851392
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.14238288600017768,
+          "seconds": 0.14238756600025226,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6963,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1222,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4160,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1835008
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13231561799966585
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.137672104000103
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.14347243300016999,
+          "seconds": 0.13955729500003144,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6959,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1218,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4402,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1826816
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13901987300005203,
+          "seconds": 0.1433494940001765,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6978,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1237,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4169,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1835008
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.1361190800002987
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13689256299994668
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.1421245460001046,
+          "seconds": 0.1458388629998808,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6962,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1221,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4237,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1896448
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13719363000018348,
+          "seconds": 0.1397349660001055,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6958,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1217,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4097,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1843200
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13210278199994718
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13520434699967154
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.1421186080001462,
+          "seconds": 0.14517237399968508,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 7401,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1660,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4129,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1818624
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13943589300015446,
+          "seconds": 0.1417881600000328,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6962,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1221,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4538,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1875968
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13245477200007372
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13711877000014283
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.13940825200006657,
+          "seconds": 0.14027553100004297,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6978,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1237,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4424,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1896448
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.14144007100003364,
+          "seconds": 0.14083135300006688,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6977,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1236,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4429,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1859584
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13483497800007171
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.13505244699990726
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.14300302800029385,
+          "seconds": 0.1440811269999358,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 7539,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1798,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4383,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1781760
+        },
+        {
+          "mode": "on",
+          "warmup": false,
+          "first_build_after_start_seconds": 0.14179987099987557,
+          "seconds": 0.1477861009998378,
+          "collector_cpu_s_during_workload": 0.0,
+          "received": 6959,
+          "submitted": 5717,
+          "kernel_drops": 0,
+          "queue_drops": 0,
+          "unresolved_fd": 0,
+          "filtered": 1218,
+          "writer_rows": 5717,
+          "writer_batches": 2,
+          "writer_max_batch": 4582,
+          "stored_events": 4510,
+          "stored_processes": 607,
+          "unreadable_paths": 0,
+          "truncated_paths": 1,
+          "db_growth_bytes": 1810432
+        },
+        {
+          "mode": "off",
+          "warmup": false,
+          "seconds": 0.1398334599998634
+        }
+      ],
+      "baseline_median_s": 0.13597407850011223,
+      "monitored_median_s": 0.14042190899999696,
+      "paired_overheads_percent": [
+        4.652275384704874,
+        -0.3089925935246707,
+        3.0934068157783434,
+        -1.4556145863912517,
+        0.029491293545524933,
+        1.720855313263181,
+        2.535996173557753,
+        -1.5373168614210564,
+        2.2444391638231975,
+        7.6120628485534025,
+        1.3693340518185382,
+        5.3118299064774055,
+        6.535271021215094,
+        5.777458948715664,
+        7.372563990148739,
+        7.0464716816347694,
+        2.3022092452381626,
+        4.447195445081009,
+        6.6853138914504395,
+        5.687223215375026
+      ],
+      "median_paired_overhead_percent": 3.7703011304296763,
+      "median_of_medians_overhead_percent": 3.2710870696439853,
+      "first_build_after_start_median_overhead_percent": 2.948095053790545,
+      "builds_per_daemon_session": 2,
+      "collector_cpu_s_median": 0.0,
+      "events_received_median": 6961.5,
+      "stored_events_median": 4510.0,
+      "db_growth_bytes_median": 1843200.0,
+      "kernel_drops_total": 0,
+      "queue_drops_total": 0,
+      "writer_batches_median": 2.0,
+      "writer_max_batch_max": 4582
+    },
+    "query_latency_ms": {
+      "why_in_process_median": 0.6427480000184005,
+      "why_in_process_p95": 1.232374999744934,
+      "impact_header_median": 258.7028494999686,
+      "why_cli_end_to_end_median": 40.82426000013584,
+      "db_events_at_measurement": 131978,
+      "db_bytes_at_measurement": 54890496
+    }
+  },
+  "checks": {
+    "functional.static_binary_is_statically_linked": true,
+    "functional.static_creator": true,
+    "functional.static_input": true,
+    "functional.objects_created_by_assembler": true,
+    "functional.assembler_parentage_gcc_then_make": true,
+    "functional.app_created_by_linker": true,
+    "functional.linker_parentage_collect2_gcc_make": true,
+    "functional.app_inputs_all_objects": true,
+    "functional.compiler_subprocesses_observed": true,
+    "functional.linker_subprocesses_observed": true,
+    "functional.header_impact_reaches_all_includers_and_app": true,
+    "functional.header_impact_excludes_non_includer": true,
+    "functional.header_change_rebuilt_every_dependent_object": true,
+    "functional.source_change_rebuilt_only_affected_object": true,
+    "functional.source_impact_reaches_object_and_app": true,
+    "functional.source_change_lineage_current": true,
+    "functional.vite_outputs_exist": true,
+    "functional.vite_js_creator_node": true,
+    "functional.vite_js_inputs": true,
+    "functional.vite_css_input": true,
+    "functional.vite_html_creator_node": true,
+    "functional.vite_human_view_hides_node_modules": true,
+    "functional.vite_postbuild_creator_and_input": true,
+    "functional.vite_transitive_impact_to_postbuild": true,
+    "functional.rename_chain_creator_is_original_writer": true,
+    "functional.rename_chain_input_preserved": true,
+    "functional.rename_chain_steps_recorded": true,
+    "functional.rename_impact_reaches_final_name": true,
+    "functional.raw_mode_retains_dependency_reads": true,
+    "functional.query_commands_succeed": true,
+    "functional.creator_attribution_ge_99pct": true,
+    "functional.useful_input_recall_ge_95pct": true,
+    "functional.functional_zero_kernel_drops": true,
+    "functional.functional_zero_queue_drops": true,
+    "noise.default_view_inputs_are_workspace_only": true,
+    "noise.default_view_reports_hidden_count": true,
+    "noise.raw_view_retains_system_reads": true,
+    "noise.raw_evidence_stored": true,
+    "noise.meaningful_input_visible": true,
+    "perf.make_j8_36_units.median_overhead_lt_5pct": true,
+    "perf.make_j8_36_units.zero_drops": true,
+    "perf.vite_build.median_overhead_lt_5pct": true,
+    "perf.vite_build.zero_drops": true,
+    "perf.static_binary_x300.median_overhead_lt_5pct": true,
+    "perf.static_binary_x300.zero_drops": true,
+    "perf.why_query_median_lt_100ms": true
+  },
+  "failed_checks": [],
+  "verdict": "PASS",
+  "finished": "2026-09-28T19:11:57+0000"
+}

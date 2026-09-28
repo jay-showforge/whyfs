@@ -8,7 +8,21 @@ and performance.  The source archive is `git archive` of the same commit.
 An artifact is never rebuilt after its hash is recorded.  A rebuild is a new artifact: it
 needs a new run and new hashes, and the old ones are invalidated here.
 
-## Status: NO approved release artifacts (authoritative run 36449450012, commit 80dabe3)
+## Status: NO approved release artifacts (authoritative run 36462972085, commit 71bee51)
+
+The authoritative run under the measurability rule failed one precommitted check: Windows ARM64
+`label` CLI median 108.8 ms (< 100 ms).  Its packages are recorded to identify them and are
+**NOT approved**.  Each passed its own platform's clean-install test in that run.
+
+| Artifact | Built on | SHA-256 |
+|---|---|---|
+| `whyfs-1.0.0-x64.msi` | `windows-2022` (x64), run 36462972085 | `6f7a3f7a10bc0c529a6ae622a23f089b8ee0baabb2845765031b7ce54a2b47b2` |
+| `whyfs-1.0.0-arm64.msi` | `windows-11-arm` (ARM64), run 36462972085 | `5aa7f47daddfe72013cad1ea1fe15c6905a535357b45d89a0bdde056d88b86a2` |
+| `whyfs_1.0.0_amd64.deb` | `ubuntu-24.04` (x86-64), run 36462972085 | `e64292b62ff9960d73c6b8ce329df3d35e1c18c669962037a1ee6ead9a01cf6c` |
+| `whyfs_1.0.0_arm64.deb` | `ubuntu-24.04-arm` (ARM64), run 36462972085 | `386d9a404738bf54e08de71d47f36e08ad1c0115321073ad3ef293a2d7d311cf` |
+| `whyfs-1.0.0-src.tar.gz` | `git archive --format=tar.gz --prefix=whyfs-1.0.0/ 71bee51` (reproducible) | `2aa1296584dfd709364fe3a02c9c743a0b6e56c982fd17dd017bbe1ac34ed8ce` |
+
+## Invalidated: the 80dabe3 candidates (never approved)
 
 The authoritative release-candidate run failed one check of the frozen 1.0 contract: Windows
 ARM64 MSVC +5.18 % (part A, < 5 %).  Its packages are recorded to identify them and are **NOT
