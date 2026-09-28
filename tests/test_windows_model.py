@@ -358,5 +358,40 @@ class WindowsRedactionTests(unittest.TestCase):
             self.assertEqual(self.red(cmd), want, cmd)
 
 
+@unittest.skipUnless(EXE, "Windows collector binary not built")
+class FileIdentityTests(unittest.TestCase):
+    """The handle-free file identity (NtQueryInformationByName on NTFS) is exactly the reference
+    form (open + FileIdInfo): regular files, a missing file, a symlink (its own ID, never the
+    target's), a directory, and a UNC path (reference form by fallback)."""
+
+    def check(self, path):
+        out = subprocess.run([str(EXE), "--file-id-check", str(path)], capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(len(out), 2, out)
+        self.assertEqual(out[0], out[1], path)
+        return out[0]
+
+    def test_forms_agree(self):
+        with tempfile.TemporaryDirectory(dir=os.path.expanduser("~")) as d:
+            d = Path(d)
+            ids = set()
+            for i in range(5):
+                (d / f"f{i}.txt").write_text("x")
+                ids.add(self.check(d / f"f{i}.txt"))
+            self.assertEqual(len(ids), 5)
+            self.assertTrue(all(x.startswith("win:") for x in ids))
+            self.assertEqual(self.check(d / "missing.txt"), "-")
+            self.check(d)
+            self.check(Path(os.environ.get("SystemRoot", r"C:\Windows")) / "win.ini")
+            try:
+                os.symlink(d / "f0.txt", d / "link.txt")
+            except OSError:
+                pass  # symlinks need the privilege or developer mode
+            else:
+                self.assertNotEqual(self.check(d / "link.txt"), self.check(d / "f0.txt"))
+            drive = str(d)[0]
+            unc = "\\\\localhost\\" + drive + "$\\" + str(d)[3:] + "\\f1.txt"
+            self.assertNotEqual(self.check(unc), "-")
+
+
 if __name__ == "__main__":
     unittest.main()

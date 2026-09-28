@@ -796,7 +796,7 @@ static int first_io(fobj_t *f, uint64_t k, int is_write) {
 // Native identity (volume serial + 128-bit file ID) of the file now at `path`, read at its first
 // observed write (live collection only).  Best effort: a file already renamed or deleted keeps
 // no ID, and the query falls back to the event sequence (docs/MACHINE_MODE.md "File identity").
-static char *capture_file_id(const char *path) {
+static char *capture_file_id_handle(const char *path) {  // the reference form: open, FileIdInfo, close
     wchar_t *w = w_from_utf8(path);
     HANDLE h = CreateFileW(w, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
                            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
@@ -811,6 +811,65 @@ static char *capture_file_id(const char *path) {
     }
     CloseHandle(h);
     return r;
+}
+// The same identity without a handle, on NTFS drive-letter paths: NtQueryInformationByName
+// (FileStatInformation, Windows 10 1709+) returns the 64-bit NTFS file reference, which is the
+// 128-bit FileIdInfo identifier zero-extended; the volume serial comes from the drive's root,
+// re-read every VOL_TTL_MS so a remounted drive letter is noticed.  Like the handle form it does
+// not follow a final symlink or junction (measured: the link's own ID).  About 2.6x cheaper
+// (6 vs 17 us per file on NTFS), and a first write to every in-scope file pays it.  Anything
+// else (not NTFS, UNC, an unconvertible path, an error) uses the handle form.
+// WHYFS_DIAG / --file-id-check compares both forms.
+typedef struct { LARGE_INTEGER FileId, CreationTime, LastAccessTime, LastWriteTime, ChangeTime, AllocationSize, EndOfFile;
+                 ULONG FileAttributes, ReparseTag, NumberOfLinks; ACCESS_MASK EffectiveAccess; } fstat_info_t;
+typedef struct { USHORT Length, MaximumLength; PWSTR Buffer; } ustr_t;
+typedef struct { ULONG Length; HANDLE RootDirectory; ustr_t *ObjectName; ULONG Attributes; PVOID SecurityDescriptor, SecurityQualityOfService; } objattr_t;
+typedef struct { PVOID StatusOrPointer; ULONG_PTR Information; } iosb_t;  // IO_STATUS_BLOCK layout
+typedef LONG (NTAPI *qibn_t)(objattr_t *, iosb_t *, PVOID, ULONG, int);
+typedef BOOLEAN (NTAPI *dos2nt_t)(PCWSTR, ustr_t *, PWSTR *, PVOID);
+#define VOL_TTL_MS 5000
+static struct { ULONGLONG serial, at; int ntfs; } vols[26];
+static char *capture_file_id(const char *path) {
+    static qibn_t qibn; static dos2nt_t dos2nt; static int init;
+    if (!init) {
+        HMODULE nt = GetModuleHandleW(L"ntdll.dll");
+        qibn = (qibn_t)(void *)GetProcAddress(nt, "NtQueryInformationByName");
+        dos2nt = (dos2nt_t)(void *)GetProcAddress(nt, "RtlDosPathNameToNtPathName_U");
+        init = 1;
+    }
+    char dl = (char)toupper((unsigned char)path[0]);
+    if (!qibn || !dos2nt || dl < 'A' || dl > 'Z' || path[1] != ':' || path[2] != '\\') return capture_file_id_handle(path);
+    int vi = dl - 'A';
+    ULONGLONG now = GetTickCount64();
+    if (!vols[vi].at || now - vols[vi].at > VOL_TTL_MS) {  // (re)learn the drive: file system and volume serial
+        wchar_t root[4] = {(wchar_t)dl, L':', L'\\', 0}, fs[32] = {0};
+        vols[vi].ntfs = 0;
+        if (GetVolumeInformationW(root, NULL, 0, NULL, NULL, NULL, fs, 32) && !wcscmp(fs, L"NTFS")) {
+            HANDLE h = CreateFileW(root, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
+                                   FILE_FLAG_BACKUP_SEMANTICS, NULL);
+            FILE_ID_INFO info;
+            if (h != INVALID_HANDLE_VALUE && GetFileInformationByHandleEx(h, FileIdInfo, &info, sizeof info)) {
+                vols[vi].serial = info.VolumeSerialNumber; vols[vi].ntfs = 1;
+            }
+            if (h != INVALID_HANDLE_VALUE) CloseHandle(h);
+        }
+        vols[vi].at = now;
+    }
+    if (!vols[vi].ntfs) return capture_file_id_handle(path);
+    wchar_t *w = w_from_utf8(path);
+    ustr_t us = {0};
+    BOOLEAN ok = dos2nt(w, &us, NULL, NULL);
+    free(w);
+    if (!ok) return capture_file_id_handle(path);
+    objattr_t oa = {sizeof oa, NULL, &us, 0x40 /* OBJ_CASE_INSENSITIVE */, NULL, NULL};
+    iosb_t io; fstat_info_t fsi;
+    LONG s = qibn(&oa, &io, &fsi, sizeof fsi, 68 /* FileStatInformation */);
+    HeapFree(GetProcessHeap(), 0, us.Buffer);
+    if (s == (LONG)0xC0000034 || s == (LONG)0xC000003A) return NULL;  // name / path not found: the file is gone
+    if (s < 0) return capture_file_id_handle(path);
+    char b[96];
+    snprintf(b, sizeof b, "win:%016llx:%016llx%016llx", (unsigned long long)vols[vi].serial, 0ULL, (unsigned long long)fsi.FileId.QuadPart);
+    return xstrdup(b);
 }
 static void io_event(uint32_t pid, int64_t ts, const char *path, int is_write, const char *api, const char *api_temp) {
     if (in_ws(path, capture_all)) {
@@ -1221,6 +1280,14 @@ static DWORD WINAPI writer_main(LPVOID arg) {
     if (sq_open_v2(db_path, &db, 0x2 | 0x01000000, NULL) != 0) { fprintf(stderr, "open %s: %s\n", db_path, db ? sq_errmsg(db) : "?"); writer_failed = 1; return 1; }
     sq_busy_timeout(db, 30000);
     sq_exec(db, "PRAGMA synchronous=NORMAL", NULL, NULL, NULL);
+    // Store I/O per 300 short processes, measured (the rows of native_exe_x300 against the real
+    // schema): the default 2 MB page cache re-read ~1200 index pages per run, and checkpointing
+    // every 1000 WAL pages re-copied the same scattered index pages several times.  A 16 MB cache
+    // and a 4000-page (16 MB) checkpoint interval: write operations -14 %, reads -76 %, writer
+    // CPU -20 %.  Every one of those I/Os was also a kernel file event.  Durability is unchanged
+    // (synchronous=NORMAL, WAL).
+    sq_exec(db, "PRAGMA cache_size=-16384", NULL, NULL, NULL);
+    sq_exec(db, "PRAGMA wal_autocheckpoint=4000", NULL, NULL, NULL);
     sqlite3_stmt *sp = NULL, *se = NULL;
     if (sq_prepare_v2(db, "INSERT INTO processes(run_id,pid,ppid,exe,cwd,command,source,first_seen_ns,os_pid,parent_key,user) VALUES(?,?,?,?,?,?,?,?,?,?,?)"
                           " ON CONFLICT(run_id,pid) DO UPDATE SET ppid=COALESCE(excluded.ppid,processes.ppid), user=COALESCE(excluded.user,processes.user),"
@@ -1429,6 +1496,40 @@ static int get_prop(PEVENT_RECORD ev, const wchar_t *name, void *out, ULONG outs
     return 1;
 }
 
+// Raw NT paths the Kernel-File consumer (a single thread) has already classified out of scope.
+// Most Creates on a machine are the same OS paths (every process loads the same DLLs:
+// ~13 Creates per short process), and converting (NT -> DOS -> normalized) and classifying each
+// again cost the consumer ~1.7 us per Create, in line with the workload.  The classification is
+// a function of the path, the scope rules and the device map, all fixed for the collector's
+// lifetime; paths with an 8.3 '~' are never memoized (their expansion asks the file system).
+// Keyed by a 64-bit hash and verified against the stored path, so a collision is only a miss.
+static map_t out_memo;  // hash -> wchar_t* raw path (bounded: OUT_MEMO_MAX, oldest evicted)
+#define OUT_MEMO_MAX 4096
+static const wchar_t *raw_path(PEVENT_RECORD ev, int off, int *n, uint64_t *hash) {
+    if (off < 0 || off >= ev->UserDataLength) return NULL;
+    const wchar_t *w = (const wchar_t *)((BYTE *)ev->UserData + off);
+    int maxc = (ev->UserDataLength - off) / 2, k = 0;
+    uint64_t h = 1469598103934665603ULL;
+    for (; k < maxc && w[k]; k++) {
+        if (w[k] == L'~') return NULL;
+        h = (h ^ w[k]) * 1099511628211ULL;
+    }
+    *n = k; *hash = h | 1;  // never 0
+    return k ? w : NULL;
+}
+static int out_memo_hit(PEVENT_RECORD ev, int off) {
+    int n; uint64_t h; const wchar_t *w = raw_path(ev, off, &n, &h);
+    if (!w) return 0;
+    const wchar_t *s = map_get(&out_memo, h, NULL);
+    return s && (int)wcslen(s) == n && !wmemcmp(s, w, n);
+}
+static void out_memo_add(PEVENT_RECORD ev, int off) {
+    int n; uint64_t h; const wchar_t *w = raw_path(ev, off, &n, &h);
+    if (!w) return;
+    wchar_t *s = xmalloc(((size_t)n + 1) * sizeof *s);
+    wmemcpy(s, w, n); s[n] = 0;
+    map_put(&out_memo, h, NULL, s);
+}
 static volatile LONG64 n_cb_file, n_cb_sys, early_filtered, image_maps_skipped;
 // ---- process records without TDH name lookups
 // Every process start costs one Kernel-Process and one system-logger record; decoding them with
@@ -1597,7 +1698,13 @@ static void on_file_event_inner(PEVENT_RECORD ev) {
     r->fo = rd_ptr(ev, L->off_fo); r->key = rd_ptr(ev, L->off_key);
     switch (id) {
     case 12: case 30:
-        r->type = R_CREATE; r->flags = rd_u32(ev, L->off_opts); r->s1 = rd_path(ev, L->off_str);
+        r->type = R_CREATE; r->flags = rd_u32(ev, L->off_opts);
+        if (machine_mode && out_memo_hit(ev, L->off_str)) {  // a raw path already classified out of scope
+            InterlockedIncrement64(&early_filtered);
+            r->type = R_FO_RESET;
+            break;
+        }
+        r->s1 = rd_path(ev, L->off_str);
         // Machine mode: a Create outside the scope policy can never become evidence, so it is
         // dropped here, before the reorder queue (most Creates on a machine are OS and cache
         // paths).  Safe for FileObject reuse: a tracked object is retired by its Close event
@@ -1607,6 +1714,7 @@ static void on_file_event_inner(PEVENT_RECORD ev) {
             // FileObject pointer's previous entry must be reset whenever the pointer is reused --
             // by any Create, in scope or not (else a stale path is learned for the new object).
             InterlockedIncrement64(&early_filtered);
+            out_memo_add(ev, L->off_str);
             free(r->s1); r->s1 = NULL;
             r->type = R_FO_RESET;
         }
@@ -1891,6 +1999,7 @@ int main(int argc, char **argv) {
     InitializeSListHead(&rec_pool);
     self_pid = GetCurrentProcessId();
     map_init(&longnames, 1, 4096, free);
+    map_init(&out_memo, 0, OUT_MEMO_MAX, free);
     prof_on = getenv("WHYFS_PROF") != NULL;
     check_proc = getenv("WHYFS_DIAG_CHECK_PROC") != NULL;
     if (getenv("WHYFS_DIAG_MAPLOG")) {
@@ -1921,6 +2030,11 @@ int main(int argc, char **argv) {
             int c = sc_classify(v); fputs(c == SC_IN ? "in" : c == SC_TEMP ? "temp" : "out", stdout); return 0;
         }
         else if (ARG("--scope-image")) { fputs(sc_image_excluded(v) ? "1" : "0", stdout); return 0; }
+        else if (ARG("--file-id-check")) {  // test hook: the handle-free identity and the reference form, one per line
+            char *n = norm_path(v), *f = capture_file_id(n), *h = capture_file_id_handle(n);
+            printf("%s\n%s\n", f ? f : "-", h ? h : "-");
+            return 0;
+        }
         else if (!strcmp(a, "--emit")) emit_json = 1;
         else if (!strcmp(a, "--redact-text") && v) {  // test hook: the command-text pass alone (shared vectors)
             int wc = 0;
