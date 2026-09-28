@@ -1759,6 +1759,7 @@ static void merge_step(int64_t upto) {
 }
 
 static volatile LONG stop_requested;
+static int session_lost;
 static BOOL WINAPI on_ctrl(DWORD t) { (void)t; InterlockedExchange(&stop_requested, 1); return TRUE; }
 static volatile LONG stats_requested;
 static DWORD WINAPI stdin_watch(LPVOID arg) {  // a "stats" line: live counters; anything else, EOF or a broken pipe: stop
@@ -1956,6 +1957,14 @@ int main(int argc, char **argv) {
         CreateThread(NULL, 0, stdin_watch, NULL, 0, NULL);
         while (!stop_requested) {
             Sleep(100);
+            // A trace session stopped by someone else ends its ProcessTrace: this collector would
+            // keep running without events.  Exit instead (error 5): the service restarts the
+            // collector and the interruption becomes a recorded gap.
+            if (WaitForSingleObject(ta, 0) == WAIT_OBJECT_0 || WaitForSingleObject(tb, 0) == WAIT_OBJECT_0) {
+                fprintf(stderr, "whyfs-collect: an ETW session ended unexpectedly; exiting so that the service restarts collection\n");
+                session_lost = 1;
+                break;
+            }
             // Reorder window: sessions flush every second per CPU buffer; delivery lag measured
             // up to ~3 s under load (max_lag_*_ms).  Records arriving later are counted (late_records).
             merge_step(wall_now_ns() - REORDER_WINDOW_NS);
@@ -1988,5 +1997,5 @@ int main(int argc, char **argv) {
         WaitForSingleObject(writer, INFINITE);
     }
     print_stats();
-    return writer_failed ? 1 : 0;
+    return writer_failed ? 1 : session_lost ? 5 : 0;
 }

@@ -112,8 +112,11 @@ static run_t *find_run(const char *ws) {
     return NULL;
 }
 
-// Stop every ETW session whose name starts with "whyfs-" and that no live run owns.
-static void cleanup_orphan_sessions(void) {
+// Stop every ETW session whose name starts with "whyfs-" and that no live run owns.  The machine
+// collector's own sessions (whyfs-machine, whyfs-machine-sys) are not workspace runs: they are
+// stopped only at service start (include_machine), before the machine collector starts --
+// stopping them later silently blinded the running machine collector.
+static void cleanup_orphan_sessions_ex(int include_machine) {
     EVENT_TRACE_PROPERTIES *props[64];
     ULONG count = 0;
     for (int i = 0; i < 64; i++) {
@@ -126,6 +129,7 @@ static void cleanup_orphan_sessions(void) {
         for (ULONG i = 0; i < count; i++) {
             wchar_t *name = (wchar_t *)((BYTE *)props[i] + props[i]->LoggerNameOffset);
             if (wcsncmp(name, L"whyfs-", 6)) continue;
+            if (!include_machine && !wcsncmp(name, L"whyfs-machine", 13)) continue;
             char *n = U(name);
             int owned = 0;
             for (int r = 0; r < MAX_RUNS; r++)
@@ -142,6 +146,7 @@ static void cleanup_orphan_sessions(void) {
     }
     for (int i = 0; i < 64; i++) free(props[i]);
 }
+static void cleanup_orphan_sessions(void) { cleanup_orphan_sessions_ex(0); }
 
 static void exe_dir(wchar_t *out, size_t cap) {
     GetModuleFileNameW(NULL, out, (DWORD)cap);
@@ -414,7 +419,7 @@ static DWORD WINAPI machine_thread(LPVOID arg) {
 }
 
 static void serve(void) {
-    cleanup_orphan_sessions();
+    cleanup_orphan_sessions_ex(1);  // before the machine collector starts: its stale sessions too
     HANDLE machine = CreateThread(NULL, 0, machine_thread, NULL, 0, NULL);
     // SYSTEM and Administrators: full; authenticated local users: read/write (connect + requests)
     PSECURITY_DESCRIPTOR sd = NULL;

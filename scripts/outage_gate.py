@@ -111,6 +111,54 @@ def service_config() -> dict:
             "is_enabled": en, "Restart": rs, "WantedBy": wb}
 
 
+def collector_pid(g: Gate) -> int | None:
+    st = g.api("status").get("result") or {}
+    try:
+        return json.loads(Path(os.environ["ProgramData"], "whyfs", "machine", ".whyfs", "machine-ready.json")
+                          .read_text())["collector_pid"]
+    except (OSError, ValueError, KeyError):
+        return st.get("collector_pid")
+
+
+def windows_session_checks(g: Gate, base: Path, src: Path) -> None:
+    """Windows: nothing else may silently blind the machine collector.
+    1. An explicit workspace capture (whyfs init + daemon start/stop) runs through the same
+       service; stopping it must not stop the machine collector's ETW sessions.
+    2. If a session is stopped from outside anyway (logman), the collector must exit and be
+       restarted -- never keep running without events."""
+    ws = base / "workspace-capture"
+    ws.mkdir()
+    for args in (["init", "."], ["daemon", "start", "--workspace", str(ws)], ["daemon", "stop", "--workspace", str(ws)]):
+        subprocess.run([*whyfs(), *args], cwd=ws, capture_output=True, text=True)
+    time.sleep(2)
+    d = base / "D.txt"
+    g.write(d, src)
+    time.sleep(SETTLE)
+    ld = g.label(d)
+    g.check("workspace_capture_does_not_blind_the_machine_collector", ld.get("status") == "labelled",
+            {k: ld.get(k) for k in ("status", "note")})
+    before = collector_pid(g)
+    r = subprocess.run(["logman", "stop", "whyfs-machine", "-ets"], capture_output=True, text=True)
+    t0 = time.monotonic()
+    restarted = False
+    while time.monotonic() - t0 < 120:
+        pid = collector_pid(g)
+        if pid and pid != before and g.ready():
+            restarted = True
+            break
+        time.sleep(1)
+    g.check("externally_stopped_session_restarts_the_collector", restarted,
+            {"logman_rc": r.returncode, "pid_before": before, "pid_after": collector_pid(g),
+             "after_s": round(time.monotonic() - t0, 1)})
+    time.sleep(2)
+    e = base / "E.txt"
+    g.write(e, src)
+    time.sleep(SETTLE)
+    le = g.label(e)
+    g.check("labels_resume_after_the_session_restart", le.get("status") == "labelled" and le["observation"]["complete"],
+            {k: le.get(k) for k in ("status", "observation")})
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
@@ -195,6 +243,9 @@ def main() -> int:
     g.check("human_label_explains_B", "not recording" in txt and "origin was not observed" in txt, txt[-600:])
     (out / "label_B.txt").write_text(txt, encoding="utf-8")
     (out / "labels.json").write_text(json.dumps({"A": la, "B": lb, "C": lc}, indent=1, default=str), encoding="utf-8")
+
+    if NT:
+        windows_session_checks(g, base, src)
 
     ok = all(g.checks.values())
     rep = {"platform": platform.platform(), "machine": platform.machine(), "checks": g.checks,
