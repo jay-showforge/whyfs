@@ -197,7 +197,13 @@ static char *long_name(const char *r) {
     char *hit = map_get(&longnames, 0, r);
     if (hit) return xstrdup(hit);
     size_t n = strlen(r);
-    for (size_t cut = n; cut > 3; ) {  // cut: length of the prefix tried (the whole path first)
+    size_t cut = n;  // cut: length of the prefix tried (the whole path first)
+    // A final component already in long form needs no lookup: expand only its directory, which
+    // stays memoized.  Otherwise every new file under a short directory (TEMP under
+    // C:\Users\RUNNER~1) costs a directory walk on the consumer thread and a memo entry.
+    const char *last = strrchr(r, '\\');
+    if (last && last > r + 2 && !has_short_name(last + 1)) cut = (size_t)(last - r);
+    for (; cut > 3; ) {
         char *prefix = xstrndup(r, cut);
         if (!has_short_name(prefix)) { free(prefix); return NULL; }  // the 8.3 part is in the tail
         char *pl = map_get(&longnames, 0, prefix);
@@ -1172,6 +1178,8 @@ static uint64_t w_rows, w_batches, w_max;
 static HANDLE user_token;
 static char db_path[4096];
 #define QUEUE_RECORDS 262144
+#define GROUP_MS 1000
+#define GROUP_ROWS 16384
 
 static void flush_pending(void) {
     if (!pending_n) return;
@@ -1218,6 +1226,14 @@ static DWORD WINAPI writer_main(LPVOID arg) {
     for (;;) {
         EnterCriticalSection(&wlock);
         while (!whead && !writer_stop) SleepConditionVariableCS(&wcond, &wlock, INFINITE);
+        // Group commit: let a burst accumulate for up to GROUP_MS before one transaction.  The
+        // consumer hands off ~10 batches a second; committing each rewrote the same hot index
+        // pages into the WAL every time (about 1 KB of store I/O per row on a hosted runner).
+        for (ULONGLONG until = GetTickCount64() + GROUP_MS; !writer_stop && wq_records < GROUP_ROWS; ) {
+            ULONGLONG now = GetTickCount64();
+            if (now >= until) break;
+            SleepConditionVariableCS(&wcond, &wlock, (DWORD)(until - now));
+        }
         wbatch_t *list = whead; whead = wtail = NULL;
         uint64_t nrec = 0; for (wbatch_t *x = list; x; x = x->next) nrec += x->n;
         wq_records -= nrec;

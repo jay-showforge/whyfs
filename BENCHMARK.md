@@ -1,5 +1,9 @@
 # v0.1 development benchmark
 
+> **Historical record (v0.1 / v0.2, workspace capture).**  The measurements for WhyFS 1.0 --
+> machine-wide service, all supported platforms, native runners -- are in
+> [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+
 This is an engineering checkpoint, not a universal performance claim.
 
 Environment: Linux x86-64 container, Python 3.13.5, local filesystem.

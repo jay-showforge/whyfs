@@ -329,6 +329,10 @@ def main() -> int:
     txt = (ex.get("result") or {}).get("text", "")
     g.check("label_text_renders", all(k in txt for k in ("Created by:", "Process chain:", "Agent:", "Task:", "Why:", "Evidence:")), txt[:400])
     (out / "label_example.txt").write_text(txt, encoding="utf-8")
+    # ... and survives a pipe (Windows: a redirected stdout is not UTF-8 by default; the label has "→")
+    pl = subprocess.run(g.as_user([*whyfs_cmd(), "label", str(e_dir / "file.json")]), capture_output=True, env=env())
+    g.check("label_text_survives_a_pipe", pl.returncode == 0 and "Created by:" in pl.stdout.decode("utf-8", "replace"),
+            (pl.returncode, pl.stdout[:200], pl.stderr[-400:]))
     # ---------------- U: discovery without a terminal (docs/HUMAN_INTERFACE.md)
     usability(g, e_dir / "file.json", src, f_dir / "b-out.json", sid_a)
     st2 = g.api("status", as_root=True).get("result") or {}

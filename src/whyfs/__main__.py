@@ -27,8 +27,8 @@ def _fast() -> int | None:
         if up == d:
             break
         d = up
-    import json
     from .client import ServiceUnavailable, call
+    from .jsonlite import dumps
     try:
         if a[0] == "why":
             reply = call("why", {"path": path, "include_noise": False, "raw": False})
@@ -39,11 +39,17 @@ def _fast() -> int | None:
     if not reply.get("ok"):
         return None
     result = reply["result"]
+    if os.name == "nt":  # as cli.main: a pipe or a legacy code page must never crash the output
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.reconfigure(encoding=stream.encoding if stream.isatty() else "utf-8", errors="replace")
+            except (AttributeError, ValueError):
+                pass
     if a[0] == "why":
-        print(json.dumps(result, indent=2))
+        print(dumps(result, indent=2))
         return 0 if result else 1
     if as_json:
-        print(json.dumps(result, indent=2, default=str))
+        print(dumps(result, indent=2))
     else:
         from .labeltext import render_label
         print(render_label(result))

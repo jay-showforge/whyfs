@@ -5,8 +5,9 @@ Kept apart from api.py (the server) so a CLI query imports only what a request n
 """
 from __future__ import annotations
 
-import json
 import os
+
+from . import jsonlite
 
 PROTOCOL = 1
 PIPE_NAME = r"\\.\pipe\whyfs-api"
@@ -18,12 +19,13 @@ class ServiceUnavailable(RuntimeError):
 
 
 def dumps(obj) -> bytes:
+    import json
     return (json.dumps(obj, default=str, separators=(",", ":")) + "\n").encode()
 
 
 def call(op: str, params: dict | None = None, timeout: float = 30.0) -> dict:
     """One request to the local service; returns the reply dict."""
-    req = dumps({"v": PROTOCOL, "op": op, "params": params or {}})
+    req = (jsonlite.dumps({"v": PROTOCOL, "op": op, "params": params or {}}) + "\n").encode()
     if os.name == "nt":
         from . import winsecurity as ws
         raw = ws.pipe_client_call(PIPE_NAME, req, timeout)
@@ -50,4 +52,4 @@ def call(op: str, params: dict | None = None, timeout: float = 30.0) -> dict:
         raw = buf
     if not raw:
         raise ServiceUnavailable("the whyfs service closed the connection")
-    return json.loads(raw)
+    return jsonlite.loads(raw)

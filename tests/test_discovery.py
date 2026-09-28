@@ -302,6 +302,38 @@ class WindowStateDirTests(unittest.TestCase):
         self.assertFalse(ui._own_private_dir("/nonexistent/whyfs"))
 
 
+class JsonLiteTests(unittest.TestCase):
+    """The CLI fast path's JSON (no `json` import) is byte-identical to the json package."""
+    SAMPLES = [{}, [], "s", 1, -2.5, None, True, [[[]]], {"1": {"2": {"3": []}}},
+               {"a": [], "b": {}, "c": [1, 2.5, -0.0, 1e300, 1e-7, True, False, None, "é \"\\\n\t\x00😀"]},
+               {"nested": {"x": [{"y": [1, [2, [3, {}]]]}], "k": "v"}, "n": 10**20}]
+
+    def test_dumps_matches_json(self):
+        from whyfs import jsonlite
+        for o in self.SAMPLES + [float("nan"), [float("inf"), float("-inf")], {1: "int key", None: 0, True: 1}]:
+            self.assertEqual(jsonlite.dumps(o, indent=2), json.dumps(o, indent=2, default=str))
+            self.assertEqual(jsonlite.dumps(o), json.dumps(o, default=str, separators=(",", ":")))
+        self.assertEqual(jsonlite.dumps({"p": Path("x")}), json.dumps({"p": Path("x")}, default=str, separators=(",", ":")))
+
+    def test_loads_matches_json(self):
+        from whyfs import jsonlite
+        for o in self.SAMPLES:
+            text = json.dumps(o, indent=1)
+            self.assertEqual(jsonlite.loads(" " + text + "\n"), json.loads(text))
+            self.assertEqual(jsonlite.loads(text.encode()), json.loads(text))
+        for bad in ("", "{", '{"a":1} x', "[1,]"):
+            with self.assertRaises(ValueError):
+                jsonlite.loads(bad)
+
+    def test_fast_path_imports_no_json_package(self):
+        import subprocess
+        import sys
+        code = "import sys, whyfs.client, whyfs.jsonlite; print('json' in sys.modules, 're' in sys.modules)"
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                             cwd=str(Path(__file__).resolve().parents[1] / "src")).stdout.split()
+        self.assertEqual(out, ["False", "False"])
+
+
 class CliTimeTests(unittest.TestCase):
     def test_when(self):
         from whyfs.cli import _when
