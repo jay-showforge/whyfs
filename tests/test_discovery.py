@@ -328,8 +328,11 @@ class JsonLiteTests(unittest.TestCase):
     def test_fast_path_imports_no_json_package(self):
         import subprocess
         import sys
-        code = "import sys, whyfs.client, whyfs.jsonlite; print('json' in sys.modules, 're' in sys.modules)"
-        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+        # -S: no site packages, so a local .pth (pywin32, editable installs) cannot import re first;
+        # the shipped runtime has none either.  Only what WhyFS itself imports is counted.
+        code = ("import sys; before = set(sys.modules); import whyfs.client, whyfs.jsonlite; "
+                "new = set(sys.modules) - before; print('json' in new, 're' in new)")
+        out = subprocess.run([sys.executable, "-S", "-c", code], capture_output=True, text=True,
                              cwd=str(Path(__file__).resolve().parents[1] / "src")).stdout.split()
         self.assertEqual(out, ["False", "False"])
 
