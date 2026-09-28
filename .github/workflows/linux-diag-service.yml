@@ -1,0 +1,39 @@
+# Diagnostic only (not validation): decomposes the INSTALLED Linux service's cost on the
+# process-spawn workload (scripts/diag_service_cost_linux.py).  Manual trigger.
+name: linux-diag-service
+on:
+  workflow_dispatch:
+    inputs:
+      runner: { description: "runner label", default: "ubuntu-24.04" }
+      pairs: { description: "pairs per variant", default: "20" }
+      variants: { description: "variants", default: "normal,discard,no_store" }
+      after: { description: "seconds waited after each measured run (0.2 = machine_perf timing)", default: "0.2" }
+jobs:
+  diag:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: platform, toolchain, BPF prerequisites
+        run: |
+          mkdir -p ci-results
+          { uname -a; dpkg --print-architecture; lscpu; } | tee ci-results/platform.txt
+          sudo apt-get update -q
+          sudo apt-get install -y -q bpfcc-tools python3-bpfcc libbpf-dev libsqlite3-dev libelf-dev zlib1g-dev \
+            pkg-config gcc make clang nodejs npm rsync file dpkg-dev desktop-file-utils linux-headers-$(uname -r)
+          mkdir -p ~/vite-template && cd ~/vite-template
+          echo '{"name":"whyfs-vite-fixture","private":true,"type":"module"}' > package.json
+          npm install --no-audit --no-fund vite@5.4.21
+      - name: build and install the .deb
+        run: |
+          bash packaging/linux/build_deb.sh dist
+          sudo apt-get install -y -q ./dist/whyfs_*.deb
+          for i in $(seq 1 180); do whyfs status --json 2>/dev/null | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["collector_ready"] else 1)' && break; sleep 1; done
+      - name: service cost decomposition
+        run: |
+          sudo python3 scripts/diag_service_cost_linux.py --user runner --out ci-results/diag-service --pairs ${{ inputs.pairs }} \
+            --variants "${{ inputs.variants }}" --after-s ${{ inputs.after }} --verify 2>&1 | tee ci-results/diag-service.log
+          sudo chown -R "$(id -u):$(id -g)" ci-results || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "linux-diag-service-${{ inputs.runner }}", path: "ci-results/" }

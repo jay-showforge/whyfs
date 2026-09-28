@@ -51,7 +51,7 @@ jobs:
           for ($i = 0; $i -lt 180; $i++) { try { if ((& "$env:ProgramFiles\whyfs\whyfs.exe" status --json | ConvertFrom-Json).collector_ready) { break } } catch {}; Start-Sleep 1 }
       - name: service cost decomposition
         shell: pwsh
-        run: python scripts\diag_service_cost.py --out ci-results\diag-service --pairs ${{ inputs.pairs }} --variants "${{ inputs.variants }}" --after-s ${{ inputs.after }} 2>&1 | Tee-Object ci-results\diag-service.log
+        run: python scripts\diag_service_cost.py --out ci-results\diag-service --pairs ${{ inputs.pairs }} --variants "${{ inputs.variants }}" --after-s ${{ inputs.after }} --verify 2>&1 | Tee-Object ci-results\diag-service.log
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "win-diag-service-${{ inputs.arch }}", path: "ci-results/" }

@@ -211,6 +211,7 @@ def main() -> int:
     ap.add_argument("--after-s", type=float, default=7.0,
                     help="wait after each measured run, counted as 'after_7s' (0.2 = machine_perf's own timing, where "
                          "the previous run's processing overlaps the next measured run)")
+    ap.add_argument("--verify", action="store_true", help="after the normal variant: every stress output's label checked")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -248,6 +249,13 @@ def main() -> int:
                 rows.append(row)
                 mp.note(f"{vname} {mode}{' warmup' if row['warmup'] else ''}: {secs:.3f}s busy {row['busy_ms']} ms "
                         f"collector {row['proc'].get('collector', {}).get('cpu_ms')} ms (+{row['after_7s']['proc'].get('collector', {}).get('cpu_ms')} after)")
+            verify = None
+            if a.verify and vname == "normal":  # correctness under the same stress, the product configuration
+                if not state["on"]:
+                    mp.service(True)
+                import stress_verify
+                verify = stress_verify.verify(run, prep, cmd, cwd, env, "copy.exe")
+                mp.note(f"verify: {verify}")
             mp.service(False)  # final collector stats are written at exit
             meas = [r for r in rows if not r["warmup"]]
             offs = [r for r in meas if r["mode"] == "off"]
@@ -278,7 +286,7 @@ def main() -> int:
                 "collector_threads_ctx": {t: med([during_and_after(r, "threads", t, "ctx") for r in ons]) for t in thread_names},
                 "lost": lost, "collector_stats": per, "stored": store_counts(t_var),
             }
-            report["variants"][vname] = {"summary": summary, "runs": rows}
+            report["variants"][vname] = {"summary": summary, "runs": rows, "verify": verify}
             mp.note(f"{vname}: median paired overhead {summary['median_paired_overhead_percent']}%  {json.dumps(summary['per_on_run_including_following_7s'])}")
             (out / "diag_service_cost.json").write_text(json.dumps(report, indent=1, default=str))
     finally:

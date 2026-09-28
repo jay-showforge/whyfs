@@ -123,6 +123,15 @@ def run_foreground(root: Path, *, capture_all: bool = False, quiet: bool = False
             scope.add(Path(f).read_text())
             extra += ("--scope", str(f))
         extra = ("--machine",) + extra
+    # Cost decomposition only (scripts/diag_service_cost_linux.py; never set by the packaged
+    # service): the native collector's --diag-discard (records counted and dropped: the kernel
+    # and ring cost alone) or --diag-no-store (the full event model, nothing persisted).
+    diag = os.environ.get("WHYFS_DIAG_NATIVE_ARGS", "").split()
+    if diag:
+        if not use_native or any(a not in ("--diag-discard", "--diag-no-store") for a in diag):
+            raise SystemExit(f"WHYFS_DIAG_NATIVE_ARGS: only --diag-discard / --diag-no-store, with the native collector: {diag}")
+        print(f"whyfs daemon: DIAGNOSTIC MODE {' '.join(diag)} (records are not stored)", file=sys.stderr)
+        extra += tuple(diag)
     collector = BCCCollector(root, run_id, capture_all=capture_all, store=store, machine=machine, scope=scope)
     native = None
     try:
