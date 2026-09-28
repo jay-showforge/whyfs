@@ -66,6 +66,10 @@ inputs contributed and, when reliably known, which person or software agent caus
 - Windows: the store writer committed every ~100 ms handoff separately; it now group-commits
   at most once per second (spawn-heavy workloads on 1-core machines: +6.6 % → +4.5 %).
 - Windows: 8.3 expansion asks the file system only for directories, not every new file.
+- Windows: the store writer uses a 16 MB page cache and a 4000-page checkpoint interval; the
+  identity captured at a file's first write is read without opening the file (NTFS); raw
+  paths already classified out of scope are memoized.  Spawn-heavy workloads on a 1-core
+  machine: +5.16 % → +4.17 %.
 - The `why`/`label` fast path no longer imports the `json` package (Windows ARM64 CLI
   100 → 88 ms), with byte-identical output.
 - Windows: `whyfs label FILE` crashed when its output was piped.

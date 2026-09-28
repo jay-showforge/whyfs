@@ -187,19 +187,19 @@ Each label also carries:
   never "safe to remove";
 - `observation`: whether whyfs was watching, without loss, since the file was created.
 
-## Measured cost (native runners, run 36374200705, commit f2b9ca6)
+## Measured cost (native runners, run 36391350371, commit ec52053)
 
 Median paired overhead over 20 counterbalanced pairs (the full table, with confidence
 intervals: [PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md#performance-20-counterbalanced-pairs-threshold-median-paired-overhead--5-)).
 
 | | Windows x64 | Windows ARM64 | Linux x86-64 | Linux ARM64 |
 |---|---|---|---|---|
-| Idle collector CPU (10 min) | 0.005 % of a core, 48 MB | 0.068 %, 48 MB | 0.12 %, 260 MB¹ | 0.10 %, 271 MB¹ |
-| Build | MSVC +1.76 % | MSVC +2.55 % | make -j8 +2.79 % | make -j8 +2.21 % |
-| Vite | +2.11 % | +2.73 % | +0.30 % | +0.07 % |
-| Process spawn ×300 | +4.54 % | −0.76 % | +3.68 % | +4.24 % |
+| Idle collector CPU (10 min) | 0.003 % of a core, 47 MB | 0.10 %, 49 MB | 0.10 %, 260 MB¹ | 0.11 %, 271 MB¹ |
+| Build | MSVC +1.15 % | MSVC +1.01 % | make -j8 +2.80 % | make -j8 +1.55 % |
+| Vite | +2.86 % | +0.95 % | −0.22 % | −0.83 % |
+| Process spawn ×300 | +4.17 % | −10.66 % (noisy runner) | +4.00 % | +3.91 % |
 | Events lost | 0 | 0 | 0 | 0 |
-| `why` / `label` CLI | 65 / 66 ms | 88 / 92 ms | 29 / 31 ms | 23 / 24 ms |
+| `why` / `label` CLI | 65 / 67 ms | 77 / 80 ms | 26 / 28 ms | 23 / 24 ms |
 | Store after the campaign | 49 MB | 48 MB | 47 MB | 47 MB |
 
 ¹ BCC's Python/LLVM runtime plus the native collector.

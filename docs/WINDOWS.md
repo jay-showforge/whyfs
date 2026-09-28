@@ -1,7 +1,7 @@
 # whyfs on Windows
 
 Status: **Windows x64 and Windows ARM64: supported, validated natively** (GitHub
-`windows-2022` and `windows-11-arm` runners, run 36374200705 on commit f2b9ca6; see
+`windows-2022` and `windows-11-arm` runners, run 36391350371 on commit ec52053; see
 [PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)).  The desktop validation record below
 (x64, commit 3dc9266) is kept as it was written.
 

@@ -1,11 +1,15 @@
 # whyfs project status
 
-## Current (2026-09-28): WhyFS 1.0.0 NOT COMPLETE: one performance check fails on Windows x64
+## Current (2026-09-28): WhyFS 1.0.0 release candidate, validated natively, not released
 
-The release run (36377152638, commit b5562df) passed every functional gate on all four
-native platforms and every performance check except one: **Windows x64 process spawn ×300,
-+5.16 % against < 5 %**.  The same code measured +4.54 % in the previous run; the overhead sits
-at the threshold ([docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md)).  Not released.
+The earlier release run failed one check: Windows x64 process spawn ×300, +5.16 %.  The cost
+was measured in service mode:
+- a +3.25 % kernel floor of required events;
+- plus user space overlapping the workload.
+
+The user-space share was halved (commit ec52053).  The unchanged campaign then passed every
+gate on all four platforms, including Windows x64 spawn **+4.17 % (CI90 3.83..4.53)**.  See
+[docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 
 **Product:** WhyFS automatically labels files with their provenance: where, when, how, and what
 or who caused them to exist.
@@ -18,7 +22,7 @@ or who caused them to exist.
 Support matrix (frozen): Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.  macOS is
 not supported.
 
-| Platform | Native evidence (earlier run 36374200705, commit f2b9ca6; the release run differs only in Windows x64 spawn: +5.16 %, FAIL) |
+| Platform | Native evidence (run 36374200705, commit f2b9ca6; Windows x64 spawn after the reduction, run 36391350371: +4.17 %) |
 |---|---|
 | Windows x64 | PASS: MSI 32/32, upgrade 16/16, product gate 47/47, outage gate 16/16, corpora 79/79, secret gate 22/22, functional gate 23/23, perf PASS (idle 0.005 %, MSVC +1.76 %, Vite +2.11 %, spawn ×300 +4.54 %, lost 0, CLI 65 ms) |
 | Windows ARM64 | PASS: MSI 32/32, upgrade 16/16, product gate 47/47, outage gate 16/16, corpora 79/79, secret gate 22/22, functional gate 23/23, perf PASS (idle 0.068 %, MSVC +2.55 %, Vite +2.73 %, spawn ×300 −0.76 %, lost 0, CLI 88 ms) |

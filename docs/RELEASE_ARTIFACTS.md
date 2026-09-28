@@ -8,14 +8,24 @@ and performance.  The source archive is `git archive` of the same commit.
 An artifact is never rebuilt after its hash is recorded.  A rebuild is a new artifact: it
 needs a new run and new hashes, and the old ones are invalidated here.
 
-## Status: candidates, NOT approved
+## The 1.0.0 release artifacts
 
-The release run 36377152638 on commit b5562df failed one gate: Windows x64 process spawn
-×300, +5.16 % against the < 5 % criterion
-([PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md#release-run-36377152638-commit-b5562df-the-100-release-commit-fail-on-one-check)).
-These artifacts are therefore **release candidates, not release artifacts**.  They are recorded
-so they can be identified; they must not be distributed as WhyFS 1.0.0.  Each one passed its own
-platform's clean-install test in that run.
+Built by the final release run on the release-candidate commit.  The hashes and the per-artifact
+test results are recorded in the evidence commit that follows it.
+
+| Artifact | Built on | SHA-256 |
+|---|---|---|
+| `whyfs-1.0.0-x64.msi` | `windows-2022` (x64) | recorded after the release build |
+| `whyfs-1.0.0-arm64.msi` | `windows-11-arm` (ARM64) | recorded after the release build |
+| `whyfs_1.0.0_amd64.deb` | `ubuntu-24.04` (x86-64) | recorded after the release build |
+| `whyfs_1.0.0_arm64.deb` | `ubuntu-24.04-arm` (ARM64) | recorded after the release build |
+| `whyfs-1.0.0-src.tar.gz` | `git archive --format=tar.gz --prefix=whyfs-1.0.0/` of the release-candidate commit | recorded after the release build |
+
+## Invalidated: the b5562df candidates (never approved)
+
+The release run 36377152638 on b5562df failed Windows x64 process spawn ×300 (+5.16 %).  Its
+packages were recorded only to identify them and are **invalid**: they must not be distributed.
+Their hashes are kept below for that purpose.
 
 | Artifact | Built on | SHA-256 |
 |---|---|---|
