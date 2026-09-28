@@ -48,19 +48,30 @@ def _noise_path(path: str) -> bool:
     return path.startswith(NOISE_PREFIXES) or (bool(NOISE_PREFIXES_NT) and pkey(path).startswith(NOISE_PREFIXES_NT))
 
 
-def last_writer(con: sqlite3.Connection, path: str):
-    p = normalize(path)
-    return con.execute(
-        """
+_ORIGIN_SQL = """
       SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector,
              pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS process_source
       FROM events e JOIN runs r ON r.id=e.run_id
       LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
-      WHERE ((e.path=? AND e.is_write=1) OR (e.kind='rename' AND e.path2=?))
-      ORDER BY e.ts_ns DESC LIMIT 1
-    """,
-        (p, p),
-    ).fetchone()
+      WHERE {cond} AND (? IS NULL OR e.ts_ns<=?)
+      ORDER BY e.ts_ns DESC, e.id DESC LIMIT 1
+"""
+
+
+def _latest_write_or_move_in(con: sqlite3.Connection, p: str, before: int | None = None):
+    """The newest write to ``p`` or move into ``p`` (at or before ``before``).
+
+    Two index-ordered lookups -- events_path (path, ts_ns) and events_path2 (path2, ts_ns) --
+    each stopping at its first match, instead of one OR query that SQLite answers by collecting
+    and sorting every event of the path (cost grew with the file's whole history)."""
+    rows = [con.execute(_ORIGIN_SQL.format(cond=c), (p, before, before)).fetchone()
+            for c in ("e.path=? AND e.is_write=1", "e.path2=? AND e.kind='rename'")]
+    rows = [r for r in rows if r is not None]
+    return max(rows, key=lambda r: (r["ts_ns"], r["id"])) if rows else None
+
+
+def last_writer(con: sqlite3.Connection, path: str):
+    return _latest_write_or_move_in(con, normalize(path))
 
 
 def _image_start(con: sqlite3.Connection, run_id: str, pid: int, at_ns: int) -> int:
@@ -269,18 +280,7 @@ def _content_origin(con: sqlite3.Connection, path: str, max_hops: int = 16, befo
     p = normalize(path)
     renames: list[dict] = []
     for _ in range(max_hops):
-        row = con.execute(
-            """
-          SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector,
-                 pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS process_source
-          FROM events e JOIN runs r ON r.id=e.run_id
-          LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
-          WHERE ((e.path=? AND e.is_write=1) OR (e.kind='rename' AND e.path2=?))
-            AND (? IS NULL OR e.ts_ns<=?)
-          ORDER BY e.ts_ns DESC, e.id DESC LIMIT 1
-        """,
-            (p, p, before, before),
-        ).fetchone()
+        row = _latest_write_or_move_in(con, p, before)
         if row is None or row["kind"] != "rename":
             return row, renames
         renames.append({
@@ -409,18 +409,29 @@ def _parent(con: sqlite3.Connection, run_id: str, key: int):
 
 
 def history(con: sqlite3.Connection, path: str, limit=20):
+    """Writes to and moves of the file, newest first.  ``limit`` <= 0: the complete history.
+
+    Each of the three conditions is one index-ordered scan stopped at ``limit`` rows, merged:
+    the newest ``limit`` rows without sorting the file's whole history."""
     p = normalize(path)
-    return con.execute(
-        """
-      SELECT e.ts_ns,e.run_id,COALESCE(e.os_pid,e.pid) AS pid,e.pid AS process_key,e.kind,e.path,e.path2,
-             COALESCE(pr.command,r.command) AS command,pr.exe,r.collector,e.source
-      FROM events e JOIN runs r ON r.id=e.run_id
-      LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
-      WHERE ((e.path=? AND e.is_write=1) OR (e.kind='rename' AND (e.path=? OR e.path2=?)))
-      ORDER BY e.ts_ns DESC LIMIT ?
-    """,
-        (p, p, p, limit),
-    ).fetchall()
+    n = limit if limit and limit > 0 else -1  # SQLite: LIMIT -1 is unlimited
+    rows: dict = {}
+    for cond in ("e.path=? AND e.is_write=1", "e.path=? AND e.kind='rename'", "e.path2=? AND e.kind='rename'"):
+        for r in con.execute(
+            f"""
+          SELECT e.id,e.ts_ns,e.run_id,COALESCE(e.os_pid,e.pid) AS pid,e.pid AS process_key,e.kind,e.path,e.path2,
+                 COALESCE(pr.command,r.command) AS command,pr.exe,r.collector,e.source
+          FROM events e JOIN runs r ON r.id=e.run_id
+          LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
+          WHERE {cond}
+          ORDER BY e.ts_ns DESC, e.id DESC LIMIT ?
+        """,
+            (p, n),
+        ).fetchall():
+            rows[r["id"]] = r
+    out = sorted(rows.values(), key=lambda r: (r["ts_ns"], r["id"]), reverse=True)
+    out = out if n < 0 else out[:n]
+    return [{k: r[k] for k in r.keys() if k != "id"} for r in out]  # the same fields as before
 
 
 def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False):
@@ -430,7 +441,53 @@ def impact(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False)
     return [(e["from"], e["to"], e["exe"], e["run_id"]) for e in impact_details(con, path, max_depth, include_noise)]
 
 
-def impact_details(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False) -> list[dict]:
+RECENT_EVENTS = 1000  # the label's window: a file's most recent events (history keeps them all)
+
+
+def _recent_window(con: sqlite3.Connection, f: str, n_readers: int) -> tuple[list, list, bool]:
+    """The recent view of ``f`` used by the label: one index-ordered scan (events_path, newest
+    first) of at most RECENT_EVENTS events of the path.  From it: the ``n_readers`` processes
+    that read ``f`` most recently -- each one's first read of ``f`` then looked up exactly
+    through its own events (events_pid), not the window -- and the moves away from ``f``.
+    Returns (readers, moves, truncated): ``truncated`` when the window did not reach the
+    beginning of the file's history or more readers were seen than expanded."""
+    window = con.execute(
+        "SELECT e.run_id, e.pid, e.kind, e.is_read, e.path2, pr.exe FROM events e "
+        "LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid "
+        "WHERE e.path=? ORDER BY e.ts_ns DESC, e.id DESC LIMIT ?", (f, RECENT_EVENTS + 1)).fetchall()
+    truncated = len(window) > RECENT_EVENTS
+    window = window[:RECENT_EVENTS]
+    order, seen = [], set()
+    for w in window:
+        if w["is_read"]:
+            k = (w["run_id"], w["pid"])
+            if k not in seen:
+                seen.add(k)
+                order.append(k)
+    truncated = truncated or len(order) > n_readers
+    readers = []
+    for run_id, pid in order[:n_readers]:
+        r = con.execute(
+            """SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns, MAX(e.kind='io') AS observed_io
+               FROM events e JOIN runs r ON r.id=e.run_id
+               LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
+               WHERE e.run_id=? AND e.pid=? AND +e.path=? AND e.is_read=1""", (run_id, pid, f)).fetchone()
+        if r is not None and r["run_id"] is not None:
+            readers.append(r)
+    moves, seen_moves = [], set()
+    for w in window:
+        if w["kind"] == "rename" and (w["path2"], w["run_id"], w["exe"]) not in seen_moves:
+            seen_moves.add((w["path2"], w["run_id"], w["exe"]))
+            moves.append({"path2": w["path2"], "run_id": w["run_id"], "exe": w["exe"]})
+    return readers, moves, truncated
+
+
+def impact_details(con: sqlite3.Connection, path: str, max_depth=5, include_noise=False,
+                   recent_readers: int | None = None, info: dict | None = None) -> list[dict]:
+    """Downstream edges from ``path``: through every observed reader (the complete walk: `whyfs
+    impact`, the API's impact), or -- with ``recent_readers`` -- through each file's most recent
+    readers only (the label: its cost must not grow with a file's history).  ``info`` receives
+    ``readers_truncated`` when older readers were left out of the recent view."""
     start = normalize(path)
     seen_files = {pkey(start)}
     frontier = [start]
@@ -438,23 +495,30 @@ def impact_details(con: sqlite3.Connection, path: str, max_depth=5, include_nois
     for _depth in range(max_depth):
         nxt = []
         for f in frontier:
-            readers = con.execute(
-                """
-              SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns,
-                     MAX(e.kind='io') AS observed_io FROM events e
-              JOIN runs r ON r.id=e.run_id LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
-              WHERE e.path=? AND e.is_read=1
-              GROUP BY e.run_id, e.pid
-            """,
-                (f,),
-            ).fetchall()
+            recent = _recent_window(con, f, recent_readers) if recent_readers is not None else None
+            if recent is not None and recent[2]:  # a long history: its recent part only, and say so
+                readers, moves, _ = recent
+                if info is not None:
+                    info["readers_truncated"] = True
+            else:  # the complete walk (or a short history: the same queries, the same result)
+                readers = con.execute(
+                    """
+                  SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns,
+                         MAX(e.kind='io') AS observed_io FROM events e
+                  JOIN runs r ON r.id=e.run_id LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
+                  WHERE e.path=? AND e.is_read=1
+                  GROUP BY e.run_id, e.pid
+                """,
+                    (f,),
+                ).fetchall()
+                moves = con.execute(
+                    """SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e
+                       LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
+                       WHERE e.kind='rename' AND e.path=?""",
+                    (f,),
+                ).fetchall()
             # A rename/move carries the file's lineage to its new name.
-            for mv in con.execute(
-                """SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e
-                   LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
-                   WHERE e.kind='rename' AND e.path=?""",
-                (f,),
-            ).fetchall():
+            for mv in moves:
                 o = mv["path2"]
                 if o and pkey(o) != pkey(f):
                     edges.append({"from": f, "to": o, "exe": (mv["exe"] or "?") + " (rename)", "run_id": mv["run_id"],

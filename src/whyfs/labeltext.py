@@ -73,4 +73,7 @@ def _render_impact_tail(lb: dict) -> list[str]:
                                    if obs["complete"] else "incomplete — " + "; ".join(obs["gaps"])))
         if obs.get("later_gaps"):
             L.append("Since then: " + "; ".join(obs["later_gaps"]) + " (later history and dependents may be missing)")
+    if lb.get("scope", {}).get("recent_only"):
+        L.append("Long history: readers and dependents above come from the most recent activity; "
+                 "`whyfs history FILE --limit 0` and `whyfs impact FILE` show all of it.")
     return L

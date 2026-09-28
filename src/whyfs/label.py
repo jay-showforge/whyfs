@@ -134,13 +134,18 @@ def file_history(con: sqlite3.Connection, path: str, limit: int = 50) -> list[di
     """What happened to the file, newest first: writes, moves in and out, deletes, and the
     first read by each other process (its consumers)."""
     p = normalize(path)
-    rows = con.execute(
-        """SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key,
-                  COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.user
-           FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid
-           WHERE e.id IN (SELECT id FROM events WHERE path=? AND (is_write=1 OR is_read=1 OR kind IN ('unlink','rename'))
-                          UNION ALL SELECT id FROM events WHERE path2=? AND kind='rename')
-           ORDER BY e.ts_ns DESC LIMIT ?""", (p, p, limit * 4)).fetchall()
+    # the newest `limit * 4` events of the path, as before -- but from two index-ordered scans
+    # (path, path2) that stop at that many rows, not a sort of the file's whole history
+    sql = ("SELECT e.id, e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key, "
+           "COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.user "
+           "FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid "
+           "WHERE {cond} ORDER BY e.ts_ns DESC, e.id DESC LIMIT ?")
+    both = {r["id"]: r for r in con.execute(sql.format(
+        cond="e.path=? AND (e.is_write=1 OR e.is_read=1 OR e.kind IN ('unlink','rename'))"),
+        (p, limit * 4)).fetchall()}
+    both.update({r["id"]: r for r in con.execute(sql.format(cond="e.path2=? AND e.kind='rename'"),
+                                                 (p, limit * 4)).fetchall()})
+    rows = sorted(both.values(), key=lambda r: (r["ts_ns"], r["id"]), reverse=True)[:limit * 4]
     out, readers = [], set()
     for r in rows:
         if r["kind"] == "rename":
@@ -181,17 +186,37 @@ from .observation import GAP_MIN_NS, LOSS_KEYS, WEAK_RETENTION_DAYS  # noqa: E40
 AMBIGUOUS_SHARED = 25
 
 
-def readers(con: sqlite3.Connection, path: str, limit: int = 20, creator: tuple | None = None) -> list[dict]:
+def readers(con: sqlite3.Connection, path: str, limit: int = 20, creator: tuple | None = None,
+            window: int | None = None) -> list[dict]:
     """Programs observed reading the file, other than the process that wrote it (reads are
-    kept for the weak-retention period)."""
+    kept for the weak-retention period).  With ``window``: only the file's ``window`` most
+    recent events are considered (the label: its cost must not grow with the file's history)."""
     run_id, key = creator or (None, None)
+    src = ("events" if window is None else
+           "(SELECT * FROM events WHERE path=? ORDER BY ts_ns DESC, id DESC LIMIT ?)")
+    args = (path, window, path) if window is not None else (path,)
     rows = con.execute(
-        "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e "
+        f"SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM {src} e "
         "LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid "
         "WHERE e.path=? AND e.is_read=1 AND e.api NOT LIKE '%derived-temp' AND NOT (e.run_id IS ? AND e.pid IS ?) "
         "GROUP BY pr.exe ORDER BY last DESC LIMIT ?",
-        (path, run_id, key, limit)).fetchall()
+        (*args, run_id, key, limit)).fetchall()
     return [{"exe": r["exe"], "processes": r["n"], "last_read_ns": r["last"], "last_read": iso(r["last"])} for r in rows]
+
+
+# The label describes the file as it is now.  For a file with a long history (rebuilt hundreds
+# of times) it reads only the recent part of that history -- the newest RECENT_EVENTS events of
+# the path, and the LABEL_RECENT_READERS most recent reader processes -- and says so in
+# label["scope"].  Nothing is dropped: `whyfs history FILE --limit 0` and `whyfs impact FILE`
+# still read everything.  Shorter histories are read completely, with the same queries as before.
+from .query import RECENT_EVENTS  # noqa: E402
+LABEL_RECENT_READERS = 50
+
+
+def _long_history(con: sqlite3.Connection, path: str) -> bool:
+    """More than RECENT_EVENTS events at this path: one bounded index probe."""
+    return con.execute("SELECT 1 FROM events WHERE path=? ORDER BY ts_ns DESC LIMIT 1 OFFSET ?",
+                       (path, RECENT_EVENTS)).fetchone() is not None
 
 
 def observation(con: sqlite3.Connection, since_ns: int | None, *, path: str | None = None,
@@ -272,12 +297,27 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
                 w, via_identity = w2, ev["path"]
     label: dict = {"schema": "whyfs-label/1", "path": target, "exists": exists}
     label["history"] = file_history(con, target, limit=history_limit)
+    long_history = _long_history(con, target)
+    scope_info: dict = {}
+
+    def _deps():
+        return impact_details(con, target, include_noise=include_noise, recent_readers=LABEL_RECENT_READERS,
+                              info=scope_info)[:dependents_limit]
+
+    def _scope():
+        if long_history or scope_info.get("readers_truncated"):
+            label["scope"] = {
+                "recent_only": True, "events_considered": RECENT_EVENTS, "reader_processes_considered": LABEL_RECENT_READERS,
+                "note": "this file has a long history: its readers and dependents come from its most recent activity; "
+                        "`whyfs history FILE --limit 0` and `whyfs impact FILE` read all of it"}
+
     if not w:
         label.update(status="no-record", note="whyfs has no observed origin for this file (created before whyfs "
                      "was running, excluded by the scope policy, or not visible to you)")
-        label["dependents"] = impact_details(con, target, include_noise=include_noise)[:dependents_limit]
+        label["dependents"] = _deps()
         label["observation"] = observation(con, None, path=target, status="no-record")
-        label["impact"] = impact(label, readers(con, target))
+        label["impact"] = impact(label, readers(con, target, window=RECENT_EVENTS if long_history else None))
+        _scope()
         return label
     # the creator's write, under whatever name the file had then (it may have moved since)
     rec = con.execute("SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 "
@@ -311,12 +351,18 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
     session = agents.session_for(con, run_id, key, w["ts_ns"]) if run_id else None
     # Created: the first write to, or move into, this path since the path last stopped existing
     # (deleted or moved away) -- not the first write ever seen at a reused path.
-    gone = con.execute("SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
-                       (target, w["ts_ns"])).fetchone()[0] or 0
-    first = con.execute("SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? "
-                        "UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ts_ns>?)",
-                        (target, gone, target, gone)).fetchone()[0]
-    deps = impact_details(con, target, include_noise=include_noise)[:dependents_limit]
+    # (index-ordered, each stopping at its first match: MAX/MIN with a filter scanned the path's
+    # whole history)
+    g = con.execute("SELECT ts_ns FROM events WHERE path=? AND kind IN ('unlink','rename') "
+                    "AND ts_ns<? ORDER BY ts_ns DESC LIMIT 1", (target, w["ts_ns"])).fetchone()
+    gone = (g[0] if g else 0) or 0
+    firsts = [r[0] for r in (
+        con.execute("SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? "
+                    "ORDER BY ts_ns LIMIT 1", (target, gone)).fetchone(),
+        con.execute("SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ts_ns>? "
+                    "ORDER BY ts_ns LIMIT 1", (target, gone)).fetchone()) if r]
+    first = min(firsts) if firsts else None
+    deps = _deps()
     inputs = list(w.get("inputs") or [])
     label.update({
         "status": "labelled",
@@ -350,7 +396,8 @@ def explain_file(con: sqlite3.Connection, path: str, *, include_noise: bool = Fa
         label["intent"] = {"task": None, "note": "no intent context was provided; whyfs does not infer intent"}
     label["causal_why"] = _causal_sentence(label)
     label["observation"] = observation(con, label["created_ns"], chain=label["process_chain"], identity=idcheck)
-    label["impact"] = impact(label, readers(con, target, creator=(run_id, key)))
+    label["impact"] = impact(label, readers(con, target, creator=(run_id, key), window=RECENT_EVENTS if long_history else None))
+    _scope()
     label["evidence"] = "OS-observed" + ("" if not session else
                                          " + registered agent context" if session["source"] == "registered" else
                                          " + detected agent (process image and command line)")

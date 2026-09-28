@@ -1,0 +1,932 @@
+[
+ {
+  "path": "C:\\Users\\ftmon\\whyfs-gen-probe2\\gen-1.txt",
+  "status": "labelled",
+  "write_events_at_path": 1,
+  "label_ms_median": 7.85,
+  "render_ms_median": 0.03,
+  "sql_statements_per_label": 48,
+  "sql_ms": 6.57,
+  "statements": [
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns>? LIMIT 1",
+    "calls": 1,
+    "ms": 5.03,
+    "vm_ops": 35128
+   },
+   {
+    "sql": "SELECT run_id, key, value FROM collector_stats WHERE key IN (?,?)",
+    "calls": 1,
+    "ms": 0.46,
+    "vm_ops": 18300
+   },
+   {
+    "sql": "SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns",
+    "calls": 1,
+    "ms": 0.29,
+    "vm_ops": 3814
+   },
+   {
+    "sql": "SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key, COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.",
+    "calls": 1,
+    "ms": 0.19,
+    "vm_ops": 142
+   },
+   {
+    "sql": "SELECT * FROM processes WHERE run_id=? AND pid=?",
+    "calls": 17,
+    "ms": 0.17,
+    "vm_ops": 428
+   },
+   {
+    "sql": "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid W",
+    "calls": 1,
+    "ms": 0.1,
+    "vm_ops": 100
+   },
+   {
+    "sql": "SELECT * FROM agent_sessions WHERE root_os_pid=? AND started_ns<=? AND (ended_ns IS NULL OR ended_ns>=?) ORDER BY started_ns DESC",
+    "calls": 8,
+    "ms": 0.05,
+    "vm_ops": 114
+   },
+   {
+    "sql": "SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN (?) AND key IN (?,?,?,?,?,?,?,?,?)",
+    "calls": 1,
+    "ms": 0.05,
+    "vm_ops": 142
+   },
+   {
+    "sql": "SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector, pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS pro",
+    "calls": 1,
+    "ms": 0.04,
+    "vm_ops": 114
+   },
+   {
+    "sql": "SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns, MAX(e.kind='io') AS observed_io FROM events e JOIN runs r ON r.id=e.run_id LEFT JOIN pro",
+    "calls": 1,
+    "ms": 0.03,
+    "vm_ops": 100
+   },
+   {
+    "sql": "SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename'",
+    "calls": 2,
+    "ms": 0.02,
+    "vm_ops": 128
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 ORDER BY file_id IS NULL LIMIT 1",
+    "calls": 1,
+    "ms": 0.02,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT path, MIN(ts_ns) AS first_ns, MAX(COALESCE(api, '') NOT LIKE '%mmap%') AS read_io FROM events WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND api LIKE '%derived-temp'",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='unlink' AND path=? AND ts_ns>=? LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT ppid, parent_key, first_seen_ns FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE kind='rename' AND path2=? AND ts_ns>=? AND file_id IS NOT NULL ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT * FROM events WHERE path=? AND ts_ns>? AND kind IN ('unlink','rename') ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid WHERE e.kind='rename' AND e.path=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND path=? AND is_write=1 AND ts_ns<? LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   }
+  ]
+ },
+ {
+  "path": "C:\\Users\\ftmon\\whyfs-gen-probe2\\gen-100.txt",
+  "status": "labelled",
+  "write_events_at_path": 92,
+  "label_ms_median": 12.18,
+  "render_ms_median": 0.04,
+  "sql_statements_per_label": 246,
+  "sql_ms": 9.42,
+  "statements": [
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns>? LIMIT 1",
+    "calls": 1,
+    "ms": 5.09,
+    "vm_ops": 34614
+   },
+   {
+    "sql": "SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key, COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.",
+    "calls": 1,
+    "ms": 1.06,
+    "vm_ops": 13814
+   },
+   {
+    "sql": "SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename'",
+    "calls": 101,
+    "ms": 0.66,
+    "vm_ops": 4300
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND path=? AND is_write=1 AND ts_ns<? LIMIT 1",
+    "calls": 100,
+    "ms": 0.6,
+    "vm_ops": 3100
+   },
+   {
+    "sql": "SELECT run_id, key, value FROM collector_stats WHERE key IN (?,?)",
+    "calls": 1,
+    "ms": 0.46,
+    "vm_ops": 18300
+   },
+   {
+    "sql": "SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns, MAX(e.kind='io') AS observed_io FROM events e JOIN runs r ON r.id=e.run_id LEFT JOIN pro",
+    "calls": 1,
+    "ms": 0.35,
+    "vm_ops": 6785
+   },
+   {
+    "sql": "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid W",
+    "calls": 1,
+    "ms": 0.29,
+    "vm_ops": 5514
+   },
+   {
+    "sql": "SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns",
+    "calls": 1,
+    "ms": 0.25,
+    "vm_ops": 3814
+   },
+   {
+    "sql": "SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector, pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS pro",
+    "calls": 1,
+    "ms": 0.21,
+    "vm_ops": 6400
+   },
+   {
+    "sql": "SELECT * FROM processes WHERE run_id=? AND pid=?",
+    "calls": 17,
+    "ms": 0.17,
+    "vm_ops": 428
+   },
+   {
+    "sql": "SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid WHERE e.kind='rename' AND e.path=?",
+    "calls": 1,
+    "ms": 0.06,
+    "vm_ops": 1471
+   },
+   {
+    "sql": "SELECT * FROM agent_sessions WHERE root_os_pid=? AND started_ns<=? AND (ended_ns IS NULL OR ended_ns>=?) ORDER BY started_ns DESC",
+    "calls": 8,
+    "ms": 0.05,
+    "vm_ops": 128
+   },
+   {
+    "sql": "SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN (?) AND key IN (?,?,?,?,?,?,?,?,?)",
+    "calls": 1,
+    "ms": 0.04,
+    "vm_ops": 142
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 ORDER BY file_id IS NULL LIMIT 1",
+    "calls": 1,
+    "ms": 0.03,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT path, MIN(ts_ns) AS first_ns, MAX(COALESCE(api, '') NOT LIKE '%mmap%') AS read_io FROM events WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND api LIKE '%derived-temp'",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='unlink' AND path=? AND ts_ns>=? LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT ppid, parent_key, first_seen_ns FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE kind='rename' AND path2=? AND ts_ns>=? AND file_id IS NOT NULL ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT * FROM events WHERE path=? AND ts_ns>? AND kind IN ('unlink','rename') ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   }
+  ]
+ },
+ {
+  "path": "C:\\Users\\ftmon\\whyfs-gen-probe2\\gen-300.txt",
+  "status": "labelled",
+  "write_events_at_path": 292,
+  "label_ms_median": 19.19,
+  "render_ms_median": 0.03,
+  "sql_statements_per_label": 646,
+  "sql_ms": 14.1,
+  "statements": [
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns>? LIMIT 1",
+    "calls": 1,
+    "ms": 4.73,
+    "vm_ops": 33100
+   },
+   {
+    "sql": "SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key, COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.",
+    "calls": 1,
+    "ms": 2.38,
+    "vm_ops": 40200
+   },
+   {
+    "sql": "SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename'",
+    "calls": 301,
+    "ms": 1.92,
+    "vm_ops": 12685
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND path=? AND is_write=1 AND ts_ns<? LIMIT 1",
+    "calls": 300,
+    "ms": 1.8,
+    "vm_ops": 9300
+   },
+   {
+    "sql": "SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns, MAX(e.kind='io') AS observed_io FROM events e JOIN runs r ON r.id=e.run_id LEFT JOIN pro",
+    "calls": 1,
+    "ms": 0.88,
+    "vm_ops": 20385
+   },
+   {
+    "sql": "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid W",
+    "calls": 1,
+    "ms": 0.61,
+    "vm_ops": 16514
+   },
+   {
+    "sql": "SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector, pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS pro",
+    "calls": 1,
+    "ms": 0.57,
+    "vm_ops": 20000
+   },
+   {
+    "sql": "SELECT run_id, key, value FROM collector_stats WHERE key IN (?,?)",
+    "calls": 1,
+    "ms": 0.43,
+    "vm_ops": 18300
+   },
+   {
+    "sql": "SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns",
+    "calls": 1,
+    "ms": 0.23,
+    "vm_ops": 3814
+   },
+   {
+    "sql": "SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid WHERE e.kind='rename' AND e.path=?",
+    "calls": 1,
+    "ms": 0.17,
+    "vm_ops": 4457
+   },
+   {
+    "sql": "SELECT * FROM processes WHERE run_id=? AND pid=?",
+    "calls": 17,
+    "ms": 0.16,
+    "vm_ops": 428
+   },
+   {
+    "sql": "SELECT * FROM agent_sessions WHERE root_os_pid=? AND started_ns<=? AND (ended_ns IS NULL OR ended_ns>=?) ORDER BY started_ns DESC",
+    "calls": 8,
+    "ms": 0.05,
+    "vm_ops": 114
+   },
+   {
+    "sql": "SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN (?) AND key IN (?,?,?,?,?,?,?,?,?)",
+    "calls": 1,
+    "ms": 0.04,
+    "vm_ops": 142
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 ORDER BY file_id IS NULL LIMIT 1",
+    "calls": 1,
+    "ms": 0.03,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT path, MIN(ts_ns) AS first_ns, MAX(COALESCE(api, '') NOT LIKE '%mmap%') AS read_io FROM events WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND api LIKE '%derived-temp'",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='unlink' AND path=? AND ts_ns>=? LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT ppid, parent_key, first_seen_ns FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE kind='rename' AND path2=? AND ts_ns>=? AND file_id IS NOT NULL ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT * FROM events WHERE path=? AND ts_ns>? AND kind IN ('unlink','rename') ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   }
+  ]
+ },
+ {
+  "path": "C:\\Users\\ftmon\\whyfs-gen-probe2\\gen-600.txt",
+  "status": "labelled",
+  "write_events_at_path": 592,
+  "label_ms_median": 30.88,
+  "render_ms_median": 0.04,
+  "sql_statements_per_label": 1246,
+  "sql_ms": 21.86,
+  "statements": [
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns>? LIMIT 1",
+    "calls": 1,
+    "ms": 4.57,
+    "vm_ops": 30085
+   },
+   {
+    "sql": "SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key, COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.",
+    "calls": 1,
+    "ms": 4.51,
+    "vm_ops": 79800
+   },
+   {
+    "sql": "SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename'",
+    "calls": 601,
+    "ms": 3.8,
+    "vm_ops": 25300
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND path=? AND is_write=1 AND ts_ns<? LIMIT 1",
+    "calls": 600,
+    "ms": 3.64,
+    "vm_ops": 18600
+   },
+   {
+    "sql": "SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns, MAX(e.kind='io') AS observed_io FROM events e JOIN runs r ON r.id=e.run_id LEFT JOIN pro",
+    "calls": 1,
+    "ms": 1.66,
+    "vm_ops": 40785
+   },
+   {
+    "sql": "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid W",
+    "calls": 1,
+    "ms": 1.17,
+    "vm_ops": 33014
+   },
+   {
+    "sql": "SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector, pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS pro",
+    "calls": 1,
+    "ms": 1.09,
+    "vm_ops": 40385
+   },
+   {
+    "sql": "SELECT run_id, key, value FROM collector_stats WHERE key IN (?,?)",
+    "calls": 1,
+    "ms": 0.46,
+    "vm_ops": 18300
+   },
+   {
+    "sql": "SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid WHERE e.kind='rename' AND e.path=?",
+    "calls": 1,
+    "ms": 0.31,
+    "vm_ops": 8971
+   },
+   {
+    "sql": "SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns",
+    "calls": 1,
+    "ms": 0.24,
+    "vm_ops": 3814
+   },
+   {
+    "sql": "SELECT * FROM processes WHERE run_id=? AND pid=?",
+    "calls": 17,
+    "ms": 0.17,
+    "vm_ops": 428
+   },
+   {
+    "sql": "SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN (?) AND key IN (?,?,?,?,?,?,?,?,?)",
+    "calls": 1,
+    "ms": 0.06,
+    "vm_ops": 142
+   },
+   {
+    "sql": "SELECT * FROM agent_sessions WHERE root_os_pid=? AND started_ns<=? AND (ended_ns IS NULL OR ended_ns>=?) ORDER BY started_ns DESC",
+    "calls": 8,
+    "ms": 0.05,
+    "vm_ops": 114
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 ORDER BY file_id IS NULL LIMIT 1",
+    "calls": 1,
+    "ms": 0.03,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT path, MIN(ts_ns) AS first_ns, MAX(COALESCE(api, '') NOT LIKE '%mmap%') AS read_io FROM events WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND api LIKE '%derived-temp'",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='unlink' AND path=? AND ts_ns>=? LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT ppid, parent_key, first_seen_ns FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE kind='rename' AND path2=? AND ts_ns>=? AND file_id IS NOT NULL ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT * FROM events WHERE path=? AND ts_ns>? AND kind IN ('unlink','rename') ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   }
+  ]
+ },
+ {
+  "path": "C:\\Users\\ftmon\\whyfs-gen-probe2\\gen-1000.txt",
+  "status": "labelled",
+  "write_events_at_path": 992,
+  "label_ms_median": 47.38,
+  "render_ms_median": 0.03,
+  "sql_statements_per_label": 2046,
+  "sql_ms": 32.96,
+  "statements": [
+   {
+    "sql": "SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key, COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.",
+    "calls": 1,
+    "ms": 7.38,
+    "vm_ops": 132614
+   },
+   {
+    "sql": "SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename'",
+    "calls": 1001,
+    "ms": 6.47,
+    "vm_ops": 42085
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND path=? AND is_write=1 AND ts_ns<? LIMIT 1",
+    "calls": 1000,
+    "ms": 6.19,
+    "vm_ops": 31000
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns>? LIMIT 1",
+    "calls": 1,
+    "ms": 3.78,
+    "vm_ops": 25057
+   },
+   {
+    "sql": "SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns, MAX(e.kind='io') AS observed_io FROM events e JOIN runs r ON r.id=e.run_id LEFT JOIN pro",
+    "calls": 1,
+    "ms": 2.78,
+    "vm_ops": 67985
+   },
+   {
+    "sql": "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid W",
+    "calls": 1,
+    "ms": 2.7,
+    "vm_ops": 55014
+   },
+   {
+    "sql": "SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector, pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS pro",
+    "calls": 1,
+    "ms": 1.94,
+    "vm_ops": 67600
+   },
+   {
+    "sql": "SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid WHERE e.kind='rename' AND e.path=?",
+    "calls": 1,
+    "ms": 0.58,
+    "vm_ops": 14971
+   },
+   {
+    "sql": "SELECT run_id, key, value FROM collector_stats WHERE key IN (?,?)",
+    "calls": 1,
+    "ms": 0.46,
+    "vm_ops": 18300
+   },
+   {
+    "sql": "SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns",
+    "calls": 1,
+    "ms": 0.25,
+    "vm_ops": 3814
+   },
+   {
+    "sql": "SELECT * FROM processes WHERE run_id=? AND pid=?",
+    "calls": 17,
+    "ms": 0.17,
+    "vm_ops": 428
+   },
+   {
+    "sql": "SELECT * FROM agent_sessions WHERE root_os_pid=? AND started_ns<=? AND (ended_ns IS NULL OR ended_ns>=?) ORDER BY started_ns DESC",
+    "calls": 8,
+    "ms": 0.05,
+    "vm_ops": 128
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 ORDER BY file_id IS NULL LIMIT 1",
+    "calls": 1,
+    "ms": 0.04,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN (?) AND key IN (?,?,?,?,?,?,?,?,?)",
+    "calls": 1,
+    "ms": 0.04,
+    "vm_ops": 142
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=?",
+    "calls": 1,
+    "ms": 0.03,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.02,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT path, MIN(ts_ns) AS first_ns, MAX(COALESCE(api, '') NOT LIKE '%mmap%') AS read_io FROM events WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND api LIKE '%derived-temp'",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='unlink' AND path=? AND ts_ns>=? LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT ppid, parent_key, first_seen_ns FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE kind='rename' AND path2=? AND ts_ns>=? AND file_id IS NOT NULL ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT * FROM events WHERE path=? AND ts_ns>? AND kind IN ('unlink','rename') ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   }
+  ]
+ },
+ {
+  "path": "C:\\Users\\ftmon\\whyfs-gen-probe2\\gen-5000.txt",
+  "status": "labelled",
+  "write_events_at_path": 4992,
+  "label_ms_median": 227.5,
+  "render_ms_median": 0.04,
+  "sql_statements_per_label": 10046,
+  "sql_ms": 161.6,
+  "statements": [
+   {
+    "sql": "SELECT e.ts_ns, e.kind, e.path, e.path2, e.is_read, e.is_write, e.api, e.run_id, e.pid AS process_key, COALESCE(e.os_pid, e.pid) AS pid, pr.exe, pr.command, pr.",
+    "calls": 1,
+    "ms": 39.89,
+    "vm_ops": 660614
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND path=? AND is_write=1 AND ts_ns<? LIMIT 1",
+    "calls": 5000,
+    "ms": 33.39,
+    "vm_ops": 155000
+   },
+   {
+    "sql": "SELECT CASE WHEN kind='rename' THEN path2 ELSE path END AS out_path, MAX(ts_ns) AS last_ns FROM events WHERE run_id=? AND pid=? AND (is_write=1 OR kind='rename'",
+    "calls": 5001,
+    "ms": 32.31,
+    "vm_ops": 210100
+   },
+   {
+    "sql": "SELECT e.run_id,e.pid,r.workspace,pr.exe,MIN(e.ts_ns) AS first_read_ns, MAX(e.kind='io') AS observed_io FROM events e JOIN runs r ON r.id=e.run_id LEFT JOIN pro",
+    "calls": 1,
+    "ms": 19.97,
+    "vm_ops": 339971
+   },
+   {
+    "sql": "SELECT pr.exe, COUNT(DISTINCT e.run_id || ':' || e.pid) AS n, MAX(e.ts_ns) AS last FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid W",
+    "calls": 1,
+    "ms": 14.63,
+    "vm_ops": 275014
+   },
+   {
+    "sql": "SELECT e.*, r.command AS run_command, r.cwd AS run_cwd, r.workspace, r.collector, pr.exe, pr.cwd AS process_cwd, pr.command AS process_command, pr.source AS pro",
+    "calls": 1,
+    "ms": 14.07,
+    "vm_ops": 339600
+   },
+   {
+    "sql": "SELECT DISTINCT e.path2, e.run_id, pr.exe FROM events e LEFT JOIN processes pr ON pr.run_id=e.run_id AND pr.pid=e.pid WHERE e.kind='rename' AND e.path=?",
+    "calls": 1,
+    "ms": 6.05,
+    "vm_ops": 74971
+   },
+   {
+    "sql": "SELECT run_id, key, value FROM collector_stats WHERE key IN (?,?)",
+    "calls": 1,
+    "ms": 0.46,
+    "vm_ops": 18300
+   },
+   {
+    "sql": "SELECT * FROM processes WHERE run_id=? AND pid=?",
+    "calls": 17,
+    "ms": 0.25,
+    "vm_ops": 428
+   },
+   {
+    "sql": "SELECT id, started_ns, ended_ns FROM runs ORDER BY started_ns",
+    "calls": 1,
+    "ms": 0.25,
+    "vm_ops": 3814
+   },
+   {
+    "sql": "SELECT pid, os_pid, exe, command FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.05,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE run_id=? AND pid=? AND ts_ns=? AND is_write=1 ORDER BY file_id IS NULL LIMIT 1",
+    "calls": 1,
+    "ms": 0.05,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT * FROM agent_sessions WHERE root_os_pid=? AND started_ns<=? AND (ended_ns IS NULL OR ended_ns>=?) ORDER BY started_ns DESC",
+    "calls": 8,
+    "ms": 0.05,
+    "vm_ops": 114
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns<=?",
+    "calls": 1,
+    "ms": 0.04,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT COALESCE(SUM(value),0) FROM collector_stats WHERE run_id IN (?) AND key IN (?,?,?,?,?,?,?,?,?)",
+    "calls": 1,
+    "ms": 0.04,
+    "vm_ops": 142
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='exec' AND ts_ns>? LIMIT 1",
+    "calls": 1,
+    "ms": 0.02,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT path, MIN(ts_ns) AS first_ns, MAX(COALESCE(api, '') NOT LIKE '%mmap%') AS read_io FROM events WHERE run_id=? AND pid=? AND is_read=1 AND path IS NOT NULL",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   },
+   {
+    "sql": "SELECT DISTINCT path FROM events WHERE run_id=? AND pid=? AND is_read=1 AND ts_ns<=? AND api LIKE '%derived-temp'",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT 1 FROM events WHERE run_id=? AND pid=? AND kind='unlink' AND path=? AND ts_ns>=? LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT ppid, parent_key, first_seen_ns FROM processes WHERE run_id=? AND pid=?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT file_id FROM events WHERE kind='rename' AND path2=? AND ts_ns>=? AND file_id IS NOT NULL ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT * FROM events WHERE path=? AND ts_ns>? AND kind IN ('unlink','rename') ORDER BY ts_ns DESC LIMIT 1",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 28
+   },
+   {
+    "sql": "SELECT MAX(ts_ns) FROM events WHERE path=? AND kind IN ('unlink','rename') AND ts_ns<?",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 14
+   },
+   {
+    "sql": "SELECT MIN(ts_ns) FROM (SELECT ts_ns FROM events WHERE path=? AND is_write=1 AND ts_ns>? UNION ALL SELECT ts_ns FROM events WHERE path2=? AND kind='rename' AND ",
+    "calls": 1,
+    "ms": 0.01,
+    "vm_ops": 42
+   }
+  ]
+ }
+]
