@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+import sys
 import time
 from pathlib import Path
 from typing import Iterable
@@ -145,6 +146,9 @@ def connect(root: Path, *, check_same_thread: bool = True) -> sqlite3.Connection
 
 def normalize(path: str | os.PathLike[str]) -> str:
     p = os.path.normpath(os.path.abspath(os.fspath(path)))
+    if sys.platform == "darwin":  # the form the collector records: links resolved, stored case
+        from .macos import true_path
+        return true_path(p)
     return _long_name(p) if os.name == "nt" and "~" in p else p
 
 

@@ -14,7 +14,8 @@ Rule file: one rule per line, `#` comments.
 Patterns are absolute paths matched component-wise as prefixes:
     *        one path component (also a drive: `*:\\Windows`)
     ab*cd    a component with that prefix and suffix (one `*` per component)
-    ~        every user's home (Linux `/home/*` and `/root`; Windows `*:\\Users\\*`)
+    ~        every user's home (Linux `/home/*` and `/root`; Windows `*:\\Users\\*`;
+             macOS `/Users/*` and `/private/var/root`)
 exclude-image patterns without a separator match the image's file name.
 Windows paths compare case-insensitively (ASCII), as in the rest of whyfs.
 Precedence: include > temp > exclude > (default) in scope.
@@ -98,6 +99,63 @@ exclude-image SearchProtocolHost.exe
 exclude-image SearchFilterHost.exe
 """
 
+MACOS_DEFAULTS = """\
+# whyfs default scope (macOS).  Additions: /Library/Application Support/WhyFS/scope.conf
+# Paths as Endpoint Security reports them: /tmp, /var and /etc are /private/tmp, /private/var, ...
+temp /private/tmp
+temp /private/var/tmp
+temp /private/var/folders/*/*/T
+exclude /private/var/folders
+exclude /private/var/db
+exclude /private/var/log
+exclude /private/var/vm
+exclude /private/var/run
+exclude /private/var/spool
+exclude /private/var/protected
+exclude /System
+exclude /usr
+exclude /bin
+exclude /sbin
+exclude /dev
+exclude /cores
+exclude /Library
+exclude /Applications
+exclude /opt/homebrew
+exclude /.Spotlight-V100
+exclude /.fseventsd
+exclude /.DocumentRevisions-V100
+exclude /Volumes/*/.Spotlight-V100
+exclude /Volumes/*/.fseventsd
+exclude /Volumes/*/.Trashes
+exclude /Volumes/*/.DocumentRevisions-V100
+exclude ~/Library/Caches
+exclude ~/Library/Logs
+exclude ~/Library/Saved Application State
+exclude ~/Library/HTTPStorages
+exclude ~/Library/Cookies
+exclude ~/Library/WebKit
+exclude ~/Library/Metadata
+exclude ~/Library/Biome
+exclude ~/Library/Preferences
+exclude ~/Library/Safari
+exclude ~/Library/Containers/com.apple.Safari
+exclude ~/Library/Application Support/Google/Chrome
+exclude ~/Library/Application Support/Firefox
+exclude ~/Library/Application Support/BraveSoftware
+exclude ~/Library/Application Support/Microsoft Edge
+exclude ~/Library/Application Support/CrashReporter
+exclude ~/.Trash
+exclude ~/.cache
+exclude ~/.npm/_cacache
+exclude-image whyfs-collect
+exclude-image mds
+exclude-image mds_stores
+exclude-image mdworker
+exclude-image mdworker_shared
+exclude-image backupd
+exclude-image fseventsd
+"""
+
 IN, TEMP, OUT = "in", "temp", "out"
 
 
@@ -106,12 +164,13 @@ def _lower(s: str) -> str:
 
 
 class Scope:
-    def __init__(self, nt: bool | None = None, text: str | None = None):
+    def __init__(self, nt: bool | None = None, text: str | None = None, mac: bool | None = None):
         self.nt = (sys.platform == "win32") if nt is None else nt
+        self.mac = (not self.nt and sys.platform == "darwin") if mac is None else mac
         self.sep = "\\" if self.nt else "/"
         self.rules: list[tuple[str, list[str]]] = []   # (kind, components)
         self.images: list[list[str] | str] = []
-        self.add(text if text is not None else (WINDOWS_DEFAULTS if self.nt else LINUX_DEFAULTS))
+        self.add(text if text is not None else defaults_text(self.nt, self.mac))
 
     # -- parsing
     def add(self, text: str) -> "Scope":
@@ -141,7 +200,7 @@ class Scope:
     def _expand(self, pat: str) -> list[list[str]]:
         if pat == "~" or pat.startswith("~/") or pat.startswith("~\\"):
             rest = pat[2:] if len(pat) > 1 else ""
-            homes = ["*:\\Users\\*"] if self.nt else ["/home/*", "/root"]
+            homes = ["*:\\Users\\*"] if self.nt else ["/Users/*", "/private/var/root"] if self.mac else ["/home/*", "/root"]
             return [self._split(h + (self.sep + rest if rest else "")) for h in homes]
         return [self._split(pat)]
 
@@ -188,11 +247,12 @@ class Scope:
         return False
 
 
-def defaults_text(nt: bool | None = None) -> str:
+def defaults_text(nt: bool | None = None, mac: bool | None = None) -> str:
     nt = (sys.platform == "win32") if nt is None else nt
-    return WINDOWS_DEFAULTS if nt else LINUX_DEFAULTS
+    mac = (not nt and sys.platform == "darwin") if mac is None else mac
+    return WINDOWS_DEFAULTS if nt else MACOS_DEFAULTS if mac else LINUX_DEFAULTS
 
 
-if __name__ == "__main__":  # python -m whyfs.scope [linux|windows] > scope-default.conf
-    which = sys.argv[1] if len(sys.argv) > 1 else ("windows" if sys.platform == "win32" else "linux")
-    sys.stdout.write(defaults_text(which == "windows"))
+if __name__ == "__main__":  # python -m whyfs.scope [linux|windows|macos] > scope-default.conf
+    which = sys.argv[1] if len(sys.argv) > 1 else ("windows" if sys.platform == "win32" else "macos" if sys.platform == "darwin" else "linux")
+    sys.stdout.write(defaults_text(which == "windows", which == "macos"))

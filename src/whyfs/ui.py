@@ -105,6 +105,8 @@ def reveal(path: str) -> bool:
         return False
     if os.name == "nt":
         subprocess.Popen(["explorer.exe", "/select,", os.path.normpath(path)])
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", "-R", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # Finder, selected
     else:
         target = path if os.path.isdir(path) else os.path.dirname(path)
         subprocess.Popen(["xdg-open", target], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)

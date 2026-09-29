@@ -326,6 +326,9 @@ def ensure_kernel_headers() -> bool:
 
 
 def capability_report() -> dict:
+    if sys.platform == "darwin":
+        from .macos import capability_report as macos_report
+        return macos_report()
     if os.name == "nt":
         from . import winsvc
         st = winsvc.service_state()

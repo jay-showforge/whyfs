@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import re
 import sqlite3
+import sys
 
 # (agent id, display name, image-path test, command-line test, version extractor)
 # Paths are compared with forward slashes, lower-cased.
@@ -177,7 +178,10 @@ def is_detected_agent_process(exe: str | None, command: str | None) -> bool:
 
 
 def proc_start_ns(pid: int) -> int | None:
-    """Wall-clock start of a live process (Linux /proc; Windows via GetProcessTimes)."""
+    """Wall-clock start of a live process (Linux /proc; Windows via GetProcessTimes; macOS libproc)."""
+    if sys.platform == "darwin":
+        from .macos import proc_start_ns as macos_start
+        return macos_start(pid)
     if os.name == "nt":
         import ctypes
         from ctypes import wintypes
@@ -205,7 +209,10 @@ def proc_start_ns(pid: int) -> int | None:
 
 # ---------------------------------------------------------------- live process ancestry (clients)
 def _live_parent_and_image(pid: int) -> tuple[int | None, str | None, str | None]:
-    """(parent pid, image path, command line) of a live process (command line: Linux only)."""
+    """(parent pid, image path, command line) of a live process (command line: Linux, macOS)."""
+    if sys.platform == "darwin":
+        from .macos import parent_and_image
+        return parent_and_image(pid)
     if os.name == "nt":
         import ctypes
         from ctypes import wintypes

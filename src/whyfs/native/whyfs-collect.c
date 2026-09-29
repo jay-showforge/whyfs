@@ -23,9 +23,15 @@
 // Replay input: records framed as u32 size + bytes (the ring-buffer payload).
 // --emit prints each handed-off record as a JSON line (string fields hex-encoded)
 // instead of writing SQLite.  On exit one JSON stats line goes to stdout.
+//
+// macOS (built with -DWHYFS_MACOS): the same event model, fed by Endpoint Security instead of
+// the eBPF ring buffer (macos/whyfs-es.c: --es live, --es-replay FILE, --es-record FILE).
+// Everything macOS-specific is inside WHYFS_MACOS blocks; the Linux build is unchanged.
 #define _GNU_SOURCE
+#ifndef WHYFS_MACOS
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -38,7 +44,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef WHYFS_MACOS
 #include <sys/prctl.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -56,6 +64,18 @@
 #define PROC_ROWS_LIMIT 200000
 #define DERIVED_LIMIT 200000
 #define DEFER_LIMIT 200000  // machine mode: deferred temporary-bridge records (ebpf_bcc.DEFER_LIMIT)
+
+// Evidence source prefix of every record's api (schema.EVIDENCE) and its I/O variants.
+#ifdef WHYFS_MACOS
+#define EVSRC "es"
+static const char *mac_io_api, *mac_io_api_dt;  // set by the ES frontend for each I/O record
+#define IO_API(mm) (mac_io_api ? mac_io_api : (mm) ? "es:mmap" : "es:rw")
+#define IO_API_DT(mm) (mac_io_api_dt ? mac_io_api_dt : (mm) ? "es:mmap:derived-temp" : "es:rw:derived-temp")
+#else
+#define EVSRC "ebpf"
+#define IO_API(mm) ((mm) ? "ebpf:mmap" : "ebpf:rw")
+#define IO_API_DT(mm) ((mm) ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp")
+#endif
 
 enum { EV_OPEN = 1, EV_READ = 2, EV_WRITE = 3, EV_RENAME = 4, EV_UNLINK = 5, EV_EXEC = 6, EV_FORK = 7,
        EV_EXIT = 8, EV_MMAP_READ = 9, EV_CHDIR = 13, EV_FCHDIR = 14, EV_MMAP_WRITE = 15 };
@@ -542,6 +562,16 @@ static char *redact_cmdline(char **argv, size_t argc) {  // whyfs/redact.py reda
 }
 
 // ---------------------------------------------------------------- /proc helpers
+#ifdef WHYFS_MACOS
+// macOS has no /proc: the facts come from Endpoint Security messages, else (live only) libproc.
+static char *mac_proc_link(uint32_t pid, const char *item);
+static size_t mac_proc_cmdline(uint32_t pid, char ***out);
+static int64_t mac_proc_start_ns(uint32_t pid);
+static char *mac_proc_user(uint32_t pid);
+struct hdr_t;
+static void mac_file_id(const struct hdr_t *e);
+static char *safe_proc_link(uint32_t pid, const char *item) { return mac_proc_link(pid, item); }
+#else
 static char *safe_proc_link(uint32_t pid, const char *item) {
     char p[64], t[PATH_MAX + 1];
     snprintf(p, sizeof p, "/proc/%u/%s", pid, item);
@@ -549,6 +579,7 @@ static char *safe_proc_link(uint32_t pid, const char *item) {
     if (n < 0) return NULL;
     return xstrndup(t, n);
 }
+#endif
 static char *clean_link(char *p) {  // takes ownership
     if (!p || !*p) { free(p); return NULL; }
     size_t n = strlen(p), d = strlen(" (deleted)");
@@ -574,6 +605,9 @@ static size_t split_argv(const unsigned char *raw, size_t n, char ***out) {
     return c;
 }
 static void free_argv(char **v, size_t n) { for (size_t i = 0; i < n; i++) free(v[i]); free(v); }
+#ifdef WHYFS_MACOS
+static size_t proc_cmdline(uint32_t pid, char ***out) { return mac_proc_cmdline(pid, out); }
+#else
 static size_t proc_cmdline(uint32_t pid, char ***out) {
     char p[64];
     snprintf(p, sizeof p, "/proc/%u/cmdline", pid);
@@ -588,6 +622,7 @@ static size_t proc_cmdline(uint32_t pid, char ***out) {
     free(b.p);
     return n;
 }
+#endif
 
 // ---------------------------------------------------------------- collector state
 typedef struct { uint64_t submitted, filtered, unresolved_fd, truncated_paths, kernel_drops, queue_drops, received,
@@ -698,7 +733,7 @@ static void emit_records(const unsigned char *p, size_t n) {
             j_opt(emit_fp, "ppid", hp, pp); j_opt(emit_fp, "parent_key", hk, pk);
             j_hex(emit_fp, "exe", exe, l1); j_hex(emit_fp, "cwd", cwd, l2); j_hex(emit_fp, "command", cmd, l3);
             if (user) fprintf(emit_fp, ",\"user\":\"%.*s\"", (int)l4, user); else fprintf(emit_fp, ",\"user\":null");
-            fprintf(emit_fp, ",\"source\":\"ebpf\"}\n");
+            fprintf(emit_fp, ",\"source\":\"" EVSRC "\"}\n");
         } else {
             int kind = r_u8(&r); int hf = r_u8(&r); int64_t fl = r_i64(&r);
             int hrw = r_u8(&r), rdv = r_u8(&r), wrv = r_u8(&r);
@@ -712,7 +747,7 @@ static void emit_records(const unsigned char *p, size_t n) {
             if (hrw) fprintf(emit_fp, ",\"read\":%s,\"write\":%s", rdv ? "true" : "false", wrv ? "true" : "false");
             if (hf) fprintf(emit_fp, ",\"flags\":%lld", (long long)fl);
             if (fid) fprintf(emit_fp, ",\"file_id\":\"%.*s\"", (int)l5, fid);
-            fprintf(emit_fp, ",\"api\":\"%.*s\",\"source\":\"ebpf\"}\n", (int)l3, api);
+            fprintf(emit_fp, ",\"api\":\"%.*s\",\"source\":\"" EVSRC "\"}\n", (int)l3, api);
         }
     }
 }
@@ -835,6 +870,8 @@ static void sc_add_pattern(int kind, const char *pat) {
         const char *rest = pat[1] ? pat + 2 : "";
 #ifdef SC_NT
         const char *homes[] = {"*:\\Users\\*"};
+#elif defined(WHYFS_MACOS)
+        const char *homes[] = {"/Users/*", "/private/var/root"};  // scope.Scope (mac)
 #else
         const char *homes[] = {"/home/*", "/root"};
 #endif
@@ -963,6 +1000,10 @@ static int within_ws(const char *p, int cap_all) {  // BCCCollector._in_ws
     if (machine_mode) return sc_classify(p) == SC_IN;
     return cap_all ? 1 : within(p, &ws_root);
 }
+#ifdef WHYFS_MACOS
+static int64_t proc_start_ns(uint32_t pid) { return mac_proc_start_ns(pid); }
+static char *proc_user(uint32_t pid) { return mac_proc_user(pid); }
+#else
 static int64_t proc_start_ns(uint32_t pid) {  // agents.proc_start_ns: btime + starttime ticks (0: unknown)
     char p[64], buf[1024];
     snprintf(p, sizeof p, "/proc/%u/stat", pid);
@@ -1004,6 +1045,7 @@ static char *proc_user(uint32_t pid) {  // ebpf_bcc._proc_user
     fclose(f);
     return r;
 }
+#endif
 
 static const char *cwd_of(uint32_t pid) {  // _cwd
     const char *c = map_get(&cwdm, pid, NULL);
@@ -1062,7 +1104,7 @@ static void record_process(prow_t *row) {  // takes ownership of row
     if (map_has(&relevant, row->pid, NULL)) put_process(row);
 }
 static void record_exec(int64_t ts, uint64_t k, uint32_t pid, const char *exe) {
-    if (map_has(&relevant, k, NULL)) { put_event(ts, k, pid, K_EXEC, 0, 0, 0, 0, 0, exe, 0, NULL, "ebpf:exec"); return; }
+    if (map_has(&relevant, k, NULL)) { put_event(ts, k, pid, K_EXEC, 0, 0, 0, 0, 0, exe, 0, NULL, EVSRC ":exec"); return; }
     ent_t *e = map_find(&pending_exec, k, NULL);
     if (!e) e = map_set(&pending_exec, k, NULL, calloc(1, sizeof(pexecs_t)));
     pexecs_t *l = e->v;
@@ -1078,7 +1120,7 @@ static void make_relevant(uint64_t k) {
         ent_t *pe = map_find(&pending_exec, k, NULL);
         if (pe) {
             pexecs_t *l = pe->v;
-            for (int j = 0; j < l->n; j++) put_event(l->v[j].ts, l->v[j].pid, l->v[j].os_pid, K_EXEC, 0, 0, 0, 0, 0, l->v[j].path, 0, NULL, "ebpf:exec");
+            for (int j = 0; j < l->n; j++) put_event(l->v[j].ts, l->v[j].pid, l->v[j].os_pid, K_EXEC, 0, 0, 0, 0, 0, l->v[j].path, 0, NULL, EVSRC ":exec");
             map_remove_ent(&pending_exec, pe);
         }
         has_k = row && row->has_parent_key;
@@ -1286,14 +1328,18 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         if (is_dir || within_ws(path, capture_all) || is_temp(path)) {
             map_put(&files, e.file, NULL, xstrdup(path));
             if (!is_dir) {  // ebpf_bcc._file_id: kernel identity (dev major:minor, inode, generation)
+#ifdef WHYFS_MACOS
+                mac_file_id(&e);  // "mac:DEV:INO" (macOS reports no inode generation)
+#else
                 char id[96]; uint32_t dev = (uint32_t)e.dirfd2;
                 snprintf(id, sizeof id, "lnx:%u:%u:%llu:%u", dev >> 20, dev & 0xFFFFF, (unsigned long long)e.file2, (uint32_t)e.dirfd);
                 map_put(&fidm, e.file, NULL, xstrdup(id));
+#endif
             }
         } else { map_pop(&files, e.file, NULL); map_pop(&fidm, e.file, NULL); }
         if (is_dir || !within_ws(path, capture_all)) { st.filtered++; free(path); return 0; }
         if (machine_mode) { free(path); return 0; }  // an open is not evidence in machine mode
-        file_event(pid, ts, K_OPEN, path, 1, e.flags, 1, 0, 0, 0, NULL, "ebpf:open");
+        file_event(pid, ts, K_OPEN, path, 1, e.flags, 1, 0, 0, 0, NULL, EVSRC ":open");
         free(path);
         return 0;
     }
@@ -1306,15 +1352,15 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         cur_fid = map_get(&fidm, e.file, NULL);
         if (within_ws(path, capture_all)) {
             if (!is_write && within_ws(path, 0)) map_set(&read_workspace, key_of(pid), NULL, NULL);
-            file_event(pid, ts, K_IO, path, 0, 0, 1, !is_write, is_write, 0, NULL, mm ? "ebpf:mmap" : "ebpf:rw");
+            file_event(pid, ts, K_IO, path, 0, 0, 1, !is_write, is_write, 0, NULL, IO_API(mm));
         } else if (is_write && map_has(&read_workspace, key_of(pid), NULL) && is_temp(path)) {
             map_put(&derived, 0, path, NULL);
-            const char *api = mm ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp";
+            const char *api = IO_API_DT(mm);
             if (machine_mode) defer_rec(pid, ts, K_IO, path, 1, 0, 1, 0, NULL, api, NULL, path);
             else file_event(pid, ts, K_IO, path, 0, 0, 1, 0, 1, 0, NULL, api);
         } else if (!is_write && map_has(&derived, 0, path)) {
             map_set(&read_workspace, key_of(pid), NULL, NULL);
-            const char *api = mm ? "ebpf:mmap:derived-temp" : "ebpf:rw:derived-temp";
+            const char *api = IO_API_DT(mm);
             if (machine_mode) defer_rec(pid, ts, K_IO, path, 1, 1, 0, 0, NULL, api, path, NULL);
             else file_event(pid, ts, K_IO, path, 0, 0, 1, 1, 0, 0, NULL, api);
         } else st.filtered++;
@@ -1416,8 +1462,8 @@ static int process_event(void *ctx, void *vdata, size_t size) {
                 }
             }
         }
-        if (defer_it) defer_rec(pid, ts, K_RENAME, a, 0, 0, 0, 1, b, "ebpf:rename", a, b);
-        else file_event(pid, ts, K_RENAME, a, 0, 0, 0, 0, 0, 1, b, "ebpf:rename");
+        if (defer_it) defer_rec(pid, ts, K_RENAME, a, 0, 0, 0, 1, b, EVSRC ":rename", a, b);
+        else file_event(pid, ts, K_RENAME, a, 0, 0, 0, 0, 0, 1, b, EVSRC ":rename");
         free(a); free(b);
         return 0;
     }
@@ -1427,10 +1473,10 @@ static int process_event(void *ctx, void *vdata, size_t size) {
         free(raw);
         if (a && map_has(&derived, 0, a)) {
             map_pop(&derived, 0, a);
-            if (machine_mode) defer_rec(pid, ts, K_UNLINK, a, 0, 0, 0, 0, NULL, "ebpf:unlink:derived-temp", NULL, NULL);
-            else file_event(pid, ts, K_UNLINK, a, 0, 0, 0, 0, 0, 0, NULL, "ebpf:unlink:derived-temp");
+            if (machine_mode) defer_rec(pid, ts, K_UNLINK, a, 0, 0, 0, 0, NULL, EVSRC ":unlink:derived-temp", NULL, NULL);
+            else file_event(pid, ts, K_UNLINK, a, 0, 0, 0, 0, 0, 0, NULL, EVSRC ":unlink:derived-temp");
         } else if (!within_ws(a, capture_all)) st.filtered++;
-        else file_event(pid, ts, K_UNLINK, a, 0, 0, 0, 0, 0, 0, NULL, "ebpf:unlink");
+        else file_event(pid, ts, K_UNLINK, a, 0, 0, 0, 0, 0, 0, NULL, EVSRC ":unlink");
         free(a);
         return 0;
     }
@@ -1532,7 +1578,7 @@ static int writer_main(const char *root, int rfd, int reply_fd, long uid, long g
                     sqlite3_bind_int64(sp, 2, pid);
                     if (hp) sqlite3_bind_int64(sp, 3, pp); else sqlite3_bind_null(sp, 3);
                     bind_text_or_null(sp, 4, exe, l1); bind_text_or_null(sp, 5, cwd, l2); bind_text_or_null(sp, 6, cmd, l3);
-                    sqlite3_bind_text(sp, 7, "ebpf", -1, SQLITE_STATIC);
+                    sqlite3_bind_text(sp, 7, EVSRC, -1, SQLITE_STATIC);
                     sqlite3_bind_int64(sp, 8, ts);
                     sqlite3_bind_int64(sp, 9, os_pid);
                     if (hk) sqlite3_bind_int64(sp, 10, pk); else sqlite3_bind_null(sp, 10);
@@ -1557,7 +1603,7 @@ static int writer_main(const char *root, int rfd, int reply_fd, long uid, long g
                     sqlite3_bind_int(se, 8, hrw && wrv);
                     if (hf) sqlite3_bind_int64(se, 9, fl); else sqlite3_bind_null(se, 9);
                     bind_text_or_null(se, 10, api, l3);
-                    sqlite3_bind_text(se, 11, "ebpf", -1, SQLITE_STATIC);
+                    sqlite3_bind_text(se, 11, EVSRC, -1, SQLITE_STATIC);
                     sqlite3_bind_int64(se, 12, os_pid);
                     if (!sq_ok(db, sqlite3_step(se), "insert event")) failed = 1;
                     sqlite3_reset(se);
@@ -1589,8 +1635,13 @@ static pid_t writer_pid = -1;
 static int writer_reply = -1;
 static void start_writer(const char *root, long uid, long gid) {
     int req[2], rep[2];
+#ifdef WHYFS_MACOS
+    if (pipe(req) || pipe(rep)) die("pipe: %s", strerror(errno));
+    for (int i = 0; i < 2; i++) { fcntl(req[i], F_SETFD, FD_CLOEXEC); fcntl(rep[i], F_SETFD, FD_CLOEXEC); }
+#else
     if (pipe2(req, O_CLOEXEC) || pipe2(rep, O_CLOEXEC)) die("pipe: %s", strerror(errno));
     fcntl(req[1], F_SETPIPE_SZ, 1 << 20);  // best effort: a larger in-kernel queue
+#endif
     pid_t p = fork();
     if (p < 0) die("fork: %s", strerror(errno));
     if (p == 0) {
@@ -1620,6 +1671,10 @@ static void print_stats(unsigned long long w_rows, unsigned long long w_batches,
            pending_exec.count, (unsigned long long)yields);
     fflush(stdout);
 }
+
+#ifdef WHYFS_MACOS
+#include "macos/whyfs-es.c"
+#endif
 
 int main(int argc, char **argv) {
     int ring_fd = -1, drop_fd = -1;
@@ -1655,6 +1710,9 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--flush-immediate")) flush_immediate = 1;
         else if (!strcmp(a, "--redact-text") && v) { char *r = redact_text(v); fputs(r, stdout); free(r); return 0; }  // test hooks
         else if (!strcmp(a, "--redact-argv")) { char *r = redact_cmdline(argv + i + 1, (size_t)(argc - i - 1)); fputs(r, stdout); free(r); return 0; }
+#ifdef WHYFS_MACOS
+        else if (mac_arg(a, v, &i)) {}
+#endif
         else die("unknown argument %s", a);
 #undef ARG
     }
@@ -1690,6 +1748,10 @@ int main(int argc, char **argv) {
     emit_fp = stdout;
     if (!emit_json && !diag_discard && !diag_nostore) start_writer(root, uid, gid);
 
+#ifdef WHYFS_MACOS
+    if (mac_mode) mac_main();
+    else
+#endif
     if (replay) {
         FILE *f = strcmp(replay, "-") ? fopen(replay, "rb") : stdin;
         if (!f) die("replay %s: %s", replay, strerror(errno));
@@ -1703,6 +1765,10 @@ int main(int argc, char **argv) {
         free(rec);
         flush_pending();
     } else {
+#ifdef WHYFS_MACOS
+        (void)ring_fd; (void)drop_fd;
+        die("--es, --es-replay FILE or --replay FILE required");
+#else
         if (ring_fd < 0) die("--ring-fd or --replay required");
         // Never outlive the daemon that holds the BPF programs.
         pid_t parent = getppid();
@@ -1742,6 +1808,7 @@ int main(int argc, char **argv) {
             if (bpf_map_lookup_elem(drop_fd, &k, &v) == 0) st.kernel_drops += v;
         }
         ring_buffer__free(rb);
+#endif
     }
     if (record_fp) fclose(record_fp);
     unsigned long long w_rows = 0, w_batches = 0, w_max = 0;

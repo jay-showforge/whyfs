@@ -41,6 +41,23 @@ EVIDENCE = {
     # program image boundaries
     "ebpf:exec": ("exec", "execve(): the process's program image changes here"),
     "etw:exec": ("exec", "process start: a Windows process runs one image for its whole life"),
+    # macOS Endpoint Security (docs/MACOS.md): it reports opens and closes, not individual reads
+    # or writes, so a read is "opened with read access" and a write "closed after modification".
+    "es:open-read": ("open-read", "opened with read access (Endpoint Security reports opens, not individual reads)"),
+    "es:open-read:derived-temp": ("open-read", "the same, for a temporary written by a process that read in-scope data"),
+    "es:close-modified": ("io", "closed after the kernel marked it modified (the write's time is its close)"),
+    "es:close-modified:derived-temp": ("io", "the same, for a derived temporary"),
+    "es:mmap": ("mapped-io", "a file mapping (MAP_SHARED writable = write, otherwise read)"),
+    "es:mmap:derived-temp": ("mapped-io", "mapping of a derived temporary"),
+    "es:clone": ("io", "clonefile(2) (APFS clone): the source read, the clone written"),
+    "es:clone:derived-temp": ("io", "a clone of or into a derived temporary"),
+    "es:copyfile": ("io", "copyfile(3) in the kernel: the source read, the destination written"),
+    "es:copyfile:derived-temp": ("io", "a kernel copy of or into a derived temporary"),
+    "es:open": ("open", "file opened (flags recorded); not evidence of data flow by itself"),
+    "es:rename": ("rename", "rename/move (Endpoint Security NOTIFY_RENAME)"),
+    "es:unlink": ("unlink", "unlink (Endpoint Security NOTIFY_UNLINK)"),
+    "es:unlink:derived-temp": ("unlink", "unlink of a derived temporary"),
+    "es:exec": ("exec", "exec: the process's program image changes here"),
 }
 # The portable tracer (v0.1) records opens with the open mode and writes it declares; it
 # cannot see reads/writes, so its evidence is "open-only" (query.why bounds it accordingly).

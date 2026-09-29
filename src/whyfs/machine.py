@@ -4,6 +4,8 @@ Linux:   `whyfs machine run` (systemd whyfs.service, root): eBPF programs + nati
          in machine mode, the local API socket, live loss counters, retention.
 Windows: `whyfs machine serve` (started by the whyfs service, SYSTEM): supervises the ETW
          collector in machine mode, serves the local API pipe, retention.
+macOS:   `whyfs machine run` (launchd org.tenzorpipe.whyfs, root): supervises the Endpoint
+         Security collector, serves the local API socket, retention (macos.serve).
 Both write one machine store that only the service (and administrators) can read.
 """
 from __future__ import annotations
@@ -25,6 +27,9 @@ NT = os.name == "nt"
 
 
 def paths() -> dict:
+    if sys.platform == "darwin":
+        from .macos import paths as macos_paths
+        return macos_paths()
     if NT:
         base = Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "whyfs"
         inst = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "whyfs"
@@ -90,6 +95,9 @@ def collector_ready() -> bool:
     """True once the machine collector is attached and recording (not merely started):
     Linux: the daemon state file, written after the BPF programs load; Windows: written by
     serve_windows when the collector reports ready."""
+    if sys.platform == "darwin":
+        from .macos import collector_ready as macos_ready
+        return macos_ready()
     d = paths()["root"] / ".whyfs"
     f = d / (READY_NAME if NT else "daemon.json")
     try:
@@ -286,6 +294,9 @@ def _update_stats(root: Path, run_id: str, lines: list[str], final: bool = False
 def main(argv: list[str]) -> int:
     cmd = argv[0] if argv else ""
     if cmd == "run":
+        if sys.platform == "darwin":
+            from .macos import serve
+            return serve()
         return run_linux() if not NT else serve_windows()
     if cmd == "serve":
         return serve_windows()

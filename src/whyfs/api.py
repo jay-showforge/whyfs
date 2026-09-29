@@ -346,6 +346,9 @@ def _process_user(pid: int) -> str | None:
     if os.name == "nt":
         from .winsecurity import process_sid
         return process_sid(pid)
+    if sys.platform == "darwin":
+        from .macos import process_user
+        return process_user(pid)
     try:
         for line in open(f"/proc/{pid}/status"):
             if line.startswith("Uid:"):
@@ -439,7 +442,13 @@ def op_status(ctx, con, params):
         "scope_rules": machine.effective_scope_text(),
         "heartbeat_age_s": (round((time.time_ns() - stats["heartbeat_ns"]) / 1e9, 1) if stats.get("heartbeat_ns") else None),
         "recording_gaps": _recording_gaps(con),
+        **({"endpoint_security": _endpoint_security()} if sys.platform == "darwin" else {}),
     }
+
+
+def _endpoint_security():
+    from .macos import endpoint_security_state
+    return endpoint_security_state()
 
 
 def _recording_gaps(con):
@@ -497,8 +506,12 @@ def serve_unix(root: Path, path: str = SOCKET_PATH, stop: threading.Event | None
 
     class Handler(socketserver.StreamRequestHandler):
         def handle(self):
-            pid, uid, _gid = struct.unpack("3i", self.request.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED,
-                                                                         struct.calcsize("3i")))
+            if sys.platform == "darwin":  # LOCAL_PEERCRED / LOCAL_PEERPID: the kernel's view of the peer
+                from .macos import peer_credentials
+                pid, uid = peer_credentials(self.request)
+            else:
+                pid, uid, _gid = struct.unpack("3i", self.request.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED,
+                                                                             struct.calcsize("3i")))
             ctx = {"user": f"uid:{uid}", "admin": uid == 0, "pid": pid}
             while True:
                 line = self.rfile.readline(MAX_REQUEST)

@@ -163,7 +163,7 @@ def _service(op: str, **params):
         reply = call(op, params)
     except ServiceUnavailable as exc:
         raise SystemExit(f"whyfs: {exc}.  Labels are recorded by the whyfs service "
-                         f"({'the Windows service' if os.name == 'nt' else 'systemd: whyfs.service'}).")
+                         f"({'the Windows service' if os.name == 'nt' else 'launchd: org.tenzorpipe.whyfs' if sys.platform == 'darwin' else 'systemd: whyfs.service'}).")
     if not reply.get("ok"):
         raise SystemExit(f"whyfs: {reply.get('error')}")
     return reply["result"]
@@ -323,6 +323,17 @@ def cmd_doctor(a):
     report = capability_report()
     if a.json:
         print(json.dumps(report, indent=2))
+    elif report.get("platform") == "macos":
+        print("whyfs macOS capability check")
+        es = report.get("endpoint_security") or {}
+        print(f"  {'service':18} {report['service']}")
+        print(f"  {'collector':18} {report.get('collector')}")
+        print(f"  {'endpoint security':18} {es.get('result', 'not attempted yet')}")
+        print(f"  {'sip':18} {report.get('sip')}")
+        print(f"  {'ready':18} {report['ready']}")
+        if es.get("result") in ("ERR_NOT_ENTITLED", "ERR_NOT_PERMITTED"):
+            print("\nThe Endpoint Security client was refused: the collector must be signed with Apple's Endpoint"
+                  " Security entitlement, and granted Full Disk Access (docs/MACOS.md).")
     elif report.get("platform") == "windows":
         print("whyfs Windows capability check")
         for key in ("architecture", "service", "binaries_installed", "install_dir", "ready"):
@@ -370,6 +381,8 @@ def cmd_daemon(a):
 
 
 def cmd_service(a):
+    if sys.platform == "darwin":
+        raise SystemExit("on macOS the service is the launchd job org.tenzorpipe.whyfs, installed by the WhyFS package")
     if os.name != "nt":
         raise SystemExit("`whyfs service` manages the Windows collector service; on Linux use `sudo whyfs daemon start`")
     from . import winsvc

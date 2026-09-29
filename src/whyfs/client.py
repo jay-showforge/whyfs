@@ -6,12 +6,13 @@ Kept apart from api.py (the server) so a CLI query imports only what a request n
 from __future__ import annotations
 
 import os
+import sys
 
 from . import jsonlite
 
 PROTOCOL = 1
 PIPE_NAME = r"\\.\pipe\whyfs-api"
-SOCKET_PATH = "/run/whyfs/api.sock"
+SOCKET_PATH = "/var/run/whyfs/api.sock" if sys.platform == "darwin" else "/run/whyfs/api.sock"
 
 
 class ServiceUnavailable(RuntimeError):
@@ -37,7 +38,7 @@ def call(op: str, params: dict | None = None, timeout: float = 30.0) -> dict:
             s.connect(SOCKET_PATH)
         except (FileNotFoundError, ConnectionRefusedError) as exc:
             raise ServiceUnavailable(f"the whyfs service is not running ({SOCKET_PATH}: {exc.strerror})")
-        # /run/whyfs is root-owned: the socket cannot be planted by another user
+        # /run/whyfs (macOS /var/run/whyfs) is root-owned: the socket cannot be planted by another user
         st = os.stat(os.path.dirname(SOCKET_PATH))
         if st.st_uid != 0 or st.st_mode & 0o022:
             raise ServiceUnavailable(f"refusing {SOCKET_PATH}: its directory is not root-owned and private")

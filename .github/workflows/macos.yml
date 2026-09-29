@@ -1,0 +1,75 @@
+# macOS development validation (macos-support branch).  Free standard GitHub-hosted runners:
+# Intel (macos-15-intel) and Apple Silicon (macos-15, plus macos-14 and macos-26 for OS coverage).
+# Every job records its real platform; architecture is verified inside the runner.
+name: macos
+on:
+  push:
+    branches: [macos-support]
+permissions: { contents: read }
+jobs:
+  linux-collector-unchanged:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - run: sudo apt-get update -q && sudo apt-get install -y -q libbpf-dev libsqlite3-dev pkg-config
+      - run: git fetch --tags --force && bash scripts/linux_collector_unchanged.sh v1.0.0 | tee linux-unchanged.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: linux-collector-unchanged, path: linux-unchanged.txt }
+
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15-intel, macos-15, macos-14, macos-26]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Platform identity
+        run: |
+          mkdir -p ci-results
+          {
+            echo "runner label: ${{ matrix.runner }}"
+            echo "commit: $GITHUB_SHA"
+            echo "uname -m: $(uname -m)"
+            echo "sysctl.proc_translated: $(sysctl -n sysctl.proc_translated 2>/dev/null || echo n/a)"
+            sw_vers
+            echo "cpu: $(sysctl -n machdep.cpu.brand_string)"
+            xcodebuild -version
+            clang --version | head -1
+            echo "python: $(python -c 'import sys,platform; print(sys.version.split()[0], platform.machine())')"
+            echo "csrutil: $(csrutil status)"
+          } 2>&1 | tee ci-results/platform.txt
+      - name: Build the collector (warnings shown)
+        run: |
+          python - <<'EOF' 2>&1 | tee ci-results/build.log
+          import sys; sys.path.insert(0, "src")
+          from pathlib import Path
+          from whyfs import macos
+          b = macos.build_collector(Path("ci-results/whyfs-collect"), sign="-")
+          print("built", b)
+          EOF
+          file ci-results/whyfs-collect | tee -a ci-results/build.log
+          echo "lipo -archs: $(lipo -archs ci-results/whyfs-collect)" | tee -a ci-results/build.log
+          test "$(lipo -archs ci-results/whyfs-collect)" = "$(uname -m)"
+          codesign -dv --entitlements - ci-results/whyfs-collect 2>&1 | tee -a ci-results/build.log
+      - name: Tests
+        env: { WHYFS_TEST_COLLECTOR: "${{ github.workspace }}/ci-results/whyfs-collect" }
+        run: |
+          python -m pip install -q -e .
+          python -m unittest discover -s tests -v > ci-results/tests.log 2>&1; rc=$?
+          tail -40 ci-results/tests.log
+          grep -E "skipped '" ci-results/tests.log | sed -E "s/.*skipped '(.*)'/\1/" | sort | uniq -c | sort -rn > ci-results/skip-reasons.txt || true
+          exit $rc
+      - name: Live Endpoint Security
+        if: always()
+        run: |
+          sudo -E env PATH="$PATH" python scripts/macos_live_es.py --out ci-results/live-es \
+            --binary ci-results/whyfs-collect 2>&1 | tail -60
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "macos-${{ matrix.runner }}", path: ci-results/ }

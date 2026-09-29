@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime as _dt
 import os
 import sqlite3
+import sys
 
 from . import agents
 from .query import impact_details, pkey
@@ -28,6 +29,9 @@ def current_file_id(path: str) -> str | None:
     """Native identity of the file now at ``path`` (same format the collectors record)."""
     if os.name == "nt":
         return _win_file_id(path)
+    if sys.platform == "darwin":
+        from .macos import file_id
+        return file_id(path)
     try:
         st = os.stat(path)
     except OSError:
@@ -81,6 +85,14 @@ def compare_ids(recorded: str | None, current: str | None) -> str:
         if r[4] and c[4] and r[4] != c[4]:
             return "mismatch"
         return "match"
+    if recorded.startswith("mac:") and current.startswith("mac:"):
+        # macOS: (device, inode) with no generation.  APFS allocates inode numbers from a
+        # per-volume counter and does not reuse them; a different device number (a volume
+        # remounted and renumbered) proves nothing.
+        r, c = recorded.split(":"), current.split(":")
+        if len(r) < 3 or len(c) < 3 or r[1] != c[1]:
+            return "unknown"
+        return "match" if r[2] == c[2] else "mismatch"
     return "match" if recorded.lower() == current.lower() else "mismatch"
 
 

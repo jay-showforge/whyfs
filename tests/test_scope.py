@@ -34,6 +34,20 @@ class ReferenceTests(unittest.TestCase):
         for p, want in V["windows_images"]:
             self.assertEqual(s.image_excluded(p), want, p)
 
+    def test_macos_vectors(self):
+        s = Scope(False, mac=True).add(V["macos_extra"])
+        for p, want in V["macos"]:
+            self.assertEqual(s.classify(p), want, p)
+        for p, want in V["macos_images"]:
+            self.assertEqual(s.image_excluded(p), want, p)
+
+    def test_macos_defaults_chosen_by_platform(self):
+        self.assertIn("/private/var/folders/*/*/T", defaults_text(False, True))
+        self.assertNotIn("/private/var/folders", defaults_text(False, False))
+        rules = ["/".join(c) for _k, c in Scope(False, mac=True).rules]
+        self.assertIn("private/var/root/Library/Caches", rules)  # `~` is every user's home, root's too
+        self.assertIn("Users/*/Library/Caches", rules)
+
     def test_user_files_anywhere_are_in_scope_by_default(self):
         for nt, paths in ((False, ["/home/u/Desktop/r.csv", "/srv/x/y", "/opt/p/q", "/data/a"]),
                           (True, [r"C:\Users\U\Desktop\r.csv", r"D:\any\where.txt", r"C:\proj\dist\app.js"])):
@@ -47,10 +61,10 @@ class ReferenceTests(unittest.TestCase):
         self.assertEqual(s.classify("/usr/local/lib/x.so"), "out")
 
 
-def _native(exe, *, nt, extra):
+def _native(exe, *, nt, extra, mac=False):
     with tempfile.TemporaryDirectory() as d:
         f1, f2 = Path(d, "default.conf"), Path(d, "extra.conf")
-        f1.write_text(defaults_text(nt), encoding="utf-8")
+        f1.write_text(defaults_text(nt, mac), encoding="utf-8")
         f2.write_text(extra, encoding="utf-8")
 
         def run(flag, value):
@@ -71,6 +85,21 @@ class LinuxNativeTests(unittest.TestCase):
                 self.assertEqual(run("--scope-classify", p), want, p)
             for p, want in V["linux_images"]:
                 self.assertEqual(run("--scope-image", p), "1" if want else "0", p)
+
+
+@unittest.skipUnless(sys.platform == "darwin", "macOS native collector")
+class MacNativeTests(unittest.TestCase):
+    def test_vectors(self):
+        from whyfs import macos
+        exe = os.environ.get("WHYFS_TEST_COLLECTOR")
+        with tempfile.TemporaryDirectory() as d:
+            if not exe:
+                exe = str(macos.build_collector(Path(d, "whyfs-collect"), sign=None))
+            for run in _native(exe, nt=False, extra=V["macos_extra"], mac=True):
+                for p, want in V["macos"]:
+                    self.assertEqual(run("--scope-classify", p), want, p)
+                for p, want in V["macos_images"]:
+                    self.assertEqual(run("--scope-image", p), "1" if want else "0", p)
 
 
 @unittest.skipUnless(os.name == "nt", "Windows native collector")

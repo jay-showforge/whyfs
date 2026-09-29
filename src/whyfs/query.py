@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 from .store import normalize
 
 # Human-view noise only. Raw evidence remains in SQLite and is available with
@@ -14,6 +15,9 @@ NOISE_PREFIXES = (
 NOISE_BASENAMES = {
     ".DS_Store", "ld.so.cache",
 }
+if sys.platform == "darwin":  # macOS system, framework, application and package-manager locations
+    NOISE_PREFIXES = NOISE_PREFIXES + ("/System/", "/Library/", "/Applications/", "/private/etc/", "/private/var/db/",
+                                       "/opt/homebrew/")
 
 
 if os.name == "nt":
