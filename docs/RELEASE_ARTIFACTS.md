@@ -8,11 +8,37 @@ and performance.  The source archive is `git archive` of the same commit.
 An artifact is never rebuilt after its hash is recorded.  A rebuild is a new artifact: it
 needs a new run and new hashes, and the old ones are invalidated here.
 
+## Final WhyFS 1.0.0 artifacts: [run 36510467027](https://github.com/jay-showforge/whyfs/actions/runs/36510467027), release commit f6c6010
+
+- **Release commit:** `f6c6010cd09858584766f3e454f2c5c87b57f2ee`.  Its product code is identical
+  to 57d60e4; only LICENSE (Change Date 2030-09-28) and documentation differ.
+- **Built on the four native hosted runners** by `release-validation.yml` from that commit.
+- **Tested in the same run, as the exact artifacts:**
+  - the MSI's clean install 32/32 and upgrade from 0.9.0, 16/16;
+  - the `.deb`'s 24/24;
+  - every product gate on each platform (see *Final artifact check* in
+    [PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md)).
+- **Embedded LICENSE check: PASS for all four packages.**
+  - Each downloaded package was hashed, then a copy was unpacked: the MSI by administrative
+    extraction (`msiexec /a`, which installs nothing), and the `.deb` by `dpkg-deb`.
+  - The packaged license (`LICENSE` in the MSI, `/usr/share/doc/whyfs/copyright` in the
+    `.deb`) contains `Change Date:          2030-09-28` and not the old placeholder.
+  - Evidence: `results/release-final-f6c6010/embedded-license/`.
+- **Not code-signed.  Not yet published.**
+
+| Artifact | Architecture | Built on | SHA-256 |
+|---|---|---|---|
+| `whyfs-1.0.0-x64.msi` | x64 | `windows-2022` | `ae3e1af770aae7900a574b63deabf886ebf95abe5d2c0dcc89a5d03a99c9bf56` |
+| `whyfs-1.0.0-arm64.msi` | ARM64 | `windows-11-arm` | `e6ecbcb74fc28b250220d543c6d3f5df40f9b961f588d0aaca0c02e3c36f6e51` |
+| `whyfs_1.0.0_amd64.deb` | x86-64 | `ubuntu-24.04` | `682e5c0fa61c9cf7bd21459676dcdafdfdbede751690525824d20808f3bcc58f` |
+| `whyfs_1.0.0_arm64.deb` | ARM64 | `ubuntu-24.04-arm` | `fa8cd32ec0e8f2637b5e3cd8a4eba6e794d9764eb27923d52c6cad960bbf74ba` |
+| `whyfs-1.0.0-src.tar.gz` | source | `git archive --format=tar.gz --prefix=whyfs-1.0.0/ f6c6010` (reproducible; built twice with identical hashes) | `225a26d4f95ccc606b822624394d4022b88e1e029922467a4b35b44fbfff3f1f` |
+
 ## Superseded, never published: the 57d60e4 candidates ([run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218))
 
 Their product validation stands.  They are superseded only because the LICENSE they embed
 (`/usr/share/doc/whyfs/copyright`, and `LICENSE` in the MSI) predates the Change Date.  The
-final artifacts are rebuilt from the license-final commit.
+final artifacts were rebuilt from the license-final commit (above).
 
 
 - **How they were built and tested:** on the four native hosted runners, from commit 57d60e4.

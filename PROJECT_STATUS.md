@@ -20,10 +20,12 @@ the fix is query-side only.
 **License:** source available under BSL 1.1; Change Date **2030-09-28**; Change License
 Apache 2.0.
 
-**Not done (release steps, not validation):**
-- the final packages are rebuilt from the license-final commit, because both packages embed
-  LICENSE ([docs/RELEASE_ARTIFACTS.md](docs/RELEASE_ARTIFACTS.md)); nothing is published yet;
-- packages are not code-signed.
+**Final artifacts: verified, not yet published.**
+- Rebuilt from release commit f6c6010 because both packages embed LICENSE ([run 36510467027](https://github.com/jay-showforge/whyfs/actions/runs/36510467027)).
+- Exact-artifact install, upgrade and gates PASS, and the embedded LICENSE check PASS, on all
+  four platforms.
+- Hashes: [docs/RELEASE_ARTIFACTS.md](docs/RELEASE_ARTIFACTS.md).
+- Not code-signed.
 
 See [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md) and
 [BENCHMARK.md](BENCHMARK.md#whyfs-10-performance-contract).

@@ -1,11 +1,12 @@
 # WhyFS 1.0.0: release notes (draft for the release review; not published)
 
-> **Status: release candidate (commit 57d60e4), not published.**
+> **Status: final artifacts verified (release commit f6c6010), not yet published.**
 > - **Validated:** every gate on the four native platforms and WSL2 (BENCHMARK.md sections 9
 >   and 10).
 > - **License:** BSL 1.1, Change Date 2030-09-28, Change License Apache 2.0.
-> - **Before a public release:** the final packages are rebuilt from the license-final commit
->   (they embed LICENSE), then published.  They are not code-signed.
+> - **Final artifacts:** rebuilt from release commit f6c6010 and verified, including the
+>   embedded LICENSE ([RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md)).  Not yet published, not
+>   code-signed.
 
 **Know why a file exists.**  WhyFS automatically labels files with their provenance: what
 created them, when, how, which inputs contributed and, when it is reliably known, which person

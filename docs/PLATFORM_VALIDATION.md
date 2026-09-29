@@ -50,6 +50,27 @@ Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buff
 in `bpf_trampoline_get` (`results/wsl2-hang-evidence.txt`).  CI runs them before the service
 is installed, and so does the WSL2 rerun; both pass.
 
+## Final artifact check ([run 36510467027](https://github.com/jay-showforge/whyfs/actions/runs/36510467027), release commit f6c6010): **PASS**
+
+This run is **not a product qualification**.  f6c6010 changes only LICENSE (the Change Date)
+and documentation relative to 57d60e4.  Product qualification remains
+[run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218) and the runs cited above.
+
+The final packages embed LICENSE, so they were rebuilt from f6c6010 and the existing
+`release-validation.yml` was run on them unchanged, on the four native hosted runners.
+
+| Platform | Tests | Package | Product | Outage | Secret | Corpora | Functional | Label gate |
+|---|---|---|---|---|---|---|---|---|
+| Windows x64 (`windows-2022`) | 116 OK | MSI 32/32, upgrade 16/16 | 47/47 | 16/16 | 22/22 | 79/79 ×2, lost 0 | PASS | PASS |
+| Windows ARM64 (`windows-11-arm`) | 116 OK | MSI 32/32, upgrade 16/16 | 47/47 | 16/16 | 22/22 | 79/79 ×2, lost 0 | PASS | PASS |
+| Linux x86-64 (`ubuntu-24.04`) | 254 + 254 OK | `.deb` 24/24 | 48/48 | 13/13 | 22/22 | 79/79 ×2, lost 0 | — | PASS |
+| Linux ARM64 (`ubuntu-24.04-arm`) | 254 + 254 OK | `.deb` 24/24 | 48/48 | 13/13 | 22/22 | 79/79 ×2, lost 0 | — | PASS |
+
+- **Embedded LICENSE check:** PASS for all four packages
+  ([RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md)).
+- **Normal CI on f6c6010:** `test.yml`, run 36510466786, PASS.
+- **Evidence:** `results/release-final-f6c6010/`.
+
 ## Authoritative run 36462972085 (commit 71bee51, 150 pairs, measurability rule): **FAIL on one check**
 
 `results/release-1.0.0-meas/`.  Details in
