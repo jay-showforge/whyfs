@@ -601,6 +601,8 @@ static const char *es_result_name(es_new_client_result_t r) {
 }
 
 static void mac_consume(const es_message_t *e) {
+    mac_mute_if_excluded(e->process);
+    if (e->event_type == ES_EVENT_TYPE_NOTIFY_EXEC) mac_mute_if_excluded(e->event.exec.target);
     arena_t a = {0};
     mmsg_t m;
     if (es_to_mmsg(e, &a, &m)) {
@@ -638,12 +640,32 @@ static int mac_mute_excluded(es_client_t *client) {
         if (wild || reopened) continue;
         buf_t p = {0};
         for (int k = 0; k < r->n; k++) { b_ch(&p, '/'); b_str(&p, r->c[k]); }
+        char *dir = xstrdup(p.p);  // the excluded directory itself (its own opens), then everything below it
         b_ch(&p, '/');
         char *prefix = b_take(&p);
         if (es_mute_path_events(client, prefix, ES_MUTE_PATH_TYPE_TARGET_PREFIX, fe, 3) == ES_RETURN_SUCCESS) muted++;
+        es_mute_path_events(client, dir, ES_MUTE_PATH_TYPE_TARGET_LITERAL, fe, 3);
         free(prefix);
+        free(dir);
     }
+    es_mute_path_events(client, "/", ES_MUTE_PATH_TYPE_TARGET_LITERAL, fe, 2);  // opens of the root directory: never evidence
     return muted;
+}
+
+// A process running an image the scope rules exclude (exclude-image: Spotlight's indexers, the
+// collector itself, ...) is muted in the kernel the first time it is seen: every event it would
+// cause is discarded by the same rules after delivery anyway.  Per process instance (audit token).
+static es_client_t *mac_client;
+static map_t mac_muted;
+static void mac_mute_if_excluded(const es_process_t *p) {
+    if (!p || !p->executable || !mac_client || !sc_n) return;
+    uint64_t k = ((uint64_t)audit_token_to_pid(p->audit_token) << 32) | (uint32_t)audit_token_to_pidversion(p->audit_token);
+    if (map_has(&mac_muted, k, NULL)) return;
+    char *exe = xstrndup(p->executable->path.data ? p->executable->path.data : "", p->executable->path.length);
+    int excluded = sc_image_excluded(exe);
+    free(exe);
+    if (excluded && es_mute_process(mac_client, &p->audit_token) == ES_RETURN_SUCCESS)
+        map_put(&mac_muted, k, NULL, NULL);  // bounded memo; the model keeps counting what it filters
 }
 
 static void mac_run_live(void) {
@@ -671,6 +693,8 @@ static void mac_run_live(void) {
         es_mute_path(client, realpath(self, real) ? real : self, ES_MUTE_PATH_TYPE_LITERAL);  // this collector and its writer
     }
     int muted_prefixes = mac_mute_excluded(client);
+    mac_client = client;
+    map_init(&mac_muted, 0, 65536, NULL);
     es_event_type_t ev[] = {ES_EVENT_TYPE_NOTIFY_EXEC, ES_EVENT_TYPE_NOTIFY_FORK, ES_EVENT_TYPE_NOTIFY_EXIT,
                             ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE, ES_EVENT_TYPE_NOTIFY_MMAP,
                             ES_EVENT_TYPE_NOTIFY_RENAME, ES_EVENT_TYPE_NOTIFY_UNLINK, ES_EVENT_TYPE_NOTIFY_CHDIR,

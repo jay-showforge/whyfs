@@ -68,6 +68,17 @@ blocks anything).
   - The query layer turns what a user types into that form with `F_GETPATH`. This resolves
     symbolic links and keeps the stored case, because APFS is normally case-insensitive.
 
+## Kernel-side scope (performance)
+
+Endpoint Security delivers events for every process on the Mac; WhyFS asks the kernel not to
+deliver what its scope rules would discard anyway:
+- open, close and mmap under each literal exclude prefix that no include or temp rule reopens
+  (and the excluded directories themselves, and opens of `/`) are muted by target path;
+- a process running an image the rules exclude (Spotlight's indexers, WhyFS's own collector) is
+  muted as a whole the first time it is seen.  Its children keep their own events; a child's
+  parent link then comes from the process table (libproc), not from the muted fork.
+exec, fork, exit, rename and unlink of everything else are never muted.
+
 ## File identity
 
 - **Format:** `mac:DEV:INO`, the device and inode that Endpoint Security attaches to every file.
