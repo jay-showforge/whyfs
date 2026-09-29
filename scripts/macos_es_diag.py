@@ -42,6 +42,9 @@ def idle(seconds: int) -> dict:
     p = subprocess.Popen([COLLECTOR, "--es", "--machine", "--scope", SCOPE, "--root", str(d), "--run-id", "diag",
                           "--emit", "--es-record", str(cap)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     hello = json.loads(p.stdout.readline() or "{}")
+    import threading  # --emit writes every record to stdout: drain it, or the collector blocks on a full pipe
+    threading.Thread(target=lambda: [None for _ in p.stdout], daemon=True).start()
+    threading.Thread(target=lambda: [None for _ in p.stderr], daemon=True).start()
     time.sleep(seconds)
     p.send_signal(signal.SIGTERM)
     p.wait(timeout=120)
