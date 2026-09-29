@@ -276,22 +276,29 @@ def main() -> int:
     # Automator runs a Run Shell Script action in a helper launched in the user's launchd session,
     # not with the caller's environment: the headless switch goes into that session (as Finder's
     # own launches would see it), and a diagnostic workflow records what the action receives.
+    # A Quick Action runs inside Automator's XPC service with its own environment (the diagnostic
+    # below records it): what it executes is observed with Endpoint Security instead.
     t.detail["quick_action_environment"] = quick_action_probe(t, work / "out.txt")
-    sh(["launchctl", "asuser", str(t.uid), "sudo", "-u", t.user, "launchctl", "setenv", "WHYFS_UI_BROWSER", "none"])
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+    from macos_observe import Execs
+    f = str(work / "out.txt")
+    want = {"WhyFS - Why does this file exist.workflow": ["ui", "--file", f],
+            "WhyFS - What created this file.workflow": ["ui", "--file", f, "--view", "created"],
+            "WhyFS - What depends on this file.workflow": ["ui", "--file", f, "--view", "impact"],
+            "WhyFS - Show WhyFS history.workflow": ["ui", "--file", f, "--view", "history"],
+            "WhyFS - Search WhyFS.workflow": ["ui", "--path", str(work)]}
     qa = {}
     for wf in sorted(Path("/Library/Services").glob("WhyFS - *.workflow")):
-        url_file.unlink(missing_ok=True)
-        r = t.as_user(["/usr/bin/automator", "-i", work / "out.txt", wf], env={"WHYFS_UI_BROWSER": "none"}, timeout=120)
-        wait(url_file.exists, 20, 0.2)
-        url = url_file.read_text() if url_file.exists() else ""
-        qa[wf.name] = {"rc": r.returncode, "stderr": r.stderr[-300:], "url_params": url.split("?", 1)[-1].split("&", 1)[-1]}
-    sh(["launchctl", "asuser", str(t.uid), "sudo", "-u", t.user, "launchctl", "unsetenv", "WHYFS_UI_BROWSER"])
-    want = {"WhyFS - Why does this file exist.workflow": "file=", "WhyFS - What created this file.workflow": "view=created",
-            "WhyFS - What depends on this file.workflow": "view=impact", "WhyFS - Show WhyFS history.workflow": "view=history",
-            "WhyFS - Search WhyFS.workflow": "path="}
+        with Execs() as ex:
+            r = t.as_user(["/usr/bin/automator", "-i", f, wf], timeout=120)
+            time.sleep(3)
+        runs = [e for e in ex.matching(*want.get(wf.name, ["?"])) if "whyfs" in e["argv"]
+                and ("--view" in want.get(wf.name, []) or "--view" not in e["argv"])]
+        qa[wf.name] = {"rc": r.returncode, "whyfs_ui_runs": [{"exe": e["exe"], "argv": e["argv"][2:]} for e in runs],
+                       "browser_opened": any(ex.browser_opened_by(e["pid"]) for e in runs)}
     t.check("quick_actions_installed", sorted(qa) == sorted(want), sorted(qa))
-    t.check("quick_actions_run_the_whyfs_window", all(qa.get(k, {}).get("rc") == 0 and v in qa.get(k, {}).get("url_params", "")
-                                                      for k, v in want.items()), qa)
+    t.check("quick_actions_run_the_whyfs_window", all(qa.get(k, {}).get("rc") == 0 and qa[k]["whyfs_ui_runs"]
+                                                      and qa[k]["browser_opened"] for k in want), qa)
     url_file.unlink(missing_ok=True)
     r = t.as_user(["/Applications/WhyFS.app/Contents/MacOS/WhyFS"], env={"WHYFS_UI_BROWSER": "none"})
     t.check("whyfs_app_opens_the_window", r.returncode == 0 and url_file.exists(), r.stderr[-300:])

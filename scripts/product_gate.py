@@ -139,6 +139,8 @@ subprocess.run(args, check=True, capture_output=True)
 for step in script:  # agent -> shell -> tool: cmd.exe on Windows, sh on Linux
     if os.name == "nt":
         subprocess.run(step, shell=True, check=True)
+    elif sys.platform == "darwin":  # macOS sh is bash, which runs the last command of `sh -c` in its own
+        subprocess.run(["sh", "-c", step + "; true"], check=True)  # process: `; true` keeps the shell a shell
     else:
         subprocess.run(["sh", "-c", step], check=True)
 subprocess.run([*whyfs, "agent", "end", "--session-id", sid], check=True, capture_output=True)
@@ -516,41 +518,46 @@ def _explorer_verb(g: "Gate", f: Path, verbs: dict) -> None:
 
 
 def _finder_quick_action(g: "Gate", f: Path) -> None:
-    """Run the Finder Quick Action "What depends on this file?" exactly as Finder runs it (Automator
-    runs the workflow with the selected file), headless: it must open that file's impact view."""
+    """Run the Finder Quick Action "What depends on this file?" as Finder runs it (Automator runs the
+    workflow with the selected file).  It runs inside Automator's XPC service, whose environment a
+    test cannot set, so what it executes is observed with Endpoint Security: the installed `whyfs ui`
+    for that file's impact view, handing its address to the browser.  The same command, run
+    headless, opens exactly that view (checked here too)."""
     import urllib.request
+    sys.path.insert(0, str(REPO / "scripts"))
+    from macos_observe import Execs
     wf = Path("/Library/Services/WhyFS - What depends on this file.workflow")
+    with Execs() as ex:
+        p = subprocess.run(["sudo", "-H", "-u", g.user, "--", "/usr/bin/automator", "-i", str(f), str(wf)],
+                           capture_output=True, text=True, timeout=120)
+        time.sleep(3)
+    runs = [e for e in ex.matching("ui", "--file", str(f), "--view", "impact") if "whyfs" in e["argv"]]
+    opened = any(ex.browser_opened_by(e["pid"]) for e in runs)
+    # the observed command, headless: the address it hands over opens that file's impact view
     url_file = g.home / ".cache" / "whyfs" / "last-launch.url"
     try:
         url_file.unlink()
     except OSError:
         pass
-    # Automator runs the action in a helper of the user's launchd session: the headless switch goes there
-    uid = subprocess.run(["id", "-u", g.user], capture_output=True, text=True).stdout.strip()
-    subprocess.run(["launchctl", "asuser", uid, "sudo", "-u", g.user, "launchctl", "setenv", "WHYFS_UI_BROWSER", "none"])
-    p = subprocess.run(["sudo", "-H", "-u", g.user, "--", "env", "WHYFS_UI_BROWSER=none", "/usr/bin/automator", "-i",
-                        str(f), str(wf)], capture_output=True, text=True, timeout=120)
-    deadline = time.time() + 30
-    while time.time() < deadline and not url_file.exists():
-        time.sleep(0.2)
-    subprocess.run(["launchctl", "asuser", uid, "sudo", "-u", g.user, "launchctl", "unsetenv", "WHYFS_UI_BROWSER"])
-    deadline = time.time() + 1
-    while time.time() < deadline and not url_file.exists():
-        time.sleep(0.2)
-    url = url_file.read_text().strip() if url_file.exists() else ""
+    argv = runs[0]["argv"] if runs else []
     loc = ""
-    if url:
-        class NoRedirect(urllib.request.HTTPRedirectHandler):
-            def redirect_request(self, *args, **kw):
-                return None
-        try:
-            urllib.request.build_opener(NoRedirect).open(url, timeout=15)
-        except urllib.error.HTTPError as exc:
-            loc = exc.headers.get("Location", "") if exc.code == 303 else f"HTTP {exc.code}"
+    if argv:
+        g.run(["env", "WHYFS_UI_BROWSER=none", *argv], check=False)
+        url = url_file.read_text().strip() if url_file.exists() else ""
+        if url:
+            class NoRedirect(urllib.request.HTTPRedirectHandler):
+                def redirect_request(self, *args, **kw):
+                    return None
+            try:
+                urllib.request.build_opener(NoRedirect).open(url, timeout=15)
+            except urllib.error.HTTPError as exc:
+                loc = exc.headers.get("Location", "") if exc.code == 303 else f"HTTP {exc.code}"
     from urllib.parse import quote
     want = "file=" + quote(str(f), safe="")
-    g.check("U.finder_quick_action_opens_the_file_in_the_window", p.returncode == 0 and want in loc and "view=impact" in loc,
-            {"workflow": wf.name, "rc": p.returncode, "stderr": p.stderr[-300:], "location": loc[:200]})
+    g.check("U.finder_quick_action_opens_the_file_in_the_window",
+            p.returncode == 0 and bool(runs) and opened and want in loc and "view=impact" in loc,
+            {"workflow": wf.name, "rc": p.returncode, "observed": [e["argv"] for e in runs], "browser_opened": opened,
+             "location": loc[:200]})
 
 
 def _ui_states(g: "Gate") -> list[str]:

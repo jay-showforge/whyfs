@@ -29,10 +29,14 @@ import time
 from pathlib import Path
 
 NT = os.name == "nt"
-WHYFS = [os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe")] if NT else ["/usr/bin/whyfs"]
+MAC = sys.platform == "darwin"
+WHYFS = [os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe")] if NT else \
+    ["/usr/local/bin/whyfs"] if MAC else ["/usr/bin/whyfs"]
 
 
 def as_user(argv: list[str], user: str | None) -> list[str]:
+    if MAC and user and os.geteuid() == 0:
+        return ["sudo", "-u", user, "--", *argv]
     if not NT and user and os.geteuid() == 0:
         return ["runuser", "-u", user, "--", *argv]
     return argv
@@ -108,7 +112,7 @@ def main() -> int:
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    home = os.path.expanduser("~") if NT else f"/home/{a.user}"
+    home = os.path.expanduser("~") if NT else f"/Users/{a.user}" if MAC else f"/home/{a.user}"
     base = Path(tempfile.mkdtemp(prefix="whyfs-labelgate-", dir=home))  # in scope
     if not NT:
         os.chmod(base, 0o777)

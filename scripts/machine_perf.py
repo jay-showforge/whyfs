@@ -3,6 +3,8 @@
 
 Windows: python scripts\\machine_perf.py --out DIR [--pairs 20] [--idle-min 10]        (elevated; MSI installed)
 Linux:   sudo python3 scripts/machine_perf.py --user USER --out DIR [...]              (the .deb installed)
+macOS:   sudo python3 scripts/machine_perf.py --user USER --out DIR [...]              (the .pkg installed;
+         "off" = the launchd job booted out; workloads: make -j8 36 units, Vite, a copy program x300)
 
 "off" = the whyfs service stopped (no ETW session / no BPF program on the machine);
 "on"  = the service running in its normal steady state: the machine collector labelling the
@@ -35,11 +37,15 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 NT = os.name == "nt"
+MAC = sys.platform == "darwin"
+MAC_LABEL = "org.tenzorpipe.whyfs"
 sys.path.insert(0, str(REPO / "scripts"))
 PAUSE_S = 1.0
 STORE = (Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "whyfs" / "machine" / ".whyfs" / "whyfs.db") if NT \
+    else Path("/Library/Application Support/WhyFS/machine/.whyfs/whyfs.db") if MAC \
     else Path("/var/lib/whyfs/machine/.whyfs/whyfs.db")
-WHYFS = [os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe")] if NT else ["/usr/bin/whyfs"]
+WHYFS = [os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe")] if NT else \
+    ["/usr/local/bin/whyfs"] if MAC else ["/usr/bin/whyfs"]
 LOSS_KEYS = ("kernel_drops", "queue_drops", "user_unresolved", "late_records", "lost_file", "lost_sys",
              "buffers_lost_file", "buffers_lost_sys")
 
@@ -58,7 +64,12 @@ def status() -> dict | None:
 
 
 def service(on: bool) -> None:
-    if NT:
+    if MAC:  # off: the launchd job booted out (no Endpoint Security client at all); on: bootstrapped
+        if on:
+            subprocess.run(["launchctl", "bootstrap", "system", f"/Library/LaunchDaemons/{MAC_LABEL}.plist"], capture_output=True)
+        else:
+            subprocess.run(["launchctl", "bootout", f"system/{MAC_LABEL}"], capture_output=True)
+    elif NT:
         subprocess.run(["powershell", "-NoProfile", "-Command", ("Start-Service" if on else "Stop-Service") + " whyfs"],
                        check=True, capture_output=True)
     else:
@@ -82,12 +93,30 @@ def collector_pids() -> list[int]:
                               "ForEach-Object { $_.ProcessId }"], capture_output=True, text=True).stdout
         return [int(x) for x in out.split()]
     out = subprocess.run(["pgrep", "-f", "[w]hyfs-collect|[w]hyfs machine run"], capture_output=True, text=True).stdout
-    return [int(x) for x in out.split()]
+    return [int(x) for x in out.split() if int(x) != os.getpid()]
+
+
+def _ps(pid: int) -> tuple[float, int] | None:
+    """macOS: (cpu seconds, rss bytes) from ps (no /proc)."""
+    out = subprocess.run(["ps", "-o", "cputime=,rss=", "-p", str(pid)], capture_output=True, text=True).stdout.split()
+    if len(out) != 2:
+        return None
+    parts = out[0].split(":")  # [[dd-]hh:]mm:ss.cc
+    secs = 0.0
+    for p in parts:
+        secs = secs * 60 + float(p.split("-")[-1])
+    if "-" in parts[0]:
+        secs += int(parts[0].split("-")[0]) * 86400
+    return secs, int(out[1]) * 1024
 
 
 def cpu_s(pids: list[int]) -> float:
     total = 0.0
     for pid in pids:
+        if MAC:
+            v = _ps(pid)
+            total += v[0] if v else 0.0
+            continue
         if NT:
             import ctypes
             from ctypes import wintypes
@@ -112,6 +141,10 @@ def cpu_s(pids: list[int]) -> float:
 def rss_mb(pids: list[int]) -> float:
     total = 0
     for pid in pids:
+        if MAC:
+            v = _ps(pid)
+            total += v[1] if v else 0
+            continue
         if NT:
             import ctypes
             from ctypes import wintypes
@@ -187,6 +220,8 @@ def workloads(base: Path, user: str | None):
             "vite_build": ("echo.", g.VITE, ws / "web", None),
             "native_exe_x300": ("del /q out-*.txt 2>nul", r"for /L %i in (1,1,300) do @.\copy.exe raw.txt out-%i.txt", ws / "native", None),
         }, [ws / "msvc" / "app.exe", ws / "native" / "out-150.txt"]
+    if MAC:
+        return _mac_workloads(base, user)
     import v02_graduation as g
     ctx = g.Ctx(user, base)
     ws = base / "perf"
@@ -204,6 +239,38 @@ def workloads(base: Path, user: str | None):
         "make_j8_36_units": ("make -s clean >/dev/null; true", "make -s -j8", ws / "cproj", None),
         "vite_build": ("true", g.VITE, ws / "web", None),
         "static_binary_x300": ("rm -f out-*.txt", "for i in $(seq 1 300); do ./static_copy raw.txt out-$i.txt; done", ws, None),
+    }, [ws / "cproj" / "app", ws / "out-150.txt"]
+
+
+def _mac_workloads(base: Path, user: str):
+    """The Linux campaign's workloads on macOS, run as the user (clang is the system compiler; a
+    macOS program cannot be linked statically, so the x300 program is an ordinary one)."""
+    import pwd
+    import v02_graduation as g
+    pw = pwd.getpwnam(user)
+    ws = base / "perf"
+    ws.mkdir(parents=True)
+    g.write_c_project(ws / "cproj")
+    g.write_vite_project(ws / "web", Path(os.environ.get("WHYFS_VITE_TEMPLATE", f"/Users/{user}/vite-template")))
+    (ws / "copy.c").write_text(g.STATIC_C)
+    (ws / "raw.txt").write_text("x" * 4096)
+    subprocess.run(["chown", "-R", f"{pw.pw_uid}:{pw.pw_gid}", str(ws)], check=True)
+    env = {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", "HOME": pw.pw_dir, "USER": user,
+           "LANG": "en_US.UTF-8"}
+
+    def run(cmd, cwd, env_=None, check=True):
+        argv = ["sudo", "-u", user, "--", "env", "-i", *[f"{k}={v}" for k, v in env.items()], "bash", "-c", cmd]
+        t0 = time.perf_counter()
+        p = subprocess.run(argv, cwd=cwd, capture_output=True, text=True)
+        dt = time.perf_counter() - t0
+        if check and p.returncode != 0:
+            raise RuntimeError(f"workload failed ({p.returncode}): {cmd}\n{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
+        return dt
+    run("cc -O2 copy.c -o copy_prog", ws)
+    return ws, (lambda cmd, cwd, env=None, check=True: run(cmd, cwd, check=check)), {
+        "make_j8_36_units": ("make -s clean >/dev/null; true", "make -s -j8", ws / "cproj", None),
+        "vite_build": ("true", g.VITE, ws / "web", None),
+        "copy_program_x300": ("rm -f out-*.txt", "for i in $(seq 1 300); do ./copy_prog raw.txt out-$i.txt; done", ws, None),
     }, [ws / "cproj" / "app", ws / "out-150.txt"]
 
 
@@ -226,7 +293,8 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     t_campaign = time.time_ns()
     # an ordinary user folder: in scope (a temp root would only record derived temporaries)
-    base = Path(tempfile.mkdtemp(prefix="whyfs-mperf-", dir=os.path.expanduser("~") if NT else f"/home/{a.user}"))
+    base = Path(tempfile.mkdtemp(prefix="whyfs-mperf-", dir=os.path.expanduser("~") if NT else
+                                 f"/Users/{a.user}" if MAC else f"/home/{a.user}"))
     if not NT:
         os.chmod(base, 0o755)
     report: dict = {"platform": platform.platform(), "machine": platform.machine(), "cpu": platform.processor(),

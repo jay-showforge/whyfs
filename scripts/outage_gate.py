@@ -8,6 +8,10 @@
 2. Kill the whole observer unexpectedly (Linux: SIGKILL to every process of whyfs.service;
    macOS: SIGKILL to every WhyFS process of the launchd job; Windows: terminate the whyfs service
    process tree).  Nothing is restarted by this script.
+   macOS: launchd restarts a killed job within about a second -- faster than the 5 s below which
+   a pause is not reported as a gap -- so the outage is held open first: every WhyFS process is
+   suspended (SIGSTOP: the observer is unavailable), B is created, and after about 12 s the
+   suspended processes are killed (SIGKILL).  Recovery is launchd's alone.
 3. Create File B while nothing is observing.
 4. Wait for the OS service manager to recover the observer by itself (systemd Restart=,
    launchd KeepAlive, Windows service recovery actions) and for the collector to be ready again.
@@ -66,7 +70,11 @@ class Gate:
         print(f"  {'PASS' if ok else 'FAIL'} {name}" + ("" if ok else f"  {json.dumps(detail, default=str)[:600]}"))
 
     def api(self, op, **params):
-        p = subprocess.run(self.as_user([*whyfs(), "api", op, json.dumps(params)]), capture_output=True, text=True)
+        try:  # a suspended service accepts the connection and never answers: bounded on macOS
+            p = subprocess.run(self.as_user([*whyfs(), "api", op, json.dumps(params)]), capture_output=True, text=True,
+                               timeout=8 if MAC else None)
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "error": "no answer within 8 s"}
         try:
             return json.loads(p.stdout)
         except ValueError:
@@ -231,14 +239,28 @@ def main() -> int:
     g.check("A_complete_before_the_outage", la.get("status") == "labelled" and la["observation"]["complete"], la.get("observation"))
 
     # 2. kill the observer
-    kill = kill_observer()
-    timeline["kill"] = kill
-    time.sleep(0.5)
-    down = not g.ready()
-    # 3. B while nothing observes
-    g.write(fb, src)
-    timeline["B_ns"] = time.time_ns()
-    still_down = not g.ready()
+    if MAC:  # hold the outage open: suspend every WhyFS process, create B, then kill them all
+        tree = subprocess.run(["pgrep", "-f", f"{MAC_COLLECTOR}|whyfs machine run"], capture_output=True, text=True).stdout.split()
+        subprocess.run(["kill", "-STOP", *tree], capture_output=True)
+        timeline["suspended"] = {"pids": tree, "at_ns": time.time_ns()}
+        t_susp = time.monotonic()
+        time.sleep(0.5)
+        down = not g.ready()
+        g.write(fb, src)
+        timeline["B_ns"] = time.time_ns()
+        still_down = not g.ready()
+        time.sleep(max(0.0, 12.0 - (time.monotonic() - t_susp)))
+        kill = kill_observer()
+        timeline["kill"] = kill
+    else:
+        kill = kill_observer()
+        timeline["kill"] = kill
+        time.sleep(0.5)
+        down = not g.ready()
+        # 3. B while nothing observes
+        g.write(fb, src)
+        timeline["B_ns"] = time.time_ns()
+        still_down = not g.ready()
     g.check("observer_was_down_when_B_appeared", down and still_down, {"down_after_kill": down, "down_after_B": still_down})
 
     # 4. automatic recovery (nothing is restarted here)
