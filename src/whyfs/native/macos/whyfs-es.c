@@ -600,6 +600,7 @@ static const char *es_result_name(es_new_client_result_t r) {
     }
 }
 
+static void mac_mute_if_excluded(const es_process_t *p);  // below, with the client setup
 static void mac_consume(const es_message_t *e) {
     mac_mute_if_excluded(e->process);
     if (e->event_type == ES_EVENT_TYPE_NOTIFY_EXEC) mac_mute_if_excluded(e->event.exec.target);
