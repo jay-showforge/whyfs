@@ -1682,6 +1682,9 @@ int main(int argc, char **argv) {
     long uid = -1, gid = -1;
     int have_offset = 0;
     char *seeds[64]; int nseeds = 0;
+#ifdef WHYFS_MACOS
+    if (argc > 1 && !strcmp(argv[1], "--launchd")) return mac_launchd(argc - 2, argv + 2);
+#endif
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         const char *v = i + 1 < argc ? argv[i + 1] : NULL;

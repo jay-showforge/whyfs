@@ -1,0 +1,12 @@
+#!/bin/sh
+# Start the WhyFS service now; launchd starts it at every boot (RunAtLoad) and restarts it if it
+# exits (KeepAlive).
+LABEL=org.tenzorpipe.whyfs
+PLIST=/Library/LaunchDaemons/$LABEL.plist
+chown -R root:wheel /Library/WhyFS "$PLIST"
+chmod 644 "$PLIST"
+mkdir -p /Library/Logs/WhyFS
+launchctl bootout system/$LABEL 2>/dev/null || true
+launchctl enable system/$LABEL
+launchctl bootstrap system "$PLIST"
+exit 0

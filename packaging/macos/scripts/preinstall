@@ -1,0 +1,5 @@
+#!/bin/sh
+# Stop a running WhyFS service before its files are replaced (upgrade).  Stopping drains the
+# collector: everything it received is stored.  The provenance store is never touched.
+launchctl bootout system/org.tenzorpipe.whyfs 2>/dev/null || true
+exit 0

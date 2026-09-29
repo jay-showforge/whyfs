@@ -155,14 +155,17 @@ def main() -> int:
     def exe(name):
         return (by(name).get("created_by") or {}).get("exe")
     c["events_received"] = stats.get("received", 0) > 0
-    c["report_created_by_python"] = by("report.txt").get("status") == "labelled" and "python" in (exe("report.txt") or "")
+    # /usr/bin/python3 may be a shim that executes another image (on CI runners, Xcode's
+    # Python3.framework .../Python.app/Contents/MacOS/Python): the label names the image that wrote
+    result["creators"] = {n: exe(n) for n in labels}
+    c["report_created_by_python"] = by("report.txt").get("status") == "labelled" and "python" in (exe("report.txt") or "").lower()
     c["report_input_is_input_csv"] = str(work / "input.csv") in (by("report.txt").get("inputs") or [])
     c["report_identity_match"] = (by("report.txt").get("identity") or {}).get("check") == "match"
     c["final_moved_from_published"] = str(work / "published.txt") in json.dumps(by("final.txt").get("renamed_from"))
     c["final_created_by_shell"] = os.path.basename(exe("final.txt") or "") in ("sh", "bash", "zsh", "cat")
     c["clone_labelled"] = by("cloned.txt").get("status") == "labelled" and os.path.basename(exe("cloned.txt") or "") == "cp"
     c["copy_labelled"] = by("copied.txt").get("status") == "labelled" and os.path.basename(exe("copied.txt") or "") == "cp"
-    c["reused_path_is_the_second_writer"] = "python" in (exe("reused.txt") or "")
+    c["reused_path_is_the_second_writer"] = "python" in (exe("reused.txt") or "").lower()
     c["report_dependents_include_final"] = str(work / "final.txt") in json.dumps(by("report.txt").get("dependents"))
     # nothing persisted in the evidence store holds the secret (the --es-record capture is a raw
     # diagnostic, owner-only, like Linux --record)

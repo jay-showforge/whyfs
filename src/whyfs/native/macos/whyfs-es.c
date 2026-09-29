@@ -684,6 +684,37 @@ static void mac_run_live(void) {
     flush_pending();
 }
 
+// ---------------------------------------------------------------- launchd entry point
+// `whyfs-collect --launchd -- PROGRAM ARGS...` is the launchd job's program: it runs the service
+// (PROGRAM: `whyfs machine run`) as its child, passes on stop signals, and exits with it
+// (launchd then restarts the job).  macOS attributes a launchd job's descendants to the job's
+// program for privacy permissions, so the Full Disk Access an Endpoint Security client needs is
+// granted to this signed collector binary, never to a Python interpreter.
+static volatile pid_t mac_child;
+static void mac_forward(int s) { if (mac_child > 0) kill(mac_child, s); }
+static int mac_launchd(int n, char **args) {
+    if (n > 0 && !strcmp(args[0], "--")) { args++; n--; }
+    if (n < 1) die("usage: --launchd -- PROGRAM [ARGS...]");
+    struct sigaction sa = {0};
+    sa.sa_handler = mac_forward;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
+    pid_t c = fork();
+    if (c < 0) die("fork: %s", strerror(errno));
+    if (c == 0) {
+        signal(SIGTERM, SIG_DFL); signal(SIGINT, SIG_DFL); signal(SIGHUP, SIG_DFL);
+        execv(args[0], args);
+        fprintf(stderr, "whyfs-collect --launchd: exec %s: %s\n", args[0], strerror(errno));
+        _exit(127);
+    }
+    mac_child = c;
+    int status = 0;
+    while (waitpid(c, &status, 0) < 0) if (errno != EINTR) die("waitpid: %s", strerror(errno));
+    if (WIFEXITED(status)) return WEXITSTATUS(status);
+    return 128 + (WIFSIGNALED(status) ? WTERMSIG(status) : 0);
+}
+
 static void mac_main(void) {
     clock_offset = 0;  // Endpoint Security timestamps are wall-clock already
     map_init(&mfacts, 0, 0, mfact_free);
