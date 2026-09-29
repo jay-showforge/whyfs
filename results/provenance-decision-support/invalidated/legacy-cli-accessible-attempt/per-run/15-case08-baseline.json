@@ -1,0 +1,175 @@
+{
+  "case": "case08",
+  "case_name": "manual-artifact-in-dist",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 92.73051993900003,
+  "final_response": "The repository does not contain enough provenance evidence to identify the creating process as an observed fact.\n\n- `dist/release-note.txt` is byte-for-byte identical to the tracked [authored/manual-release.txt](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case08-baseline/authored/manual-release.txt:1), including the SHA-256 hash. This strongly suggests the manual note was copied or staged into `dist/`.\n- That contribution is inferred from content, not observed process lineage; no accessible provenance record identifies the command or confirms that it read the manual file.\n- [tools/package-release.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case08-baseline/tools/package-release.py:2) would write `automated package note`, which does not match the current artifact. Therefore that script did not produce the file\u2019s current contents, although it could conceivably have run earlier and then been overwritten.\n- The location proves nothing by itself. `dist/` is ignored by [.gitignore](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case08-baseline/.gitignore:3), and the README merely says material \u201cmay be staged\u201d there.\n\nFor a durable wording correction, change the tracked upstream text in `authored/manual-release.txt`, then repeat the actual staging/copy workflow. Editing the ignored `dist/release-note.txt` alone would only patch a disposable artifact. If the packaging script is intended to become authoritative instead, its hard-coded string must be corrected and the workflow standardized\u2014but the current file is not evidence that this script ran. No files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc 'git status --short --ignored && git log --oneline --decorate --stat --all && git ls-files --stage && for f in README.md tools/package-release.py authored/manual-release.txt dist/release-note.txt .gitignore; do echo \"### $f\"; sed -n '\"'1,240p' \\\"\"'$f\"; done && stat -c '\"'%n | inode=%i | size=%s | mtime=%y | ctime=%z | birth=%w' authored/manual-release.txt dist/release-note.txt tools/package-release.py\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"command -v getfattr || true\ngetfattr -d -m - authored/manual-release.txt dist/release-note.txt tools/package-release.py 2>&1 || true\nlsattr authored/manual-release.txt dist/release-note.txt tools/package-release.py 2>&1 || true\nfind .. -maxdepth 3 -type f -o -type l | sort | sed -n '1,260p'\nfind /tmp -maxdepth 3 -iname '*whyfs*' -o -iname '*provenance*' 2>/dev/null | sed -n '1,200p'\nmount | sed -n '1,160p'\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc \"whyfs --help 2>&1 | sed -n '1,240p'\nfind /run/whyfs -maxdepth 3 -type f -o -type l 2>/dev/null | sort | sed -n '1,240p'\nfind /var/lib/whyfs -maxdepth 3 -type f -o -type l 2>/dev/null | sort | sed -n '1,240p'\nls -la /run/whyfs /var/lib/whyfs /usr/lib/whyfs\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"python3 - <<'PY'\nimport os\nfor p in ['authored/manual-release.txt','dist/release-note.txt','tools/package-release.py']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  try: print(' ',n,os.getxattr(p,n))\n  except OSError as e: print(' ',n,e)\nPY\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 2 -type f -printf '%p\\\\n' 2>&1 | sed -n '1,240p'\nfind /root/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -printf '%p\\\\n' 2>&1 | sed -n '1,240p'\nfor h in ~/.bash_history ~/.zsh_history; do test -r \\\"\"'$h\" && { echo \"### $h\"; tail -n 200 \"$h\"; }; done\njournalctl --since '\"'2026-09-29 12:57:30' --until '2026-09-29 12:58:00' --no-pager 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc 'sha256sum authored/manual-release.txt dist/release-note.txt tools/package-release.py\ncmp -l authored/manual-release.txt dist/release-note.txt; echo \"cmp_exit=$?\"\nprintf '\"'automated package note\\\\n' | sha256sum\ngit show --format=fuller --stat HEAD\ngit check-ignore -v dist/release-note.txt\njournalctl --since '2026-09-29 12:57:30' --until '2026-09-29 12:58:10' --no-pager -o short-iso 2>/dev/null | rg -i 'whyfs|case08|release-note|manual-release|package-release|\\\\bcp\\\\b|python' | sed -n '1,240p'\nnamei -l /root/whyfs-provenance-decision-20260929T125733 2>&1\nid\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"journalctl --since '2026-09-29 12:57:33' --until '2026-09-29 12:57:47' --no-pager -o short-iso 2>&1 | sed -n '1,260p'\nsystemctl cat 'whyfs-prov-08*' 2>&1 | sed -n '1,240p'\nsystemctl list-units --all --no-pager | rg 'whyfs-prov.*08|case08' | sed -n '1,120p'\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc 'sudo -n true 2>&1; echo \"sudo_exit=$?\"\nsudo -n ls -la /var/lib/whyfs/machine/.whyfs 2>&1 | sed -n '\"'1,160p'\nsudo -n ls -la /root/whyfs-provenance-decision-20260929T125733/cases/case08-whyfs 2>&1 | sed -n '1,160p'\"",
+        "completed_index": 10
+      },
+      {
+        "command": "/bin/bash -lc 'nl -ba authored/manual-release.txt\nnl -ba dist/release-note.txt\nnl -ba tools/package-release.py\nnl -ba .gitignore\nnl -ba README.md\ngit status --porcelain=v1 --ignored'",
+        "completed_index": 12
+      }
+    ],
+    "context_bytes": 66629,
+    "context_bytes_by_tool": {
+      "filesystem": 27543,
+      "git": 5942,
+      "other": 0,
+      "search": 33144,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/4e/01ed96eed306adbe9b66f50558c6b12b43c660",
+      ".git/objects/80/2c0408b95f701e55b17901d444ae703012c590",
+      ".git/objects/86/fff81c3cba413e83194681574b1e11f4e30952",
+      ".git/objects/9d/671bc0c5dbe665c07249ea1f15187584f60554",
+      ".git/objects/a3/b7c7f762f0bedf996f2f8a8f0d84451cf832ee",
+      ".git/objects/c7/28501b47d4edc9db7d370afa220e56218d7d79",
+      ".git/objects/d0/49710758c3d475d8ab0b11ffbd475934c72767",
+      ".git/objects/f0/2f9b2a1b17dd4d8c017079a4db47c8a94be8bf",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "authored/manual-release.txt",
+      "dist/release-note.txt",
+      "tools/package-release.py"
+    ],
+    "distinct_files_inspected": 36,
+    "file_change_calls": 0,
+    "filesystem_reads": 6,
+    "git_inspection_calls": 3,
+    "manual_reconstruction_operations": 9,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 9,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 66629,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'git status --short --ignored && git log --oneline --decorate --stat --all && git ls-files --stage && for f in README.md tools/package-release.py authored/manual-release.txt dist/release-note.txt .gitignore; do echo \"### $f\"; sed -n '\"'1,240p' \\\"\"'$f\"; done && stat -c '\"'%n | inode=%i | size=%s | mtime=%y | ctime=%z | birth=%w' authored/manual-release.txt dist/release-note.txt tools/package-release.py\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"command -v getfattr || true\ngetfattr -d -m - authored/manual-release.txt dist/release-note.txt tools/package-release.py 2>&1 || true\nlsattr authored/manual-release.txt dist/release-note.txt tools/package-release.py 2>&1 || true\nfind .. -maxdepth 3 -type f -o -type l | sort | sed -n '1,260p'\nfind /tmp -maxdepth 3 -iname '*whyfs*' -o -iname '*provenance*' 2>/dev/null | sed -n '1,200p'\nmount | sed -n '1,160p'\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"whyfs --help 2>&1 | sed -n '1,240p'\nfind /run/whyfs -maxdepth 3 -type f -o -type l 2>/dev/null | sort | sed -n '1,240p'\nfind /var/lib/whyfs -maxdepth 3 -type f -o -type l 2>/dev/null | sort | sed -n '1,240p'\nls -la /run/whyfs /var/lib/whyfs /usr/lib/whyfs\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"python3 - <<'PY'\nimport os\nfor p in ['authored/manual-release.txt','dist/release-note.txt','tools/package-release.py']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  try: print(' ',n,os.getxattr(p,n))\n  except OSError as e: print(' ',n,e)\nPY\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 2 -type f -printf '%p\\\\n' 2>&1 | sed -n '1,240p'\nfind /root/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -printf '%p\\\\n' 2>&1 | sed -n '1,240p'\nfor h in ~/.bash_history ~/.zsh_history; do test -r \\\"\"'$h\" && { echo \"### $h\"; tail -n 200 \"$h\"; }; done\njournalctl --since '\"'2026-09-29 12:57:30' --until '2026-09-29 12:58:00' --no-pager 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 7
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'sha256sum authored/manual-release.txt dist/release-note.txt tools/package-release.py\ncmp -l authored/manual-release.txt dist/release-note.txt; echo \"cmp_exit=$?\"\nprintf '\"'automated package note\\\\n' | sha256sum\ngit show --format=fuller --stat HEAD\ngit check-ignore -v dist/release-note.txt\njournalctl --since '2026-09-29 12:57:30' --until '2026-09-29 12:58:10' --no-pager -o short-iso 2>/dev/null | rg -i 'whyfs|case08|release-note|manual-release|package-release|\\\\bcp\\\\b|python' | sed -n '1,240p'\nnamei -l /root/whyfs-provenance-decision-20260929T125733 2>&1\nid\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"journalctl --since '2026-09-29 12:57:33' --until '2026-09-29 12:57:47' --no-pager -o short-iso 2>&1 | sed -n '1,260p'\nsystemctl cat 'whyfs-prov-08*' 2>&1 | sed -n '1,240p'\nsystemctl list-units --all --no-pager | rg 'whyfs-prov.*08|case08' | sed -n '1,120p'\"",
+        "completed_index": 9
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'sudo -n true 2>&1; echo \"sudo_exit=$?\"\nsudo -n ls -la /var/lib/whyfs/machine/.whyfs 2>&1 | sed -n '\"'1,160p'\nsudo -n ls -la /root/whyfs-provenance-decision-20260929T125733/cases/case08-whyfs 2>&1 | sed -n '1,160p'\"",
+        "completed_index": 10
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'nl -ba authored/manual-release.txt\nnl -ba dist/release-note.txt\nnl -ba tools/package-release.py\nnl -ba .gitignore\nnl -ba README.md\ngit status --porcelain=v1 --ignored'",
+        "completed_index": 12
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 9,
+    "thread_id": "01a0eece-10cf-79e1-bd2a-c38543eac322",
+    "tool_calls": 9,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 240768,
+      "input_tokens": 272773,
+      "output_tokens": 3789,
+      "reasoning_tokens": 1478,
+      "total_tokens": 276562
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "24d7366b4e3b4ba7ef0a33e734180284f3358758d20c967196f27e577bc6235b",
+  "returncode": 0,
+  "run_id": "15-case08-baseline"
+}

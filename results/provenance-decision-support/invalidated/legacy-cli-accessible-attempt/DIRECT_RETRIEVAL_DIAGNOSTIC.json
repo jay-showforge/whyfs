@@ -1,0 +1,470 @@
+{
+  "case01": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "python3 tools/make_inventory.py",
+              "file": "reports/inventory-summary.txt",
+              "inputs": [
+                "tools/make_inventory.py",
+                "data/stock.csv"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/make_inventory.py",
+            "data/stock.csv"
+          ],
+          "generated": true,
+          "hidden_inputs": 4,
+          "path": "reports/inventory-summary.txt",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "reports/inventory-summary.txt"
+        },
+        "is_error": false,
+        "latency_ms": 42.807582,
+        "output_bytes": 325,
+        "tool": "source_chain"
+      }
+    ],
+    "minimum_call_count": 1,
+    "total_latency_ms": 42.807582,
+    "total_output_bytes": 325
+  },
+  "case02": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "node tools/render-card.js",
+              "file": "site/device-card.html",
+              "inputs": [
+                "tools/render-card.js",
+                "work/normalized.json"
+              ]
+            },
+            {
+              "by": "python3 tools/normalize.py",
+              "file": "work/normalized.json",
+              "inputs": [
+                "tools/normalize.py",
+                "specs/device.yaml"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/render-card.js",
+            "tools/normalize.py",
+            "specs/device.yaml"
+          ],
+          "generated": true,
+          "hidden_inputs": 6,
+          "path": "site/device-card.html",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "site/device-card.html"
+        },
+        "is_error": false,
+        "latency_ms": 39.378709,
+        "output_bytes": 445,
+        "tool": "source_chain"
+      }
+    ],
+    "minimum_call_count": 1,
+    "total_latency_ms": 39.378709,
+    "total_output_bytes": 445
+  },
+  "case03": {
+    "calls": [
+      {
+        "answer": {
+          "count": 3,
+          "gaps_since_written": [
+            "this file's origin was not observed"
+          ],
+          "not_proof_of_safety": true,
+          "observed": [
+            {
+              "file": "web/assets/badge.svg",
+              "one_of": 3,
+              "via": "node tools/build-badges.js"
+            },
+            {
+              "file": "mobile/assets/badge.json",
+              "one_of": 3,
+              "via": "node tools/build-badges.js"
+            },
+            {
+              "file": "docs/badge.txt",
+              "one_of": 3,
+              "via": "node tools/build-badges.js"
+            }
+          ],
+          "observed_only": true,
+          "path": "theme/badge.toml",
+          "q": "dependents"
+        },
+        "arguments": {
+          "path": "theme/badge.toml"
+        },
+        "is_error": false,
+        "latency_ms": 37.36154,
+        "output_bytes": 408,
+        "tool": "observed_dependents"
+      }
+    ],
+    "minimum_call_count": 1,
+    "total_latency_ms": 37.36154,
+    "total_output_bytes": 408
+  },
+  "case04": {
+    "calls": [
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "moved_from": [
+            "scratch/runtime-draft.ini"
+          ],
+          "path": "config/runtime-current.ini",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T12:57:41-07:00",
+            "cmd": "python3 tools/prepare-runtime.py",
+            "program": "python3.12"
+          }
+        },
+        "arguments": {
+          "path": "config/runtime-current.ini"
+        },
+        "is_error": false,
+        "latency_ms": 37.492104,
+        "output_bytes": 289,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "count": 1,
+          "not_proof_of_safety": true,
+          "observed": [
+            {
+              "file": "reports/runtime-use.txt",
+              "via": "python3 tools/consume-runtime.py"
+            }
+          ],
+          "observed_only": true,
+          "path": "config/runtime-current.ini",
+          "q": "dependents"
+        },
+        "arguments": {
+          "path": "config/runtime-current.ini"
+        },
+        "is_error": false,
+        "latency_ms": 35.133038,
+        "output_bytes": 201,
+        "tool": "observed_dependents"
+      }
+    ],
+    "minimum_call_count": 2,
+    "total_latency_ms": 72.625142,
+    "total_output_bytes": 490
+  },
+  "case05": {
+    "calls": [
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "path": "state/live-index.json",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T12:57:41-07:00",
+            "cmd": "python3 tools/rebuild-index.py",
+            "program": "python3.12"
+          }
+        },
+        "arguments": {
+          "path": "state/live-index.json"
+        },
+        "is_error": false,
+        "latency_ms": 34.999762,
+        "output_bytes": 239,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "python3 tools/rebuild-index.py",
+              "file": "state/live-index.json",
+              "inputs": [
+                "tools/rebuild-index.py",
+                "records/current.json"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/rebuild-index.py",
+            "records/current.json"
+          ],
+          "generated": true,
+          "hidden_inputs": 4,
+          "path": "state/live-index.json",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "state/live-index.json"
+        },
+        "is_error": false,
+        "latency_ms": 35.812951,
+        "output_bytes": 318,
+        "tool": "source_chain"
+      }
+    ],
+    "minimum_call_count": 2,
+    "total_latency_ms": 70.812713,
+    "total_output_bytes": 557
+  },
+  "case06": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": false,
+          "complete": false,
+          "path": "cache/vendor-snapshot.bin",
+          "possible": [
+            "created before whyfs recorded it",
+            "outside the recording scope",
+            "written by a process you cannot see"
+          ],
+          "q": "origin",
+          "reason": "no_observed_write",
+          "recording_since": "2026-09-27T17:14:14-07:00",
+          "status": "unknown"
+        },
+        "arguments": {
+          "path": "cache/vendor-snapshot.bin"
+        },
+        "is_error": false,
+        "latency_ms": 35.208083,
+        "output_bytes": 297,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "count": 1,
+          "gaps_since_written": [
+            "this file's origin was not observed"
+          ],
+          "not_proof_of_safety": true,
+          "observed": [
+            {
+              "file": "analysis/cache.sha256",
+              "via": "python3 tools/audit-cache.py"
+            }
+          ],
+          "observed_only": true,
+          "path": "cache/vendor-snapshot.bin",
+          "q": "dependents"
+        },
+        "arguments": {
+          "path": "cache/vendor-snapshot.bin"
+        },
+        "is_error": false,
+        "latency_ms": 34.736359,
+        "output_bytes": 255,
+        "tool": "observed_dependents"
+      }
+    ],
+    "minimum_call_count": 2,
+    "total_latency_ms": 69.94444200000001,
+    "total_output_bytes": 552
+  },
+  "case07": {
+    "calls": [
+      {
+        "answer": {
+          "files": [
+            {
+              "action": "written",
+              "path": "artifacts/findings.json"
+            },
+            {
+              "action": "written",
+              "path": "artifacts/review.md"
+            }
+          ],
+          "matched": [
+            {
+              "agent": "AuditBot",
+              "session": "license-review-whyfs-1790711862552856674",
+              "source": "registered",
+              "started": "2026-09-29T12:57:42-07:00",
+              "task": "Review dependency licenses for release"
+            }
+          ],
+          "matched_elsewhere": 5,
+          "other_writers_under": [
+            {
+              "agent": null,
+              "by": "python3.12",
+              "path": "artifacts/ambient.log"
+            }
+          ],
+          "q": "session"
+        },
+        "arguments": {
+          "agent": "AuditBot",
+          "supplied_task": "Review dependency licenses for release",
+          "workspace": "."
+        },
+        "is_error": false,
+        "latency_ms": 531.44531,
+        "output_bytes": 433,
+        "tool": "session_files"
+      }
+    ],
+    "minimum_call_count": 1,
+    "total_latency_ms": 531.44531,
+    "total_output_bytes": 433
+  },
+  "case08": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt",
+              "file": "dist/release-note.txt",
+              "inputs": [
+                "authored/manual-release.txt"
+              ]
+            }
+          ],
+          "edit": [
+            "authored/manual-release.txt"
+          ],
+          "generated": true,
+          "hidden_inputs": 2,
+          "path": "dist/release-note.txt",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "dist/release-note.txt"
+        },
+        "is_error": false,
+        "latency_ms": 35.586719,
+        "output_bytes": 328,
+        "tool": "source_chain"
+      }
+    ],
+    "minimum_call_count": 1,
+    "total_latency_ms": 35.586719,
+    "total_output_bytes": 328
+  },
+  "case09": {
+    "calls": [
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "path": "scratch/unused-seed.dat",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T12:57:43-07:00",
+            "cmd": "python3 tools/materialize-seed.py",
+            "program": "python3.12"
+          }
+        },
+        "arguments": {
+          "path": "scratch/unused-seed.dat"
+        },
+        "is_error": false,
+        "latency_ms": 39.723416,
+        "output_bytes": 244,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "count": 0,
+          "not_proof_of_safety": true,
+          "observed": [],
+          "observed_only": true,
+          "path": "scratch/unused-seed.dat",
+          "q": "dependents"
+        },
+        "arguments": {
+          "path": "scratch/unused-seed.dat"
+        },
+        "is_error": false,
+        "latency_ms": 36.379928,
+        "output_bytes": 123,
+        "tool": "observed_dependents"
+      }
+    ],
+    "minimum_call_count": 2,
+    "total_latency_ms": 76.10334399999999,
+    "total_output_bytes": 367
+  },
+  "case10": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "node tools/export-blue.js",
+              "file": "public/channel.json",
+              "inputs": [
+                "tools/export-blue.js",
+                "configs/channel.json"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/export-blue.js",
+            "configs/channel.json"
+          ],
+          "generated": true,
+          "hidden_inputs": 2,
+          "path": "public/channel.json",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "public/channel.json"
+        },
+        "is_error": false,
+        "latency_ms": 38.738589,
+        "output_bytes": 305,
+        "tool": "source_chain"
+      }
+    ],
+    "minimum_call_count": 1,
+    "total_latency_ms": 38.738589,
+    "total_output_bytes": 305
+  }
+}

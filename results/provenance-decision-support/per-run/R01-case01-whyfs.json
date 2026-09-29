@@ -1,0 +1,159 @@
+{
+  "case": "case01",
+  "case_name": "generated-inventory-summary",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 75.6058387,
+  "final_response": "### Observed facts\n\n- The specific file was created at `2026-09-29 13:29:56 -07:00` by `/usr/bin/python3.12` running:\n  `python3 tools/make_inventory.py`\n  as user `ftmon`, PID 648.\n- WhyFS recorded the write at the OS level and confirmed that the current file identity matches the recorded file.\n- The observed data input was [data/stock.csv](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case01-whyfs/data/stock.csv:2), containing `north,14`. The process also read [tools/make_inventory.py](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case01-whyfs/tools/make_inventory.py:1).\n- Provenance is marked **complete for the file\u2019s origin**: recording was active without reported loss, and there are no creation-time or later gaps. Four system/library inputs were hidden from the compact display, but that is filtering, not missing evidence.\n- No agent identity or task/intent was recorded.\n- The report directory is Git-ignored, and [README.md](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case01-whyfs/README.md:1) directs users to regenerate the summary with the script.\n\n### Inference\n\nDirectly editing `reports/inventory-summary.txt` is not a durable correction. The script reconstructs it from `data/stock.csv`, so a later regeneration would overwrite the manual change.\n\nTo durably correct the north inventory count, change the north value in `data/stock.csv`, then rerun `python3 tools/make_inventory.py`. Only change the generator itself if the transformation logic\u2014not the source count\u2014is wrong.\n\nNo files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sort | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,240p' README.md\nsed -n '1,240p' tools/make_inventory.py\nsed -n '1,240p' data/stock.csv\nsed -n '1,240p' reports/inventory-summary.txt\ngit status --short\ngit log --all --date=iso-strict --format='commit %H%nAuthor: %an <%ae>%nAuthorDate: %aI%nCommitDate: %cI%nSubject: %s' --name-status\nstat -c '%n | type=%F | size=%s | mtime=%y | ctime=%z | birth=%w | inode=%i' README.md tools/make_inventory.py data/stock.csv reports/inventory-summary.txt\n(getfattr -d -m- reports/inventory-summary.txt data/stock.csv tools/make_inventory.py 2>&1 || true)\nfindmnt -T reports/inventory-summary.txt -o TARGET,SOURCE,FSTYPE,OPTIONS\"",
+        "completed_index": 4
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,120p' .gitignore\ngit check-ignore -v reports/inventory-summary.txt || true\ngit ls-files -s\nls -la\nls -la reports data tools\ncommand -v whyfs || true\ncommand -v why || true\ncompgen -c | rg -i 'why|prov|trace' | sort -u | sed -n '1,200p'\nenv | sort | rg -i 'why|prov|trace|audit|case|workspace' || true\nfind .. -maxdepth 3 -type f -not -path '*/.git/*' -printf '%p\\\\n' | sort | sed -n '1,240p'\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help\nwhyfs-mcp --help'",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs /usr/bin/whyfs-mcp\nfile /usr/bin/whyfs /usr/bin/whyfs-mcp\nsed -n '1,240p' /usr/bin/whyfs\nsed -n '1,240p' /usr/bin/whyfs-mcp\nrg -n --hidden -S 'whyfs' /usr/local/lib/python* /usr/lib/python* /opt 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc 'python3 -m whyfs --help\npython3 -m whyfs ask --help\npython3 -m whyfs ask index 2>&1 || true\npython3 -m whyfs status 2>&1 || true'",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc 'python3 -m whyfs ask origin reports/inventory-summary.txt\npython3 -m whyfs ask sources reports/inventory-summary.txt\npython3 -m whyfs label reports/inventory-summary.txt --json\npython3 -m whyfs history reports/inventory-summary.txt --limit 0 --json'",
+        "completed_index": 10
+      },
+      {
+        "command": "/bin/bash -lc \"python3 -m whyfs label reports/inventory-summary.txt\npython3 -m whyfs why reports/inventory-summary.txt --json\nrg -n 'inputs_hidden|hidden_inputs|hidden input|complete' /usr/lib/python3/dist-packages/whyfs/{label.py,query.py,ask.py,labeltext.py,observation.py} | sed -n '1,260p'\nsed -n '190,240p' /usr/lib/python3/dist-packages/whyfs/label.py\nsed -n '60,95p' /usr/lib/python3/dist-packages/whyfs/labeltext.py\nsed -n '1,210p' /usr/lib/python3/dist-packages/whyfs/observation.py\"",
+        "completed_index": 12
+      }
+    ],
+    "context_bytes": 61114,
+    "context_bytes_by_tool": {
+      "filesystem": 31581,
+      "git": 4814,
+      "other": 305,
+      "search": 1203,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/04/8f9a7cb4b94d9bb514e05f0cf0e7ca678a38d3",
+      ".git/objects/28/58b0911d730a9a235d91cffdc4c171efa7d4e1",
+      ".git/objects/35/75ccbac95c320b85a24eab8a56e06a9740ec3c",
+      ".git/objects/4f/26fade9c9c69821680a59663edd107205821e7",
+      ".git/objects/6d/0b9de099d0b0b8c142f487accb147da05f8e84",
+      ".git/objects/9d/6a6e535ee3eab9f7fcd02e69d4691ef1c5341c",
+      ".git/objects/b2/d8e6d9c9a27ad41f6287c88f5af31deea43230",
+      ".git/objects/d9/c21ba574091dacbce0f3d674d0103e02f8b96f",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "data/stock.csv",
+      "reports/inventory-summary.txt",
+      "tools/make_inventory.py"
+    ],
+    "distinct_files_inspected": 36,
+    "file_change_calls": 0,
+    "filesystem_reads": 2,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 5,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "legacy_cli_attempts": [
+        "/bin/bash -lc \"sed -n '1,120p' .gitignore\ngit check-ignore -v reports/inventory-summary.txt || true\ngit ls-files -s\nls -la\nls -la reports data tools\ncommand -v whyfs || true\ncommand -v why || true\ncompgen -c | rg -i 'why|prov|trace' | sort -u | sed -n '1,200p'\nenv | sort | rg -i 'why|prov|trace|audit|case|workspace' || true\nfind .. -maxdepth 3 -type f -not -path '*/.git/*' -printf '%p\\\\n' | sort | sed -n '1,240p'\"",
+        "/bin/bash -lc 'whyfs --help\nwhyfs-mcp --help'",
+        "/bin/bash -lc \"ls -l /usr/bin/whyfs /usr/bin/whyfs-mcp\nfile /usr/bin/whyfs /usr/bin/whyfs-mcp\nsed -n '1,240p' /usr/bin/whyfs\nsed -n '1,240p' /usr/bin/whyfs-mcp\nrg -n --hidden -S 'whyfs' /usr/local/lib/python* /usr/lib/python* /opt 2>/dev/null | sed -n '1,240p'\"",
+        "/bin/bash -lc 'python3 -m whyfs --help\npython3 -m whyfs ask --help\npython3 -m whyfs ask index 2>&1 || true\npython3 -m whyfs status 2>&1 || true'",
+        "/bin/bash -lc 'python3 -m whyfs ask origin reports/inventory-summary.txt\npython3 -m whyfs ask sources reports/inventory-summary.txt\npython3 -m whyfs label reports/inventory-summary.txt --json\npython3 -m whyfs history reports/inventory-summary.txt --limit 0 --json'",
+        "/bin/bash -lc \"python3 -m whyfs label reports/inventory-summary.txt\npython3 -m whyfs why reports/inventory-summary.txt --json\nrg -n 'inputs_hidden|hidden_inputs|hidden input|complete' /usr/lib/python3/dist-packages/whyfs/{label.py,query.py,ask.py,labeltext.py,observation.py} | sed -n '1,260p'\nsed -n '190,240p' /usr/lib/python3/dist-packages/whyfs/label.py\nsed -n '60,95p' /usr/lib/python3/dist-packages/whyfs/labeltext.py\nsed -n '1,210p' /usr/lib/python3/dist-packages/whyfs/observation.py\""
+      ],
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 5,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 61114,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sort | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,240p' README.md\nsed -n '1,240p' tools/make_inventory.py\nsed -n '1,240p' data/stock.csv\nsed -n '1,240p' reports/inventory-summary.txt\ngit status --short\ngit log --all --date=iso-strict --format='commit %H%nAuthor: %an <%ae>%nAuthorDate: %aI%nCommitDate: %cI%nSubject: %s' --name-status\nstat -c '%n | type=%F | size=%s | mtime=%y | ctime=%z | birth=%w | inode=%i' README.md tools/make_inventory.py data/stock.csv reports/inventory-summary.txt\n(getfattr -d -m- reports/inventory-summary.txt data/stock.csv tools/make_inventory.py 2>&1 || true)\nfindmnt -T reports/inventory-summary.txt -o TARGET,SOURCE,FSTYPE,OPTIONS\"",
+        "completed_index": 4
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,120p' .gitignore\ngit check-ignore -v reports/inventory-summary.txt || true\ngit ls-files -s\nls -la\nls -la reports data tools\ncommand -v whyfs || true\ncommand -v why || true\ncompgen -c | rg -i 'why|prov|trace' | sort -u | sed -n '1,200p'\nenv | sort | rg -i 'why|prov|trace|audit|case|workspace' || true\nfind .. -maxdepth 3 -type f -not -path '*/.git/*' -printf '%p\\\\n' | sort | sed -n '1,240p'\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs /usr/bin/whyfs-mcp\nfile /usr/bin/whyfs /usr/bin/whyfs-mcp\nsed -n '1,240p' /usr/bin/whyfs\nsed -n '1,240p' /usr/bin/whyfs-mcp\nrg -n --hidden -S 'whyfs' /usr/local/lib/python* /usr/lib/python* /opt 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"python3 -m whyfs label reports/inventory-summary.txt\npython3 -m whyfs why reports/inventory-summary.txt --json\nrg -n 'inputs_hidden|hidden_inputs|hidden input|complete' /usr/lib/python3/dist-packages/whyfs/{label.py,query.py,ask.py,labeltext.py,observation.py} | sed -n '1,260p'\nsed -n '190,240p' /usr/lib/python3/dist-packages/whyfs/label.py\nsed -n '60,95p' /usr/lib/python3/dist-packages/whyfs/labeltext.py\nsed -n '1,210p' /usr/lib/python3/dist-packages/whyfs/observation.py\"",
+        "completed_index": 12
+      }
+    ],
+    "search_calls": 1,
+    "shell_commands": 8,
+    "thread_id": "01a0eedc-56a6-7e31-8b29-3b052fad1f60",
+    "tool_calls": 8,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 163584,
+      "input_tokens": 193739,
+      "output_tokens": 2751,
+      "reasoning_tokens": 795,
+      "total_tokens": 196490
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 2,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "4531dbf860d162b77fc24c43131fada0716b65045c21b276a084f3011f26f71f",
+  "returncode": 0,
+  "run_id": "R01-case01-whyfs"
+}

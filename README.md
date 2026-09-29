@@ -97,6 +97,21 @@ Other operations: `search_files`, `list_agent_sessions`, `get_file_history`,
 optional task description, so the files they cause are attributed to it.  See
 [docs/AGENT_PROTOCOL.md](docs/AGENT_PROTOCOL.md).
 
+## Provenance benchmark
+
+In a controlled 10-pair provenance-decision benchmark, WhyFS increased required-fact recovery
+from **63.64% to 95.45%** and reduced manual provenance reconstruction by **41.18%**, with
+**100% factual precision** in both conditions and no added uncertainty or safety errors.
+
+This result is specific to provenance-explicit tasks.  Separate testing did not support a
+general claim that WhyFS makes arbitrary coding-agent work cheaper or faster.
+
+[Read the benchmark summary](BENCHMARK.md#provenance-decision-support-benchmark) ·
+[Full report and evidence](results/provenance-decision-support/FINAL_REPORT.md)
+
+The benchmark used an experimental native typed-tool candidate.  Publishing its evidence does
+not add that implementation to WhyFS 1.0.0 or make it a released or supported feature.
+
 ## Command line
 
 ```bash

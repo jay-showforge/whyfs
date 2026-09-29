@@ -1,0 +1,186 @@
+{
+  "case": "case06",
+  "case_name": "pre-observation-vendor-cache",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 83.00772322700004,
+  "final_response": "The original creator of `cache/vendor-snapshot.bin` cannot be determined from the available evidence.\n\n- WhyFS reports `attributable: false`, `complete: false`, and `reason: no_observed_write`. No creation or write event was captured.\n- Git cannot supply attribution: the file is ignored by [`.gitignore`](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case06-whyfs/.gitignore:3) and appears in no commit.\n- Filesystem ownership (`ftmon`) and timestamps do not establish who originally created or supplied it. Likewise, the repository commit author must not be treated as its creator.\n\nThe actual pre-investigation use observed was:\n\n- At `2026-09-29 12:57:42 -07:00`, user `ftmon` ran `python3 tools/audit-cache.py`.\n- The script read the snapshot and generated [analysis/cache.sha256](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case06-whyfs/analysis/cache.sha256:1), as specified in [audit-cache.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case06-whyfs/tools/audit-cache.py:3).\n- The resulting SHA-256 matches the current snapshot: `44a961eb1c936e4ece8b9464a8a7b7a931f6e5641827c17e84f282026f9f3c12`.\n- WhyFS records that checksum as the sole downstream generated file. Later reads by `file`, `sha256sum`, and `rg` were my read-only investigation, not prior operational use.\n\nThe origin evidence is therefore incomplete, although the later checksum-generation event is completely attributed. Still unknown are the original person or process, creation command, upstream source or vendor, inputs, acquisition method, and intent. The file may have been created before observation, outside collection scope, or by an unobservable process; the evidence does not distinguish among those possibilities.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short --untracked-files=all && git log --all --decorate --stat --oneline && git log --all --format=fuller --name-status && git ls-files --stage && stat cache/vendor-snapshot.bin analysis/cache.sha256 README.md tools/audit-cache.py && file cache/vendor-snapshot.bin && sha256sum cache/vendor-snapshot.bin && sed -n '1,240p' README.md && sed -n '1,240p' tools/audit-cache.py && sed -n '1,80p' analysis/cache.sha256 && git check-ignore -v cache/vendor-snapshot.bin || true\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,80p' .gitignore && find . -xdev -printf '%TY-%Tm-%Td %TH:%TM:%TS %y %p\\\\n' | sort && getfattr -d -m- cache/vendor-snapshot.bin analysis/cache.sha256 2>&1 || true && git fsck --full --unreachable --no-reflogs && git reflog show --all --date=iso && rg -uuu -n --hidden --glob '\"'!.git/objects/**'\"' 'vendor-snapshot|44a961eb1c936e4ece8b9464a8a7b7a931f6e5641827c17e84f282026f9f3c12' .. /tmp 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'findmnt -T cache/vendor-snapshot.bin -o TARGET,SOURCE,FSTYPE,OPTIONS && lsattr -d cache/vendor-snapshot.bin analysis/cache.sha256 2>&1 || true && git cat-file -p HEAD''^{tree} && git cat-file -p HEAD && git status --ignored --short && find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 4 -type f '\"\\\\( -iname '*provenance*' -o -iname '*audit*' -o -iname '*manifest*' -o -iname '*.json' -o -iname '*.jsonl' -o -iname '*.log' \\\\) -print | sed -n '1,240p'\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"compgen -c | rg -i 'why|prov|audit' | sort -u | sed -n '1,200p'; env | sort | rg -i 'why|prov|trace|audit|case|workspace' | sed -n '1,200p'; ps -ef | rg -i 'whyfs|provenance|audit' | rg -v 'rg -i' | sed -n '1,200p'\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"whyfs --help && whyfs-mcp --help 2>&1 | sed -n '1,200p'\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask && whyfs status && whyfs label --help && whyfs history --help && whyfs why --help && whyfs impact --help'",
+        "completed_index": 10
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs label cache/vendor-snapshot.bin --json'",
+        "completed_index": 11
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask origin cache/vendor-snapshot.bin'",
+        "completed_index": 12
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs history cache/vendor-snapshot.bin --json'",
+        "completed_index": 13
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs why cache/vendor-snapshot.bin --raw --json'",
+        "completed_index": 14
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs impact cache/vendor-snapshot.bin --depth 3 --json'",
+        "completed_index": 15
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask dependents cache/vendor-snapshot.bin'",
+        "completed_index": 16
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs label analysis/cache.sha256 --json'",
+        "completed_index": 17
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask origin analysis/cache.sha256'",
+        "completed_index": 18
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask sources analysis/cache.sha256'",
+        "completed_index": 19
+      }
+    ],
+    "context_bytes": 26850,
+    "context_bytes_by_tool": {
+      "filesystem": 2444,
+      "git": 6816,
+      "other": 1190,
+      "search": 5888,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/1a/7a8fc98758be975063984625e592d582b1d63a",
+      ".git/objects/88/a10444c3bda4e7865c5b5f553c2fab35af0ec2",
+      ".git/objects/89/1202018406b553ffeb3658de078c0fb204dbb2",
+      ".git/objects/9c/647c986fdb1d2efd30bdb1810577bfa5a12d25",
+      ".git/objects/9d/223a95a03f5379a1ae28fdd7f2ebe8123e40cd",
+      ".git/objects/9e/6db0e1fb04cbc6f13959882f5c373a4d5a2b0f",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "analysis/cache.sha256",
+      "cache/vendor-snapshot.bin",
+      "tools/audit-cache.py"
+    ],
+    "distinct_files_inspected": 34,
+    "file_change_calls": 0,
+    "filesystem_reads": 4,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 6,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 6,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 26850,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short --untracked-files=all && git log --all --decorate --stat --oneline && git log --all --format=fuller --name-status && git ls-files --stage && stat cache/vendor-snapshot.bin analysis/cache.sha256 README.md tools/audit-cache.py && file cache/vendor-snapshot.bin && sha256sum cache/vendor-snapshot.bin && sed -n '1,240p' README.md && sed -n '1,240p' tools/audit-cache.py && sed -n '1,80p' analysis/cache.sha256 && git check-ignore -v cache/vendor-snapshot.bin || true\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,80p' .gitignore && find . -xdev -printf '%TY-%Tm-%Td %TH:%TM:%TS %y %p\\\\n' | sort && getfattr -d -m- cache/vendor-snapshot.bin analysis/cache.sha256 2>&1 || true && git fsck --full --unreachable --no-reflogs && git reflog show --all --date=iso && rg -uuu -n --hidden --glob '\"'!.git/objects/**'\"' 'vendor-snapshot|44a961eb1c936e4ece8b9464a8a7b7a931f6e5641827c17e84f282026f9f3c12' .. /tmp 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'findmnt -T cache/vendor-snapshot.bin -o TARGET,SOURCE,FSTYPE,OPTIONS && lsattr -d cache/vendor-snapshot.bin analysis/cache.sha256 2>&1 || true && git cat-file -p HEAD''^{tree} && git cat-file -p HEAD && git status --ignored --short && find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 4 -type f '\"\\\\( -iname '*provenance*' -o -iname '*audit*' -o -iname '*manifest*' -o -iname '*.json' -o -iname '*.jsonl' -o -iname '*.log' \\\\) -print | sed -n '1,240p'\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"compgen -c | rg -i 'why|prov|audit' | sort -u | sed -n '1,200p'; env | sort | rg -i 'why|prov|trace|audit|case|workspace' | sed -n '1,200p'; ps -ef | rg -i 'whyfs|provenance|audit' | rg -v 'rg -i' | sed -n '1,200p'\"",
+        "completed_index": 7
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"whyfs --help && whyfs-mcp --help 2>&1 | sed -n '1,200p'\"",
+        "completed_index": 9
+      }
+    ],
+    "search_calls": 3,
+    "shell_commands": 16,
+    "thread_id": "01a0eec9-b04b-7b42-90c2-8a8e933c13e1",
+    "tool_calls": 16,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 180352,
+      "input_tokens": 197703,
+      "output_tokens": 3414,
+      "reasoning_tokens": 1012,
+      "total_tokens": 201117
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 4,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "6117ae26de80dbda724ecadb9ec5d2c43a941141f0dc439b5a02d3905ecb989f",
+  "returncode": 0,
+  "run_id": "11-case06-whyfs"
+}

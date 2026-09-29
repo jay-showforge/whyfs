@@ -1,0 +1,215 @@
+{
+  "case": "case09",
+  "case_name": "empty-observed-dependents-safety",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 105.54067270100018,
+  "final_response": "- **Creator:** The evidence strongly attributes [scratch/unused-seed.dat](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case09-baseline/scratch/unused-seed.dat) to [tools/materialize-seed.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case09-baseline/tools/materialize-seed.py:2), run with Python as documented in [README.md](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case09-baseline/README.md:1). The script copies `inputs/seed.txt` to that exact path; source and output currently have identical SHA-256 hashes. The scratch file was created about nine seconds after the tracked fixture files.\n\n- **Observed downstream dependencies:** None found. A full repository search, including ignored files, found no reader or reference to the scratch file other than its producer. It is ignored by Git and absent from Git history.\n\n- **Safety conclusion:** This supports calling it an **observed leaf and reproducible generated file**, but it is **not proof that it is globally safe to delete**. Repository searches cannot exclude external programs, dynamically constructed paths, deleted or expired dependency records, or activity outside the observation window. Therefore the defensible statement is: **no downstream dependency was observed\u2014not that no dependency can exist**.\n\nNothing was deleted or intentionally changed.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --all --date=iso-strict --format='commit %H%nAuthor: %an <%ae>%nDate: %ad%nSubject: %s' --name-status && sed -n '1,240p' README.md && sed -n '1,240p' tools/materialize-seed.py && stat scratch/unused-seed.dat inputs/seed.txt && sha256sum scratch/unused-seed.dat inputs/seed.txt && git ls-files --stage\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"ls -la . scratch inputs tools && sed -n '1,160p' .gitignore && (getfattr -d -m - scratch/unused-seed.dat 2>&1 || true) && (findmnt -T scratch/unused-seed.dat -o TARGET,SOURCE,FSTYPE,OPTIONS || true) && (env | sort | rg -i 'why|prov|trace|fs|audit' || true) && (command -v whyfs || true) && (compgen -c | rg -i 'whyfs|provenance' | sort -u || true)\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help'",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs && file /usr/bin/whyfs && stat /usr/bin/whyfs && rg -n -uu --hidden 'whyfs|provenance|unused-seed|materialize-seed' /etc /usr/local /opt /home/ftmon/whyfs-provenance-decision-20260929T125733 2>/dev/null\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"find /usr/lib/whyfs /etc/whyfs -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort && find /var/lib -maxdepth 3 -iname '*whyfs*' -o -iname '*provenance*' 2>/dev/null | sort && sed -n '1,240p' /usr/lib/whyfs/scope-default.conf 2>/dev/null && sed -n '1,240p' /etc/whyfs/scope.conf 2>/dev/null && systemctl status whyfs.service --no-pager 2>&1 | sed -n '1,160p'\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"dpkg -L whyfs 2>&1 && ls -laR /var/lib/whyfs /etc/whyfs /usr/lib/whyfs 2>&1 && sed -n '1,200p' /var/lib/dpkg/info/whyfs.list && sed -n '1,240p' /var/lib/dpkg/info/whyfs.postinst\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,260p' /usr/share/doc/whyfs/README.md && python3 -m whyfs --help 2>&1\"",
+        "completed_index": 11
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs-mcp /usr/lib/python3/dist-packages/whyfs/client.py /usr/lib/python3/dist-packages/whyfs/ask.py && sed -n '1,260p' /usr/lib/python3/dist-packages/whyfs/client.py && sed -n '1,280p' /usr/lib/python3/dist-packages/whyfs/ask.py\"",
+        "completed_index": 12
+      },
+      {
+        "command": "/bin/bash -lc 'ls -la /run/whyfs 2>&1 && stat /run/whyfs/api.sock 2>&1 && command -v socat || true && command -v nc || true'",
+        "completed_index": 13
+      },
+      {
+        "command": "/bin/bash -lc \"namei -l /run/whyfs/api.sock && systemctl cat whyfs.service whyfs@.service 2>&1 && ps -ef | rg '[w]hyfs|[p]ython.*whyfs'\"",
+        "completed_index": 16
+      },
+      {
+        "command": "/bin/bash -lc \"systemctl cat whyfs.service whyfs@.service 2>&1; ps -ef | rg '[w]hyfs|[p]ython.*whyfs' || true; systemctl status whyfs.service --no-pager 2>&1 || true; id\"",
+        "completed_index": 17
+      },
+      {
+        "command": "/bin/bash -lc \"rg -n -uu --hidden --glob '\"'!.git/objects/**'\"' --glob '\"'!scratch/unused-seed.dat'\"' 'unused-seed\\\\.dat|scratch/unused-seed|seed\\\\.txt' . && git log --all -S'unused-seed' -p -- . && (journalctl --since '2026-09-29 12:57:30' --until '2026-09-29 12:58:00' --no-pager 2>/dev/null | rg -i 'materialize|unused-seed|seed\\\\.txt|python3' || true) && (command -v lastcomm >/dev/null && lastcomm python3 | head -30 || true)\"",
+        "completed_index": 18
+      },
+      {
+        "command": "/bin/bash -lc \"journalctl --since '2026-09-29 12:57:40' --until '2026-09-29 12:57:46' --no-pager 2>/dev/null | sed -n '1,240p'; stat -c '%n birth=%w modify=%y change=%z' scratch/unused-seed.dat inputs/seed.txt tools/materialize-seed.py README.md; git status --porcelain=v1 --untracked-files=all\"",
+        "completed_index": 19
+      }
+    ],
+    "context_bytes": 147651,
+    "context_bytes_by_tool": {
+      "filesystem": 3239,
+      "git": 9970,
+      "other": 8854,
+      "search": 125588,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/01/147d7804497b8109db3d742ec8ab65767a0a70",
+      ".git/objects/0b/078f5dfeaea43725d979299910465f7b640370",
+      ".git/objects/10/8e2685a8b36aca924908f3dff236d6cb1ce52a",
+      ".git/objects/40/970445675b646d94b2e0e6ea37550ac1cb3ccd",
+      ".git/objects/6b/7113e46773f4212a528954b88ab4c658c80a7a",
+      ".git/objects/7d/244e5ef04b49c4ba06ada174a44689510f8aad",
+      ".git/objects/86/7217064e78d713f72369b4e8927092d8692992",
+      ".git/objects/bc/98518c91c9dcd04cf526d0d16744ab9b716d8e",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "inputs/seed.txt",
+      "scratch/unused-seed.dat",
+      "tools/materialize-seed.py"
+    ],
+    "distinct_files_inspected": 36,
+    "file_change_calls": 0,
+    "filesystem_reads": 9,
+    "git_inspection_calls": 3,
+    "manual_reconstruction_operations": 13,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 13,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 147651,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --all --date=iso-strict --format='commit %H%nAuthor: %an <%ae>%nDate: %ad%nSubject: %s' --name-status && sed -n '1,240p' README.md && sed -n '1,240p' tools/materialize-seed.py && stat scratch/unused-seed.dat inputs/seed.txt && sha256sum scratch/unused-seed.dat inputs/seed.txt && git ls-files --stage\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -la . scratch inputs tools && sed -n '1,160p' .gitignore && (getfattr -d -m - scratch/unused-seed.dat 2>&1 || true) && (findmnt -T scratch/unused-seed.dat -o TARGET,SOURCE,FSTYPE,OPTIONS || true) && (env | sort | rg -i 'why|prov|trace|fs|audit' || true) && (command -v whyfs || true) && (compgen -c | rg -i 'whyfs|provenance' | sort -u || true)\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs && file /usr/bin/whyfs && stat /usr/bin/whyfs && rg -n -uu --hidden 'whyfs|provenance|unused-seed|materialize-seed' /etc /usr/local /opt /home/ftmon/whyfs-provenance-decision-20260929T125733 2>/dev/null\"",
+        "completed_index": 7
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find /usr/lib/whyfs /etc/whyfs -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort && find /var/lib -maxdepth 3 -iname '*whyfs*' -o -iname '*provenance*' 2>/dev/null | sort && sed -n '1,240p' /usr/lib/whyfs/scope-default.conf 2>/dev/null && sed -n '1,240p' /etc/whyfs/scope.conf 2>/dev/null && systemctl status whyfs.service --no-pager 2>&1 | sed -n '1,160p'\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"dpkg -L whyfs 2>&1 && ls -laR /var/lib/whyfs /etc/whyfs /usr/lib/whyfs 2>&1 && sed -n '1,200p' /var/lib/dpkg/info/whyfs.list && sed -n '1,240p' /var/lib/dpkg/info/whyfs.postinst\"",
+        "completed_index": 9
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,260p' /usr/share/doc/whyfs/README.md && python3 -m whyfs --help 2>&1\"",
+        "completed_index": 11
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs-mcp /usr/lib/python3/dist-packages/whyfs/client.py /usr/lib/python3/dist-packages/whyfs/ask.py && sed -n '1,260p' /usr/lib/python3/dist-packages/whyfs/client.py && sed -n '1,280p' /usr/lib/python3/dist-packages/whyfs/ask.py\"",
+        "completed_index": 12
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'ls -la /run/whyfs 2>&1 && stat /run/whyfs/api.sock 2>&1 && command -v socat || true && command -v nc || true'",
+        "completed_index": 13
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"namei -l /run/whyfs/api.sock && systemctl cat whyfs.service whyfs@.service 2>&1 && ps -ef | rg '[w]hyfs|[p]ython.*whyfs'\"",
+        "completed_index": 16
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"systemctl cat whyfs.service whyfs@.service 2>&1; ps -ef | rg '[w]hyfs|[p]ython.*whyfs' || true; systemctl status whyfs.service --no-pager 2>&1 || true; id\"",
+        "completed_index": 17
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"rg -n -uu --hidden --glob '\"'!.git/objects/**'\"' --glob '\"'!scratch/unused-seed.dat'\"' 'unused-seed\\\\.dat|scratch/unused-seed|seed\\\\.txt' . && git log --all -S'unused-seed' -p -- . && (journalctl --since '2026-09-29 12:57:30' --until '2026-09-29 12:58:00' --no-pager 2>/dev/null | rg -i 'materialize|unused-seed|seed\\\\.txt|python3' || true) && (command -v lastcomm >/dev/null && lastcomm python3 | head -30 || true)\"",
+        "completed_index": 18
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"journalctl --since '2026-09-29 12:57:40' --until '2026-09-29 12:57:46' --no-pager 2>/dev/null | sed -n '1,240p'; stat -c '%n birth=%w modify=%y change=%z' scratch/unused-seed.dat inputs/seed.txt tools/materialize-seed.py README.md; git status --porcelain=v1 --untracked-files=all\"",
+        "completed_index": 19
+      }
+    ],
+    "search_calls": 6,
+    "shell_commands": 14,
+    "thread_id": "01a0eed1-41a6-7382-9822-f2a058e947de",
+    "tool_calls": 16,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 496640,
+      "input_tokens": 546784,
+      "output_tokens": 4181,
+      "reasoning_tokens": 1547,
+      "total_tokens": 550965
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "bb59f6ca2eafef4316a33e4b8f32342c9581db2a020dfb0897abbffd1c20dee2",
+  "returncode": 0,
+  "run_id": "18-case09-baseline"
+}

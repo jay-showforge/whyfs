@@ -1,0 +1,257 @@
+{
+  "case": "case08",
+  "case_name": "manual-artifact-in-dist",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 64.88943854699983,
+  "final_response": "WhyFS recorded that this specific file was created at `2026-09-29 12:57:43 -07:00` by:\n\n```text\n/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt\n```\n\nThe observed editable input was [authored/manual-release.txt](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case08-whyfs/authored/manual-release.txt:1). Its contents exactly match the output. The provenance record is attributable and complete for this creation, though it also reports two unnamed hidden/system inputs.\n\nThe `dist/` location does not prove that [tools/package-release.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case08-whyfs/tools/package-release.py:2) ran. In fact, that script would write `automated package note`, not the file\u2019s current wording. `dist/` is merely an ignored staging location.\n\nFor a durable wording correction, change the tracked source [authored/manual-release.txt](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case08-whyfs/authored/manual-release.txt:1), then repeat the install/staging workflow. Editing the ignored `dist/release-note.txt` directly would be overwritten. If the Python packaging script is intended to own this artifact going forward, it should instead be changed to read the authored source; currently it represents a separate, conflicting generation path.\n\nNo files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short --ignored && git log --oneline --decorate --all --stat && stat dist/release-note.txt authored/manual-release.txt tools/package-release.py README.md .gitignore && printf '%s\\\\n' '--- dist' && sed -n '1,200p' dist/release-note.txt && printf '%s\\\\n' '--- authored' && sed -n '1,200p' authored/manual-release.txt && printf '%s\\\\n' '--- script' && sed -n '1,240p' tools/package-release.py && printf '%s\\\\n' '--- README' && sed -n '1,240p' README.md && printf '%s\\\\n' '--- ignore' && sed -n '1,160p' .gitignore\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"command -v getfattr || true; getfattr -d -m - dist/release-note.txt authored/manual-release.txt 2>&1 || true; lsattr -d dist dist/release-note.txt authored/manual-release.txt 2>&1 || true; findmnt -T dist/release-note.txt -o TARGET,SOURCE,FSTYPE,OPTIONS; find .. -maxdepth 3 -type f -o -type l | sort | sed -n '1,240p'; rg -n -uu \\\"release-note|manual-release|Operator-reviewed|automated package|whyfs|provenance\\\" .. /tmp 2>/dev/null | sed -n '1,260p'\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc \"python3 - <<'PY'\nimport os\nfor p in ['dist/release-note.txt','authored/manual-release.txt','dist','authored']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  try: print(' ',n,os.getxattr(p,n))\n  except OSError as e: print(' ',n,e)\nPY\nprintenv | sort | sed -n '1,240p'\nps -ef | sed -n '1,240p'\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 2 -type f -readable -print 2>/dev/null | sort | sed -n '1,260p'\"",
+        "completed_index": 6
+      }
+    ],
+    "context_bytes": 14957,
+    "context_bytes_by_tool": {
+      "filesystem": 7900,
+      "git": 2509,
+      "other": 0,
+      "search": 3071,
+      "whyfs": 1477
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/4e/01ed96eed306adbe9b66f50558c6b12b43c660",
+      ".git/objects/80/2c0408b95f701e55b17901d444ae703012c590",
+      ".git/objects/86/fff81c3cba413e83194681574b1e11f4e30952",
+      ".git/objects/9d/671bc0c5dbe665c07249ea1f15187584f60554",
+      ".git/objects/a3/b7c7f762f0bedf996f2f8a8f0d84451cf832ee",
+      ".git/objects/c7/28501b47d4edc9db7d370afa220e56218d7d79",
+      ".git/objects/d0/49710758c3d475d8ab0b11ffbd475934c72767",
+      ".git/objects/f0/2f9b2a1b17dd4d8c017079a4db47c8a94be8bf",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "authored/manual-release.txt",
+      "dist/release-note.txt",
+      "tools/package-release.py"
+    ],
+    "distinct_files_inspected": 36,
+    "file_change_calls": 0,
+    "filesystem_reads": 3,
+    "git_inspection_calls": 1,
+    "manual_reconstruction_operations": 4,
+    "natural_use": {
+      "calls": 4,
+      "calls_detail": [
+        {
+          "answer": {
+            "agent": null,
+            "attributable": true,
+            "complete": true,
+            "path": "dist/release-note.txt",
+            "q": "origin",
+            "status": "observed",
+            "user": "ftmon",
+            "written_by": {
+              "at": "2026-09-29T12:57:43-07:00",
+              "cmd": "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt",
+              "program": "install"
+            }
+          },
+          "arguments": {
+            "path": "dist/release-note.txt"
+          },
+          "completed_index": 7,
+          "error": null,
+          "output_bytes": 282,
+          "tool": "file_origin"
+        },
+        {
+          "answer": {
+            "count": 1,
+            "gaps_since_written": [
+              "this file's origin was not observed"
+            ],
+            "not_proof_of_safety": true,
+            "observed": [
+              {
+                "file": "dist/release-note.txt",
+                "via": "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt"
+              }
+            ],
+            "observed_only": true,
+            "path": "authored/manual-release.txt",
+            "q": "dependents",
+            "vcs_metadata": 2
+          },
+          "arguments": {
+            "path": "authored/manual-release.txt"
+          },
+          "completed_index": 8,
+          "error": null,
+          "output_bytes": 322,
+          "tool": "observed_dependents"
+        },
+        {
+          "answer": {
+            "groups": [
+              {
+                "agent": null,
+                "at": "2026-09-29T12:57:43-07:00",
+                "by": "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt",
+                "written": [
+                  "dist/release-note.txt"
+                ]
+              }
+            ],
+            "q": "changes",
+            "recording_gaps": [
+              {
+                "after_crash": true,
+                "from": "2026-09-28T13:16:51-07:00",
+                "to": "2026-09-28T14:33:01-07:00"
+              },
+              {
+                "after_crash": true,
+                "from": "2026-09-28T14:33:24-07:00",
+                "to": "2026-09-28T15:19:58-07:00"
+              },
+              {
+                "after_crash": true,
+                "from": "2026-09-28T15:20:11-07:00",
+                "to": "2026-09-28T15:20:25-07:00"
+              }
+            ],
+            "since": "2026-09-28T13:16:51-07:00",
+            "under": ".",
+            "vcs_metadata": 2
+          },
+          "arguments": {
+            "directory": ".",
+            "since": "24h"
+          },
+          "completed_index": 9,
+          "error": null,
+          "output_bytes": 545,
+          "tool": "recent_changes"
+        },
+        {
+          "answer": {
+            "attributable": true,
+            "chain": [
+              {
+                "by": "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt",
+                "file": "dist/release-note.txt",
+                "inputs": [
+                  "authored/manual-release.txt"
+                ]
+              }
+            ],
+            "edit": [
+              "authored/manual-release.txt"
+            ],
+            "generated": true,
+            "hidden_inputs": 2,
+            "path": "dist/release-note.txt",
+            "q": "sources",
+            "status": "observed"
+          },
+          "arguments": {
+            "path": "dist/release-note.txt"
+          },
+          "completed_index": 10,
+          "error": null,
+          "output_bytes": 328,
+          "tool": "source_chain"
+        }
+      ],
+      "first_tool": "file_origin",
+      "ignored": false,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 4,
+      "output_bytes": 1477,
+      "used": true
+    },
+    "ordinary_context_bytes": 13480,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short --ignored && git log --oneline --decorate --all --stat && stat dist/release-note.txt authored/manual-release.txt tools/package-release.py README.md .gitignore && printf '%s\\\\n' '--- dist' && sed -n '1,200p' dist/release-note.txt && printf '%s\\\\n' '--- authored' && sed -n '1,200p' authored/manual-release.txt && printf '%s\\\\n' '--- script' && sed -n '1,240p' tools/package-release.py && printf '%s\\\\n' '--- README' && sed -n '1,240p' README.md && printf '%s\\\\n' '--- ignore' && sed -n '1,160p' .gitignore\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"command -v getfattr || true; getfattr -d -m - dist/release-note.txt authored/manual-release.txt 2>&1 || true; lsattr -d dist dist/release-note.txt authored/manual-release.txt 2>&1 || true; findmnt -T dist/release-note.txt -o TARGET,SOURCE,FSTYPE,OPTIONS; find .. -maxdepth 3 -type f -o -type l | sort | sed -n '1,240p'; rg -n -uu \\\"release-note|manual-release|Operator-reviewed|automated package|whyfs|provenance\\\" .. /tmp 2>/dev/null | sed -n '1,260p'\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"python3 - <<'PY'\nimport os\nfor p in ['dist/release-note.txt','authored/manual-release.txt','dist','authored']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  try: print(' ',n,os.getxattr(p,n))\n  except OSError as e: print(' ',n,e)\nPY\nprintenv | sort | sed -n '1,240p'\nps -ef | sed -n '1,240p'\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 2 -type f -readable -print 2>/dev/null | sort | sed -n '1,260p'\"",
+        "completed_index": 6
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 4,
+    "thread_id": "01a0eecf-79cd-7d32-80e3-6e838dc953f2",
+    "tool_calls": 8,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 110208,
+      "input_tokens": 122003,
+      "output_tokens": 2206,
+      "reasoning_tokens": 833,
+      "total_tokens": 124209
+    },
+    "whyfs_calls": 4,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": [
+      "file_origin",
+      "observed_dependents",
+      "recent_changes",
+      "source_chain"
+    ]
+  },
+  "prompt_sha256": "24d7366b4e3b4ba7ef0a33e734180284f3358758d20c967196f27e577bc6235b",
+  "returncode": 0,
+  "run_id": "16-case08-whyfs"
+}

@@ -1,0 +1,164 @@
+{
+  "case": "case06",
+  "case_name": "pre-observation-vendor-cache",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 67.990597224,
+  "final_response": "The original creator of `cache/vendor-snapshot.bin` cannot be determined from the available evidence.\n\n- The file is ignored by Git via [.gitignore](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case06-baseline/.gitignore:3). It appears in no commit, reflog, unreachable Git object, or extended attribute.\n- Its filesystem ownership (`ftmon`) and birth time (`2026-09-29 12:57:34.379725484 -0700`) describe this copy of the inode, not the person or process that originally produced its contents.\n- The commit author, \u201cProvenance Benchmark,\u201d cannot validly be treated as the file\u2019s creator because the file was not committed.\n\nThe evidenced downstream use was as input to the SHA-256 audit in [audit-cache.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case06-baseline/tools/audit-cache.py:3). The resulting [cache.sha256](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case06-baseline/analysis/cache.sha256:1) was created about 7.57 seconds later and contains the snapshot\u2019s exact hash, `44a961\u2026f9f3c12`. This strongly evidences that audit behavior, although no process-execution record identifies who ran it.\n\nOrigin evidence is therefore incomplete. Unknowns include:\n\n- who or what created the original snapshot;\n- whether this copy was generated, downloaded, or copied;\n- its upstream vendor, source location, and earlier history;\n- the creating command/process and original creation time;\n- who executed the later audit.\n\nNo file contents were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,200p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc 'git status --short --ignored && git log --all --decorate --stat --format=fuller && git log --all --reflog --oneline --decorate'",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,240p' README.md; sed -n '1,240p' tools/audit-cache.py; sed -n '1,120p' analysis/cache.sha256; sed -n '1,120p' .gitignore\"",
+        "completed_index": 4
+      },
+      {
+        "command": "/bin/bash -lc 'stat cache/vendor-snapshot.bin analysis/cache.sha256 tools/audit-cache.py README.md; file cache/vendor-snapshot.bin; sha256sum cache/vendor-snapshot.bin; getfattr -d -m- cache/vendor-snapshot.bin 2>&1 || true'",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'git ls-files --stage; git fsck --full --no-reflogs --unreachable 2>&1; git reflog show --all --date=iso'",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"xxd -g1 cache/vendor-snapshot.bin; ls -laR --time-style=full-iso; lsattr cache/vendor-snapshot.bin analysis/cache.sha256 2>&1; findmnt -T cache/vendor-snapshot.bin -o TARGET,SOURCE,FSTYPE,OPTIONS; command -v ausearch || true; command -v debugfs || true; rg -uuu -n -F 'vendor-snapshot.bin' . .. 2>/dev/null\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"python3 - <<'PY'\nimport os\nfor p in ['cache/vendor-snapshot.bin','analysis/cache.sha256']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  print(n, repr(os.getxattr(p,n)))\nPY\nfind /var/log/audit /var/lib -maxdepth 3 \\\\( -iname '*audit*' -o -iname '*provenance*' -o -iname '*trace*' \\\\) -print 2>/dev/null | sed -n '1,160p'\nfind .. -maxdepth 1 -printf '%f %y\\\\n'\n\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc 'for f in /home/ftmon/.bash_history /home/ftmon/.zsh_history /root/.bash_history; do if [ -r \"$f\" ]; then echo \"$f\"; rg -n -F '\"'vendor-snapshot.bin' \\\"\"'$f\" || true; rg -n -F '\"'audit-cache.py' \\\"\"'$f\" || true; fi; done\nls -l /var/log/audit/audit.log /var/account/pacct /var/log/account/pacct 2>/dev/null || true\njournalctl --since '\"'2026-09-29 12:56:00' --until '2026-09-29 12:59:00' --no-pager 2>/dev/null | rg -n 'vendor-snapshot|audit-cache|case06' || true\ngit check-ignore -v cache/vendor-snapshot.bin analysis/cache.sha256\ngit log --all --full-history -- cache/vendor-snapshot.bin analysis/cache.sha256\n\"",
+        "completed_index": 11
+      }
+    ],
+    "context_bytes": 14320,
+    "context_bytes_by_tool": {
+      "filesystem": 3182,
+      "git": 952,
+      "other": 0,
+      "search": 10186,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/1a/7a8fc98758be975063984625e592d582b1d63a",
+      ".git/objects/88/a10444c3bda4e7865c5b5f553c2fab35af0ec2",
+      ".git/objects/89/1202018406b553ffeb3658de078c0fb204dbb2",
+      ".git/objects/9c/647c986fdb1d2efd30bdb1810577bfa5a12d25",
+      ".git/objects/9d/223a95a03f5379a1ae28fdd7f2ebe8123e40cd",
+      ".git/objects/9e/6db0e1fb04cbc6f13959882f5c373a4d5a2b0f",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "analysis/cache.sha256",
+      "cache/vendor-snapshot.bin",
+      "tools/audit-cache.py"
+    ],
+    "distinct_files_inspected": 34,
+    "file_change_calls": 0,
+    "filesystem_reads": 5,
+    "git_inspection_calls": 3,
+    "manual_reconstruction_operations": 8,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 8,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 14320,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,200p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'git status --short --ignored && git log --all --decorate --stat --format=fuller && git log --all --reflog --oneline --decorate'",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,240p' README.md; sed -n '1,240p' tools/audit-cache.py; sed -n '1,120p' analysis/cache.sha256; sed -n '1,120p' .gitignore\"",
+        "completed_index": 4
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'stat cache/vendor-snapshot.bin analysis/cache.sha256 tools/audit-cache.py README.md; file cache/vendor-snapshot.bin; sha256sum cache/vendor-snapshot.bin; getfattr -d -m- cache/vendor-snapshot.bin 2>&1 || true'",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'git ls-files --stage; git fsck --full --no-reflogs --unreachable 2>&1; git reflog show --all --date=iso'",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"xxd -g1 cache/vendor-snapshot.bin; ls -laR --time-style=full-iso; lsattr cache/vendor-snapshot.bin analysis/cache.sha256 2>&1; findmnt -T cache/vendor-snapshot.bin -o TARGET,SOURCE,FSTYPE,OPTIONS; command -v ausearch || true; command -v debugfs || true; rg -uuu -n -F 'vendor-snapshot.bin' . .. 2>/dev/null\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"python3 - <<'PY'\nimport os\nfor p in ['cache/vendor-snapshot.bin','analysis/cache.sha256']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  print(n, repr(os.getxattr(p,n)))\nPY\nfind /var/log/audit /var/lib -maxdepth 3 \\\\( -iname '*audit*' -o -iname '*provenance*' -o -iname '*trace*' \\\\) -print 2>/dev/null | sed -n '1,160p'\nfind .. -maxdepth 1 -printf '%f %y\\\\n'\n\"",
+        "completed_index": 9
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'for f in /home/ftmon/.bash_history /home/ftmon/.zsh_history /root/.bash_history; do if [ -r \"$f\" ]; then echo \"$f\"; rg -n -F '\"'vendor-snapshot.bin' \\\"\"'$f\" || true; rg -n -F '\"'audit-cache.py' \\\"\"'$f\" || true; fi; done\nls -l /var/log/audit/audit.log /var/account/pacct /var/log/account/pacct 2>/dev/null || true\njournalctl --since '\"'2026-09-29 12:56:00' --until '2026-09-29 12:59:00' --no-pager 2>/dev/null | rg -n 'vendor-snapshot|audit-cache|case06' || true\ngit check-ignore -v cache/vendor-snapshot.bin analysis/cache.sha256\ngit log --all --full-history -- cache/vendor-snapshot.bin analysis/cache.sha256\n\"",
+        "completed_index": 11
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 8,
+    "thread_id": "01a0eeca-f3ff-7c12-90d6-12b7a5a6f02f",
+    "tool_calls": 8,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 85504,
+      "input_tokens": 107655,
+      "output_tokens": 3032,
+      "reasoning_tokens": 1276,
+      "total_tokens": 110687
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "6117ae26de80dbda724ecadb9ec5d2c43a941141f0dc439b5a02d3905ecb989f",
+  "returncode": 0,
+  "run_id": "12-case06-baseline"
+}

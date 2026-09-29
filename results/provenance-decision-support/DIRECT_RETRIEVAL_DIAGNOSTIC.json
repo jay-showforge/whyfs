@@ -1,0 +1,645 @@
+{
+  "case01": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "python3 tools/make_inventory.py",
+              "file": "reports/inventory-summary.txt",
+              "inputs": [
+                "tools/make_inventory.py",
+                "data/stock.csv"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/make_inventory.py",
+            "data/stock.csv"
+          ],
+          "generated": true,
+          "hidden_inputs": 4,
+          "path": "reports/inventory-summary.txt",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "reports/inventory-summary.txt"
+        },
+        "is_error": false,
+        "latency_ms": 42.500091,
+        "output_bytes": 325,
+        "tool": "source_chain"
+      },
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "later_gaps": [
+            "whyfs was not recording from 2026-09-29T13:49:58-07:00 to 2026-09-29T13:50:22-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:50:22-07:00 to 2026-09-29T13:51:40-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:51:40-07:00 to 2026-09-29T13:54:29-07:00 (the observer stopped unexpectedly)"
+          ],
+          "path": "reports/inventory-summary.txt",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T13:48:28-07:00",
+            "cmd": "python3 tools/make_inventory.py",
+            "program": "python3.12"
+          }
+        },
+        "arguments": {
+          "path": "reports/inventory-summary.txt"
+        },
+        "is_error": false,
+        "latency_ms": 38.299443,
+        "output_bytes": 629,
+        "tool": "file_origin"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-second-replacement-20260929T134824/cases/case01-whyfs",
+    "minimum_call_count": 2,
+    "total_latency_ms": 80.799534,
+    "total_output_bytes": 954
+  },
+  "case02": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "node tools/render-card.js",
+              "file": "site/device-card.html",
+              "inputs": [
+                "tools/render-card.js",
+                "work/normalized.json"
+              ]
+            },
+            {
+              "by": "python3 tools/normalize.py",
+              "file": "work/normalized.json",
+              "inputs": [
+                "tools/normalize.py",
+                "specs/device.yaml"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/render-card.js",
+            "tools/normalize.py",
+            "specs/device.yaml"
+          ],
+          "generated": true,
+          "hidden_inputs": 6,
+          "path": "site/device-card.html",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "site/device-card.html"
+        },
+        "is_error": false,
+        "latency_ms": 249.343409,
+        "output_bytes": 445,
+        "tool": "source_chain"
+      },
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "later_gaps": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "path": "site/device-card.html",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T13:29:57-07:00",
+            "cmd": "node tools/render-card.js",
+            "program": "node"
+          }
+        },
+        "arguments": {
+          "path": "site/device-card.html"
+        },
+        "is_error": false,
+        "latency_ms": 37.826607,
+        "output_bytes": 609,
+        "tool": "file_origin"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case02-whyfs",
+    "minimum_call_count": 2,
+    "total_latency_ms": 287.17001600000003,
+    "total_output_bytes": 1054
+  },
+  "case03": {
+    "calls": [
+      {
+        "answer": {
+          "count": 3,
+          "gaps_since_written": [
+            "this file's origin was not observed"
+          ],
+          "not_proof_of_safety": true,
+          "observed": [
+            {
+              "file": "web/assets/badge.svg",
+              "one_of": 3,
+              "via": "node tools/build-badges.js"
+            },
+            {
+              "file": "mobile/assets/badge.json",
+              "one_of": 3,
+              "via": "node tools/build-badges.js"
+            },
+            {
+              "file": "docs/badge.txt",
+              "one_of": 3,
+              "via": "node tools/build-badges.js"
+            }
+          ],
+          "observed_only": true,
+          "path": "theme/badge.toml",
+          "q": "dependents",
+          "vcs_metadata": 2
+        },
+        "arguments": {
+          "path": "theme/badge.toml"
+        },
+        "is_error": false,
+        "latency_ms": 218.060925,
+        "output_bytes": 425,
+        "tool": "observed_dependents"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case03-whyfs",
+    "minimum_call_count": 1,
+    "total_latency_ms": 218.060925,
+    "total_output_bytes": 425
+  },
+  "case04": {
+    "calls": [
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "later_gaps": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "moved_from": [
+            "scratch/runtime-draft.ini"
+          ],
+          "path": "config/runtime-current.ini",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T13:29:58-07:00",
+            "cmd": "python3 tools/prepare-runtime.py",
+            "program": "python3.12"
+          }
+        },
+        "arguments": {
+          "path": "config/runtime-current.ini"
+        },
+        "is_error": false,
+        "latency_ms": 36.18573,
+        "output_bytes": 670,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "count": 1,
+          "gaps_since_written": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "not_proof_of_safety": true,
+          "observed": [
+            {
+              "file": "reports/runtime-use.txt",
+              "via": "python3 tools/consume-runtime.py"
+            }
+          ],
+          "observed_only": true,
+          "path": "config/runtime-current.ini",
+          "q": "dependents"
+        },
+        "arguments": {
+          "path": "config/runtime-current.ini"
+        },
+        "is_error": false,
+        "latency_ms": 41.844915,
+        "output_bytes": 590,
+        "tool": "observed_dependents"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case04-whyfs",
+    "minimum_call_count": 2,
+    "total_latency_ms": 78.03064499999999,
+    "total_output_bytes": 1260
+  },
+  "case05": {
+    "calls": [
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "created": "2026-09-29T13:29:58-07:00",
+          "later_gaps": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "path": "state/live-index.json",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T13:29:59-07:00",
+            "cmd": "python3 tools/rebuild-index.py",
+            "program": "python3.12"
+          }
+        },
+        "arguments": {
+          "path": "state/live-index.json"
+        },
+        "is_error": false,
+        "latency_ms": 40.226331,
+        "output_bytes": 658,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "python3 tools/rebuild-index.py",
+              "file": "state/live-index.json",
+              "inputs": [
+                "tools/rebuild-index.py",
+                "records/current.json"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/rebuild-index.py",
+            "records/current.json"
+          ],
+          "generated": true,
+          "hidden_inputs": 4,
+          "path": "state/live-index.json",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "state/live-index.json"
+        },
+        "is_error": false,
+        "latency_ms": 39.085478,
+        "output_bytes": 318,
+        "tool": "source_chain"
+      },
+      {
+        "answer": {
+          "count": 1,
+          "gaps_since_written": [
+            "this file's origin was not observed"
+          ],
+          "not_proof_of_safety": true,
+          "observed": [
+            {
+              "file": "state/live-index.json",
+              "via": "python3 tools/bootstrap-index.py"
+            }
+          ],
+          "observed_only": true,
+          "path": "tools/bootstrap-index.py",
+          "q": "dependents",
+          "vcs_metadata": 2
+        },
+        "arguments": {
+          "path": "tools/bootstrap-index.py"
+        },
+        "is_error": false,
+        "latency_ms": 204.796796,
+        "output_bytes": 275,
+        "tool": "observed_dependents"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case05-whyfs",
+    "minimum_call_count": 3,
+    "total_latency_ms": 284.108605,
+    "total_output_bytes": 1251
+  },
+  "case06": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": false,
+          "complete": false,
+          "path": "cache/vendor-snapshot.bin",
+          "possible": [
+            "created before whyfs recorded it",
+            "outside the recording scope",
+            "written by a process you cannot see"
+          ],
+          "q": "origin",
+          "reason": "no_observed_write",
+          "recording_since": "2026-09-27T17:14:14-07:00",
+          "status": "unknown"
+        },
+        "arguments": {
+          "path": "cache/vendor-snapshot.bin"
+        },
+        "is_error": false,
+        "latency_ms": 40.411836,
+        "output_bytes": 297,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "count": 1,
+          "gaps_since_written": [
+            "this file's origin was not observed"
+          ],
+          "not_proof_of_safety": true,
+          "observed": [
+            {
+              "file": "analysis/cache.sha256",
+              "via": "python3 tools/audit-cache.py"
+            }
+          ],
+          "observed_only": true,
+          "path": "cache/vendor-snapshot.bin",
+          "q": "dependents"
+        },
+        "arguments": {
+          "path": "cache/vendor-snapshot.bin"
+        },
+        "is_error": false,
+        "latency_ms": 37.728753,
+        "output_bytes": 255,
+        "tool": "observed_dependents"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-second-replacement-20260929T134824/cases/case06-whyfs",
+    "minimum_call_count": 2,
+    "total_latency_ms": 78.140589,
+    "total_output_bytes": 552
+  },
+  "case07": {
+    "calls": [
+      {
+        "answer": {
+          "files": [
+            {
+              "action": "written",
+              "path": "artifacts/findings.json"
+            },
+            {
+              "action": "written",
+              "path": "artifacts/review.md"
+            }
+          ],
+          "matched": [
+            {
+              "agent": "AuditBot",
+              "session": "license-review-whyfs-1790713799798534600",
+              "source": "registered",
+              "started": "2026-09-29T13:29:59-07:00",
+              "task": "Review dependency licenses for release"
+            }
+          ],
+          "matched_elsewhere": 9,
+          "other_writers_under": [
+            {
+              "agent": null,
+              "by": "python3.12",
+              "path": "artifacts/ambient.log"
+            }
+          ],
+          "q": "session"
+        },
+        "arguments": {
+          "agent": "AuditBot",
+          "supplied_task": "Review dependency licenses for release",
+          "workspace": "."
+        },
+        "is_error": false,
+        "latency_ms": 763.918609,
+        "output_bytes": 433,
+        "tool": "session_files"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-whyfs",
+    "minimum_call_count": 1,
+    "total_latency_ms": 763.918609,
+    "total_output_bytes": 433
+  },
+  "case08": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt",
+              "file": "dist/release-note.txt",
+              "inputs": [
+                "authored/manual-release.txt"
+              ]
+            }
+          ],
+          "edit": [
+            "authored/manual-release.txt"
+          ],
+          "generated": true,
+          "hidden_inputs": 2,
+          "path": "dist/release-note.txt",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "dist/release-note.txt"
+        },
+        "is_error": false,
+        "latency_ms": 37.383414,
+        "output_bytes": 328,
+        "tool": "source_chain"
+      },
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "later_gaps": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "path": "dist/release-note.txt",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T13:30:00-07:00",
+            "cmd": "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt",
+            "program": "install"
+          }
+        },
+        "arguments": {
+          "path": "dist/release-note.txt"
+        },
+        "is_error": false,
+        "latency_ms": 38.573184,
+        "output_bytes": 663,
+        "tool": "file_origin"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case08-whyfs",
+    "minimum_call_count": 2,
+    "total_latency_ms": 75.956598,
+    "total_output_bytes": 991
+  },
+  "case09": {
+    "calls": [
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "later_gaps": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "path": "scratch/unused-seed.dat",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T13:30:00-07:00",
+            "cmd": "python3 tools/materialize-seed.py",
+            "program": "python3.12"
+          }
+        },
+        "arguments": {
+          "path": "scratch/unused-seed.dat"
+        },
+        "is_error": false,
+        "latency_ms": 39.564665,
+        "output_bytes": 625,
+        "tool": "file_origin"
+      },
+      {
+        "answer": {
+          "count": 0,
+          "gaps_since_written": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "not_proof_of_safety": true,
+          "observed": [],
+          "observed_only": true,
+          "path": "scratch/unused-seed.dat",
+          "q": "dependents"
+        },
+        "arguments": {
+          "path": "scratch/unused-seed.dat"
+        },
+        "is_error": false,
+        "latency_ms": 39.534464,
+        "output_bytes": 512,
+        "tool": "observed_dependents"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case09-whyfs",
+    "minimum_call_count": 2,
+    "total_latency_ms": 79.099129,
+    "total_output_bytes": 1137
+  },
+  "case10": {
+    "calls": [
+      {
+        "answer": {
+          "attributable": true,
+          "chain": [
+            {
+              "by": "node tools/export-blue.js",
+              "file": "public/channel.json",
+              "inputs": [
+                "tools/export-blue.js",
+                "configs/channel.json"
+              ]
+            }
+          ],
+          "edit": [
+            "tools/export-blue.js",
+            "configs/channel.json"
+          ],
+          "generated": true,
+          "hidden_inputs": 2,
+          "path": "public/channel.json",
+          "q": "sources",
+          "status": "observed"
+        },
+        "arguments": {
+          "path": "public/channel.json"
+        },
+        "is_error": false,
+        "latency_ms": 40.696361,
+        "output_bytes": 305,
+        "tool": "source_chain"
+      },
+      {
+        "answer": {
+          "agent": null,
+          "attributable": true,
+          "complete": true,
+          "later_gaps": [
+            "whyfs was not recording from 2026-09-29T13:41:12-07:00 to 2026-09-29T13:44:01-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:14-07:00 to 2026-09-29T13:44:34-07:00 (the observer stopped unexpectedly)",
+            "whyfs was not recording from 2026-09-29T13:44:34-07:00 to 2026-09-29T13:48:08-07:00 (the observer stopped unexpectedly)"
+          ],
+          "path": "public/channel.json",
+          "q": "origin",
+          "status": "observed",
+          "user": "ftmon",
+          "written_by": {
+            "at": "2026-09-29T13:30:01-07:00",
+            "cmd": "node tools/export-blue.js",
+            "program": "node"
+          }
+        },
+        "arguments": {
+          "path": "public/channel.json"
+        },
+        "is_error": false,
+        "latency_ms": 39.791725,
+        "output_bytes": 607,
+        "tool": "file_origin"
+      }
+    ],
+    "fixture_root": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case10-whyfs",
+    "minimum_call_count": 2,
+    "total_latency_ms": 80.48808600000001,
+    "total_output_bytes": 912
+  }
+}

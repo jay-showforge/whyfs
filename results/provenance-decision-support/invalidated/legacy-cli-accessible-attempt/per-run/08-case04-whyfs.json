@@ -1,0 +1,139 @@
+{
+  "case": "case04",
+  "case_name": "runtime-config-move-lineage",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 47.39685476500006,
+  "final_response": "### Observed facts\n\n- At `2026-09-29 12:57:41 -07:00`, `python3 tools/prepare-runtime.py` read [seed/runtime-template.ini](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case04-whyfs/seed/runtime-template.ini) and wrote `scratch/runtime-draft.ini`.\n- The OS-level provenance collector then observed:\n  `mv scratch/runtime-draft.ini config/runtime-current.ini`\n- The recorded filesystem identity matches the current file, and collection reports no observation gaps.\n- Shortly afterward, `python3 tools/consume-runtime.py` read [config/runtime-current.ini](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case04-whyfs/config/runtime-current.ini) and generated [reports/runtime-use.txt](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case04-whyfs/reports/runtime-use.txt).\n- The current config and report are Git-ignored runtime artifacts, so this lineage comes from observed filesystem events rather than Git history.\n\n### Inference\n\nThe current file came immediately from `scratch/runtime-draft.ini`, which was generated from `seed/runtime-template.ini` by `tools/prepare-runtime.py`. Treating `config/runtime-current.ini` as an unrelated new file would therefore be incorrect: the evidence shows an identity-preserving rename/move with continuous lineage.\n\nIts observed later functional use was as the input consumed by `tools/consume-runtime.py` to produce `reports/runtime-use.txt`.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,160p' && git status --short && git log --all --oneline --decorate -n 30\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git show --stat --summary --find-renames HEAD && git ls-tree -r --full-name HEAD && git log --all --follow --name-status --find-renames -- config/runtime-current.ini && stat config/runtime-current.ini seed/runtime-template.ini reports/runtime-use.txt && sed -n '1,240p' README.md && sed -n '1,240p' tools/prepare-runtime.py && sed -n '1,240p' tools/consume-runtime.py && sed -n '1,240p' reports/runtime-use.txt && sed -n '1,240p' config/runtime-current.ini && sed -n '1,240p' seed/runtime-template.ini\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,160p' .gitignore; find . -maxdepth 3 -printf '%y %i %T@ %p -> %l\\\\n' | sort; getfattr -d -m- config/runtime-current.ini seed/runtime-template.ini reports/runtime-use.txt 2>&1 || true; mount | sed -n '1,120p'; findmnt -T config/runtime-current.ini -o TARGET,SOURCE,FSTYPE,OPTIONS; command -v whyfs || true; command -v inotifywait || true; env | sort | rg -i 'why|prov|trace|audit|fs' || true; ps auxww | rg -i 'whyfs|provenance|audit|trace' || true\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help && whyfs status 2>&1 || true && whyfs query --help 2>&1 || true && whyfs explain --help 2>&1 || true'",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask; whyfs why --help; whyfs history --help; whyfs impact --help; whyfs label --help'",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask origin config/runtime-current.ini; whyfs ask sources config/runtime-current.ini; whyfs ask dependents config/runtime-current.ini; whyfs label config/runtime-current.ini --json; whyfs why config/runtime-current.ini --json; whyfs history config/runtime-current.ini --json; whyfs impact config/runtime-current.ini --depth 4 --json'",
+        "completed_index": 8
+      }
+    ],
+    "context_bytes": 25186,
+    "context_bytes_by_tool": {
+      "filesystem": 0,
+      "git": 4282,
+      "other": 1156,
+      "search": 11889,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/20/abe15e99c68c118634916ddf2a0470d38d99a9",
+      ".git/objects/20/c27d7a3a8f3aae8a853e258f426b7551742e0f",
+      ".git/objects/30/848d27707434e23e92f109aa12bcc404bfc2dd",
+      ".git/objects/5e/4a4ba94bce449e212a337f35ae67373b4f1b78",
+      ".git/objects/a2/6a5ef7663e64bb6baa28762f9dbadf26df69b0",
+      ".git/objects/a6/06c7df150ef169357e20f680cace9dd762a588",
+      ".git/objects/d5/64d0bc3dd917926892c55e3706cc116d5b165e",
+      ".git/objects/d8/c5331111f82d18361b11507493e7c3111166d1",
+      ".git/objects/db/057bc40ade631ab2a3c7ab7149922bffbbc32a",
+      ".git/objects/e6/9de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      ".git/objects/ee/449cb64424b633f9be982e44d75ae1b7561b6d",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "config/.gitkeep",
+      "config/runtime-current.ini",
+      "reports/runtime-use.txt",
+      "seed/runtime-template.ini",
+      "tools/consume-runtime.py",
+      "tools/prepare-runtime.py"
+    ],
+    "distinct_files_inspected": 42,
+    "file_change_calls": 0,
+    "filesystem_reads": 1,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 3,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 3,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 25186,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,160p' && git status --short && git log --all --oneline --decorate -n 30\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git show --stat --summary --find-renames HEAD && git ls-tree -r --full-name HEAD && git log --all --follow --name-status --find-renames -- config/runtime-current.ini && stat config/runtime-current.ini seed/runtime-template.ini reports/runtime-use.txt && sed -n '1,240p' README.md && sed -n '1,240p' tools/prepare-runtime.py && sed -n '1,240p' tools/consume-runtime.py && sed -n '1,240p' reports/runtime-use.txt && sed -n '1,240p' config/runtime-current.ini && sed -n '1,240p' seed/runtime-template.ini\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,160p' .gitignore; find . -maxdepth 3 -printf '%y %i %T@ %p -> %l\\\\n' | sort; getfattr -d -m- config/runtime-current.ini seed/runtime-template.ini reports/runtime-use.txt 2>&1 || true; mount | sed -n '1,120p'; findmnt -T config/runtime-current.ini -o TARGET,SOURCE,FSTYPE,OPTIONS; command -v whyfs || true; command -v inotifywait || true; env | sort | rg -i 'why|prov|trace|audit|fs' || true; ps auxww | rg -i 'whyfs|provenance|audit|trace' || true\"",
+        "completed_index": 5
+      }
+    ],
+    "search_calls": 1,
+    "shell_commands": 6,
+    "thread_id": "01a0eec6-f491-73e1-8e69-949f13218335",
+    "tool_calls": 6,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 116352,
+      "input_tokens": 131071,
+      "output_tokens": 1760,
+      "reasoning_tokens": 441,
+      "total_tokens": 132831
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 1,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "2057208f09c75554e9c06af6cb17b1d2f750906979683ab819baf91ba33df445",
+  "returncode": 0,
+  "run_id": "08-case04-whyfs"
+}

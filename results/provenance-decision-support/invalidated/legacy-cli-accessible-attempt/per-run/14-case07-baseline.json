@@ -1,0 +1,170 @@
+{
+  "case": "case07",
+  "case_name": "registered-review-session",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 79.20425665000005,
+  "final_response": "No historical agent/session attribution is established by the available evidence.\n\n- The supplied task text is exactly: \u201cReview dependency licenses for release.\u201d\n- A plausible\u2014but inferred\u2014intent is to read [dependencies.txt](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-baseline/licenses/dependencies.txt) and generate [review.md](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-baseline/artifacts/review.md) and [findings.json](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-baseline/artifacts/findings.json), as described by [run-review.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-baseline/tools/run-review.py). Static contents and matching timestamps support that inference, but do not prove which files a particular agent session actually observed.\n- The only established session identity is this investigative Codex session: `01a0eecc-d8f7-7db1-8229-68a54f6b2c4e`, originator `codex_exec`. It began after the artifacts were created, so those artifacts cannot be attributed to it.\n- [ambient.log](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-baseline/artifacts/ambient.log) is the nearby file that should not be attributed to the license-review session. It corresponds to separate [ambient-write.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-baseline/tools/ambient-write.py) behavior and was created about 184 ms later.\n\nThus, the likely review-related set is `licenses/dependencies.txt`, `artifacts/review.md`, and `artifacts/findings.json`, with `tools/run-review.py` as the likely executable\u2014but this is inferred workflow, not proven session-level observation. No files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc 'pwd && rg --files -uu | sort'",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --all --decorate --oneline --stat && find . -maxdepth 3 -type f -not -path './.git/*' -printf '%TY-%Tm-%Td %TH:%TM:%TS %s %p\\\\n' | sort && rg -n -uu -i \\\"Review dependency licenses for release|session|agent|provenance|observed|attribut|intent|license\\\" . -g '\"'!.git/**'\"'\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc 'for f in README.md .gitignore licenses/dependencies.txt tools/run-review.py tools/ambient-write.py artifacts/review.md artifacts/findings.json artifacts/ambient.log; do echo \"### $f\"; sed -n '\"'1,200p' \\\"\"'$f\"; done\nprintf '\"'\\\\n### extended attributes\\\\n'\ngetfattr -R -d -m- . 2>/dev/null || true\nprintf '\\\\n### nearby case-level files\\\\n'\nfind .. -maxdepth 3 -type f -not -path '*/.git/*' -printf '%p\\\\n' | sort | head -300\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc \"rg -n -uu -F \\\"Review dependency licenses for release\\\" /home/ftmon/whyfs-provenance-decision-20260929T125733 2>/dev/null || true\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort | head -500\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 5 -type f -printf '%p\\\\n' 2>/dev/null | sort | sed -n '1,1000p'\nprintf '\\\\n### environment clues\\\\n'\nenv | sort | rg -i 'whyfs|proven|session|agent|task|trace|otel|codex' || true\nprintf '\\\\n### sqlite schemas\\\\n'\nfor db in /home/ftmon/whyfs-provenance-decision-20260929T125733/agent-homes/14-case07-baseline/*.sqlite; do echo \\\"DB \"'$db\"; sqlite3 \"$db\" '\"'.tables' 2>/dev/null; done\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"command -v whyfs || true\ncompgen -c | rg -i 'whyfs|provenance' | sort -u | head -100\nmount | rg -i 'whyfs|fuse|case07' || true\nps -ef | rg -i 'whyfs|provenance|case07' | rg -v 'rg -i' || true\nfind /run /tmp /var/tmp -maxdepth 4 -type f \\\\( -iname '*whyfs*' -o -iname '*proven*' -o -iname '*case07*' \\\\) -printf '%p\\\\n' 2>/dev/null | head -300\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 4 -type d -printf '%p\\\\n' 2>/dev/null | sort | head -500\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"whyfs --help 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short --ignored\nstat -c '%n | birth=%w | mtime=%y | ctime=%z | inode=%i' README.md licenses/dependencies.txt tools/run-review.py tools/ambient-write.py artifacts/review.md artifacts/findings.json artifacts/ambient.log\nprintf '\\\\n### repository identity evidence\\\\n'\ngit show -s --format=fuller HEAD\nprintf '\\\\n### current thread metadata (first records)\\\\n'\nsed -n '1,14p' /home/ftmon/whyfs-provenance-decision-20260929T125733/agent-homes/14-case07-baseline/sessions/2026/09/29/rollout-2026-09-29T13-13-17-01a0eecc-d8f7-7db1-8229-68a54f6b2c4e.jsonl\"",
+        "completed_index": 10
+      }
+    ],
+    "context_bytes": 67216,
+    "context_bytes_by_tool": {
+      "filesystem": 7940,
+      "git": 40186,
+      "other": 0,
+      "search": 19090,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/00/3e9c3b6420e9acd8a7f60ee8bc5385b6b9a51c",
+      ".git/objects/21/64daf1f7d56cd8829ce8e423e8473ec3c31699",
+      ".git/objects/2d/bf7b1163d99d52614583dfd683dba23bf5106f",
+      ".git/objects/41/66d650752db8edb45276266893cb4ec45d17f7",
+      ".git/objects/6f/822b5ae08e8c58f5622539edc298c60e288da8",
+      ".git/objects/a4/772ce0253664bcd27414cf64bf37f18bb1ca36",
+      ".git/objects/b8/9dd9537b439f73cdf1b0156e8b2f7429922378",
+      ".git/objects/cd/becb3d494c27911696ce68ad271ce09b9f8c86",
+      ".git/objects/f1/e1c6a33a1d5b73c277d00127e163cbdf2a052a",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "artifacts/ambient.log",
+      "artifacts/findings.json",
+      "artifacts/review.md",
+      "licenses/dependencies.txt",
+      "tools/ambient-write.py",
+      "tools/run-review.py"
+    ],
+    "distinct_files_inspected": 40,
+    "file_change_calls": 0,
+    "filesystem_reads": 6,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 8,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 8,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 67216,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'pwd && rg --files -uu | sort'",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --all --decorate --oneline --stat && find . -maxdepth 3 -type f -not -path './.git/*' -printf '%TY-%Tm-%Td %TH:%TM:%TS %s %p\\\\n' | sort && rg -n -uu -i \\\"Review dependency licenses for release|session|agent|provenance|observed|attribut|intent|license\\\" . -g '\"'!.git/**'\"'\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'for f in README.md .gitignore licenses/dependencies.txt tools/run-review.py tools/ambient-write.py artifacts/review.md artifacts/findings.json artifacts/ambient.log; do echo \"### $f\"; sed -n '\"'1,200p' \\\"\"'$f\"; done\nprintf '\"'\\\\n### extended attributes\\\\n'\ngetfattr -R -d -m- . 2>/dev/null || true\nprintf '\\\\n### nearby case-level files\\\\n'\nfind .. -maxdepth 3 -type f -not -path '*/.git/*' -printf '%p\\\\n' | sort | head -300\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"rg -n -uu -F \\\"Review dependency licenses for release\\\" /home/ftmon/whyfs-provenance-decision-20260929T125733 2>/dev/null || true\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort | head -500\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 5 -type f -printf '%p\\\\n' 2>/dev/null | sort | sed -n '1,1000p'\nprintf '\\\\n### environment clues\\\\n'\nenv | sort | rg -i 'whyfs|proven|session|agent|task|trace|otel|codex' || true\nprintf '\\\\n### sqlite schemas\\\\n'\nfor db in /home/ftmon/whyfs-provenance-decision-20260929T125733/agent-homes/14-case07-baseline/*.sqlite; do echo \\\"DB \"'$db\"; sqlite3 \"$db\" '\"'.tables' 2>/dev/null; done\"",
+        "completed_index": 7
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"command -v whyfs || true\ncompgen -c | rg -i 'whyfs|provenance' | sort -u | head -100\nmount | rg -i 'whyfs|fuse|case07' || true\nps -ef | rg -i 'whyfs|provenance|case07' | rg -v 'rg -i' || true\nfind /run /tmp /var/tmp -maxdepth 4 -type f \\\\( -iname '*whyfs*' -o -iname '*proven*' -o -iname '*case07*' \\\\) -printf '%p\\\\n' 2>/dev/null | head -300\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 4 -type d -printf '%p\\\\n' 2>/dev/null | sort | head -500\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"whyfs --help 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 9
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short --ignored\nstat -c '%n | birth=%w | mtime=%y | ctime=%z | inode=%i' README.md licenses/dependencies.txt tools/run-review.py tools/ambient-write.py artifacts/review.md artifacts/findings.json artifacts/ambient.log\nprintf '\\\\n### repository identity evidence\\\\n'\ngit show -s --format=fuller HEAD\nprintf '\\\\n### current thread metadata (first records)\\\\n'\nsed -n '1,14p' /home/ftmon/whyfs-provenance-decision-20260929T125733/agent-homes/14-case07-baseline/sessions/2026/09/29/rollout-2026-09-29T13-13-17-01a0eecc-d8f7-7db1-8229-68a54f6b2c4e.jsonl\"",
+        "completed_index": 10
+      }
+    ],
+    "search_calls": 3,
+    "shell_commands": 8,
+    "thread_id": "01a0eecc-d8f7-7db1-8229-68a54f6b2c4e",
+    "tool_calls": 8,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 155136,
+      "input_tokens": 181093,
+      "output_tokens": 3271,
+      "reasoning_tokens": 1280,
+      "total_tokens": 184364
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "c9fd81449a44a596523f5af7a3e479aac983e495f7b5a652fe48298ee5d66c2d",
+  "returncode": 0,
+  "run_id": "14-case07-baseline"
+}
