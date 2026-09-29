@@ -17,9 +17,13 @@
 **Not re-run, by design:** `machine_perf` at 150 pairs, spawn stress and graduation, because
 the fix is query-side only.
 
+**License:** source available under BSL 1.1; Change Date **2030-09-28**; Change License
+Apache 2.0.
+
 **Not done (release steps, not validation):**
-- packages are not code-signed and not published;
-- the BSL Change Date in LICENSE is not set.
+- the final packages are rebuilt from the license-final commit, because both packages embed
+  LICENSE ([docs/RELEASE_ARTIFACTS.md](docs/RELEASE_ARTIFACTS.md)); nothing is published yet;
+- packages are not code-signed.
 
 See [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md) and
 [BENCHMARK.md](BENCHMARK.md#whyfs-10-performance-contract).

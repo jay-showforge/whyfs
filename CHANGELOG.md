@@ -89,7 +89,7 @@ inputs contributed and, when reliably known, which person or software agent caus
 - Source available under the Business Source License 1.1, with Apache 2.0 as the Change License.
 - The Additional Use Grant covers personal non-commercial use and non-commercial educational or
   research use.  Commercial production use requires a commercial license.
-- The Change Date is set at first public distribution.
+- Change Date for 1.0.0: 2030-09-28.
 
 ## 0.2.0a1 and earlier
 

@@ -166,5 +166,5 @@ not OSI-approved open source.
   - WhyFS as part of a product, appliance, managed service or agent platform.
 
   Contact licensing@tenzorpipe.org.
-- **Change to Apache 2.0.**  Each version becomes available under the Apache License 2.0 on its
-  Change Date.  The date is set when that version is first publicly distributed.
+- **Change to Apache 2.0.**  WhyFS 1.0.0 becomes available under the Apache License 2.0 on its
+  Change Date, **2030-09-28**.  Each later version states its own Change Date.

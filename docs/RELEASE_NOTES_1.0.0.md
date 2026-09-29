@@ -3,8 +3,9 @@
 > **Status: release candidate (commit 57d60e4), not published.**
 > - **Validated:** every gate on the four native platforms and WSL2 (BENCHMARK.md sections 9
 >   and 10).
-> - **Before a public release:** the BSL Change Date must be set, and the packages built,
->   signed if desired, and published.
+> - **License:** BSL 1.1, Change Date 2030-09-28, Change License Apache 2.0.
+> - **Before a public release:** the final packages are rebuilt from the license-final commit
+>   (they embed LICENSE), then published.  They are not code-signed.
 
 **Know why a file exists.**  WhyFS automatically labels files with their provenance: what
 created them, when, how, which inputs contributed and, when it is reliably known, which person
@@ -93,8 +94,9 @@ See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).  In short:
 
 WhyFS is not OSI open source.
 
-**Before the first public distribution** (open items for the human release review):
-1. The **Change Date** in `LICENSE` is a placeholder and must be set to a fixed calendar date.
-2. The Additional Use Grant wording should get a final legal review.
-3. Contributor terms: outside code contributions wait until the maintainer publishes them;
+The **Change Date** for 1.0.0 is **2030-09-28**.
+
+Open items for the human release review:
+1. The Additional Use Grant wording should get a final legal review.
+2. Contributor terms: outside code contributions wait until the maintainer publishes them;
    no CLA is required today ([CONTRIBUTING.md](../CONTRIBUTING.md)).

@@ -8,14 +8,18 @@ and performance.  The source archive is `git archive` of the same commit.
 An artifact is never rebuilt after its hash is recorded.  A rebuild is a new artifact: it
 needs a new run and new hashes, and the old ones are invalidated here.
 
-## Release-candidate artifacts: [run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218), commit 57d60e4
+## Superseded, never published: the 57d60e4 candidates ([run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218))
+
+Their product validation stands.  They are superseded only because the LICENSE they embed
+(`/usr/share/doc/whyfs/copyright`, and `LICENSE` in the MSI) predates the Change Date.  The
+final artifacts are rebuilt from the license-final commit.
+
 
 - **How they were built and tested:** on the four native hosted runners, from commit 57d60e4.
   Each passed its own platform's exact-artifact tests in that run: MSI clean install 32/32 and
   upgrade 16/16, or `.deb` 24/24.
 - **Not published and not code-signed.**
-- **Candidates only:** they become release artifacts only when a public release is approved,
-  and the BSL Change Date must be set first.
+- **Superseded** by the license-final artifacts.
 - **An artifact is never rebuilt after its hash is recorded.**
 
 | Artifact | Built on | SHA-256 |
