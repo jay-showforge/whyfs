@@ -1,0 +1,40 @@
+# macOS collector diagnostics (macos-support branch): what Endpoint Security still delivers at idle
+# after kernel muting, and loss under the long-history gate's spawn burst.  Not a gate.
+# Runs when this file changes.
+name: macos-diag
+on:
+  push:
+    branches: [macos-support]
+    paths: [.github/workflows/macos-diag.yml]
+permissions: { contents: read }
+jobs:
+  diag:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15-intel, macos-15]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Build and install the package
+        run: |
+          mkdir -p ci-results
+          { echo "runner: ${{ matrix.runner }}  uname -m: $(uname -m)  commit: $GITHUB_SHA"; sw_vers; } | tee ci-results/platform.txt
+          python packaging/macos/build_pkg.py --out dist --version 1.0.0.${{ github.run_number }}1 \
+            --build-id "${GITHUB_SHA::7}-${{ github.run_id }}" > ci-results/build-pkg.log 2>&1
+          sudo installer -pkg dist/*.pkg -target / > ci-results/install.log 2>&1
+          for i in $(seq 1 90); do whyfs status --json 2>/dev/null | grep -q '"collector_ready": true' && break; sleep 1; done
+          whyfs status
+      - name: Diagnostics
+        run: sudo -E env PATH="$PATH" python scripts/macos_es_diag.py --user "$USER" --out ci-results/diag --idle-s 300 --generations 1000
+      - name: Collect
+        if: always()
+        run: |
+          sudo cp /Library/Logs/WhyFS/*.log ci-results/ 2>/dev/null || true
+          sudo chown -R "$USER" ci-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "macos-diag-${{ matrix.runner }}", path: ci-results/ }
