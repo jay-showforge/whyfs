@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased (development branch `agent-interface-v2`)
+
+- `whyfs ask` and the API operation `ask`: one provenance question, one small JSON answer, for
+  AI agents and scripts (`origin`, `sources`, `dependents`, `session`, `changes`), with a short
+  question index (`whyfs ask`) and JSON tool definitions (`whyfs ask --schema`).  A compact
+  projection over the existing evidence; every existing command and operation is unchanged.
+
 ## 1.0.0 (2026-09-29 UTC)
 
 WhyFS automatically labels files with their provenance: what created them, when, how, which

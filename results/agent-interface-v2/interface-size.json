@@ -1,0 +1,710 @@
+{
+ "measure": "UTF-8 bytes of command output (interface size), not tokens",
+ "store_copy_of": "/var/lib/whyfs/machine/.whyfs/whyfs.db",
+ "view": "uid:1001",
+ "cases": [
+  {
+   "case": "case01",
+   "task_class": "generated-artifact",
+   "pilot_observed": {
+    "whyfs_commands": 0,
+    "whyfs_operations": 0,
+    "bytes": 0
+   },
+   "old_equivalent": {
+    "calls": 2,
+    "bytes": 11724,
+    "detail": [
+     {
+      "call": "label dist/banner.txt",
+      "bytes": 10637
+     },
+     {
+      "call": "why dist/banner.txt",
+      "bytes": 1087
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 347,
+    "detail": [
+     {
+      "call": "ask sources path=dist/banner.txt",
+      "bytes": 347
+     }
+    ],
+    "answers": [
+     {
+      "q": "sources",
+      "path": "dist/banner.txt",
+      "status": "observed",
+      "attributable": true,
+      "generated": true,
+      "chain": [
+       {
+        "file": "dist/banner.txt",
+        "by": "python3 tools/build.py",
+        "inputs": [
+         "tools/build.py",
+         "src/settings.json",
+         "templates/banner.txt"
+        ]
+       }
+      ],
+      "edit": [
+       "tools/build.py",
+       "src/settings.json",
+       "templates/banner.txt"
+      ],
+      "hidden_inputs": 4
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 97.0,
+   "reduction_vs_pilot_observed_percent": null
+  },
+  {
+   "case": "case02",
+   "task_class": "generated-intermediate",
+   "pilot_observed": {
+    "whyfs_commands": 3,
+    "whyfs_operations": 8,
+    "bytes": 9238
+   },
+   "old_equivalent": {
+    "calls": 3,
+    "bytes": 12841,
+    "detail": [
+     {
+      "call": "why dist/release.txt",
+      "bytes": 1025
+     },
+     {
+      "call": "why .build/release.json",
+      "bytes": 1028
+     },
+     {
+      "call": "label dist/release.txt",
+      "bytes": 10788
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 459,
+    "detail": [
+     {
+      "call": "ask sources path=dist/release.txt",
+      "bytes": 459
+     }
+    ],
+    "answers": [
+     {
+      "q": "sources",
+      "path": "dist/release.txt",
+      "status": "observed",
+      "attributable": true,
+      "generated": true,
+      "chain": [
+       {
+        "file": "dist/release.txt",
+        "by": "/usr/bin/python3 tools/stage2.py",
+        "inputs": [
+         "tools/stage2.py",
+         ".build/release.json"
+        ]
+       },
+       {
+        "file": ".build/release.json",
+        "by": "/usr/bin/python3 tools/stage1.py",
+        "inputs": [
+         "tools/stage1.py",
+         "src/release.json"
+        ]
+       }
+      ],
+      "edit": [
+       "tools/stage2.py",
+       "tools/stage1.py",
+       "src/release.json"
+      ],
+      "hidden_inputs": 8
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 96.4,
+   "reduction_vs_pilot_observed_percent": 95.0
+  },
+  {
+   "case": "case03",
+   "task_class": "dependency-impact",
+   "pilot_observed": {
+    "whyfs_commands": 3,
+    "whyfs_operations": 5,
+    "bytes": 9125
+   },
+   "old_equivalent": {
+    "calls": 1,
+    "bytes": 879135,
+    "detail": [
+     {
+      "call": "impact src/colors.json",
+      "bytes": 879135
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 1469,
+    "detail": [
+     {
+      "call": "ask dependents path=src/colors.json",
+      "bytes": 1469
+     }
+    ],
+    "answers": [
+     {
+      "q": "dependents",
+      "path": "src/colors.json",
+      "observed": [
+       {
+        "file": "dist/web.css",
+        "via": "python3 tools/build.py",
+        "one_of": 3
+       },
+       {
+        "file": "dist/theme.json",
+        "via": "python3 tools/build.py",
+        "one_of": 3
+       },
+       {
+        "file": "docs/palette.md",
+        "via": "python3 tools/build.py",
+        "one_of": 3
+       },
+       {
+        "file": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/agent-homes/05-case03-whyfs/state_5.sqlite",
+        "via": "/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex exec --json --ignore-user-config --mo\u2026"
+       }
+      ],
+      "count": 4,
+      "broad_readers": [
+       {
+        "via": "/usr/local/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex exec --json --ignore-user-config --mo\u2026",
+        "wrote": 270
+       },
+       {
+        "via": "through a broad reader's outputs",
+        "wrote": 2
+       }
+      ],
+      "broad_readers_note": "these programs wrote many files after reading it; whether any of those files used it is not observable (whyfs impact FILE lists them)",
+      "vcs_metadata": 7,
+      "observed_only": true,
+      "not_proof_of_safety": true,
+      "gaps_since_written": [
+       "whyfs was not recording from 2026-09-28T21:27:08-07:00 to 2026-09-28T21:29:15-07:00 (the observer stopped unexpectedly)",
+       "whyfs was not recording from 2026-09-28T21:29:48-07:00 to 2026-09-28T21:30:28-07:00 (the observer stopped unexpectedly)",
+       "whyfs was not recording from 2026-09-28T21:30:28-07:00 to 2026-09-28T21:31:18-07:00 (the observer stopped unexpectedly)"
+      ]
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 99.8,
+   "reduction_vs_pilot_observed_percent": 83.9
+  },
+  {
+   "case": "case04",
+   "task_class": "stale-output",
+   "pilot_observed": {
+    "whyfs_commands": 3,
+    "whyfs_operations": 11,
+    "bytes": 11842
+   },
+   "old_equivalent": {
+    "calls": 3,
+    "bytes": 12645,
+    "detail": [
+     {
+      "call": "why dist/mobile.json",
+      "bytes": 1181
+     },
+     {
+      "call": "why dist/web.json",
+      "bytes": 1178
+     },
+     {
+      "call": "label dist/mobile.json",
+      "bytes": 10286
+     }
+    ]
+   },
+   "new": {
+    "calls": 2,
+    "bytes": 720,
+    "detail": [
+     {
+      "call": "ask sources path=dist/mobile.json",
+      "bytes": 363
+     },
+     {
+      "call": "ask sources path=dist/web.json",
+      "bytes": 357
+     }
+    ],
+    "answers": [
+     {
+      "q": "sources",
+      "path": "dist/mobile.json",
+      "status": "observed",
+      "attributable": true,
+      "generated": true,
+      "chain": [
+       {
+        "file": "dist/mobile.json",
+        "by": "python3 tools/build.py",
+        "inputs": [
+         "tools/build.py",
+         "src/api.json",
+         "config/targets.json"
+        ],
+        "shared_with_outputs": 1
+       }
+      ],
+      "edit": [
+       "tools/build.py",
+       "src/api.json",
+       "config/targets.json"
+      ],
+      "hidden_inputs": 4
+     },
+     {
+      "q": "sources",
+      "path": "dist/web.json",
+      "status": "observed",
+      "attributable": true,
+      "generated": true,
+      "chain": [
+       {
+        "file": "dist/web.json",
+        "by": "python3 tools/build.py",
+        "inputs": [
+         "tools/build.py",
+         "src/api.json",
+         "config/targets.json"
+        ],
+        "shared_with_outputs": 1
+       }
+      ],
+      "edit": [
+       "tools/build.py",
+       "src/api.json",
+       "config/targets.json"
+      ],
+      "hidden_inputs": 4
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 94.3,
+   "reduction_vs_pilot_observed_percent": 93.9
+  },
+  {
+   "case": "case05",
+   "task_class": "agent-produced-files",
+   "pilot_observed": {
+    "whyfs_commands": 5,
+    "whyfs_operations": 9,
+    "bytes": 95078
+   },
+   "old_equivalent": {
+    "calls": 2,
+    "bytes": 81624,
+    "detail": [
+     {
+      "call": "sessions",
+      "bytes": 80010
+     },
+     {
+      "call": "recent work",
+      "bytes": 1614
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 499,
+    "detail": [
+     {
+      "call": "ask session task=Dependency audit for checkout under=work",
+      "bytes": 499
+     }
+    ],
+    "answers": [
+     {
+      "q": "session",
+      "matched_elsewhere": 3,
+      "matched": [
+       {
+        "session": "fixture-audit-whyfs-1790655090270161011",
+        "agent": "FixtureAgent",
+        "source": "registered",
+        "started": "2026-09-28T21:11:30-07:00",
+        "task": "Dependency audit for checkout"
+       }
+      ],
+      "files": [
+       {
+        "path": "work/beta.json",
+        "action": "written"
+       },
+       {
+        "path": "work/alpha.md",
+        "action": "written"
+       }
+      ],
+      "other_writers_under": [
+       {
+        "path": "work/delta.json",
+        "by": "python3.12",
+        "agent": null
+       },
+       {
+        "path": "work/gamma.md",
+        "by": "python3.12",
+        "agent": null
+       }
+      ]
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 99.4,
+   "reduction_vs_pilot_observed_percent": 99.5
+  },
+  {
+   "case": "case06",
+   "task_class": "rename-lineage",
+   "pilot_observed": {
+    "whyfs_commands": 3,
+    "whyfs_operations": 7,
+    "bytes": 11101
+   },
+   "old_equivalent": {
+    "calls": 2,
+    "bytes": 12257,
+    "detail": [
+     {
+      "call": "why dist/summary.txt",
+      "bytes": 1668
+     },
+     {
+      "call": "label dist/summary.txt",
+      "bytes": 10589
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 343,
+    "detail": [
+     {
+      "call": "ask sources path=dist/summary.txt",
+      "bytes": 343
+     }
+    ],
+    "answers": [
+     {
+      "q": "sources",
+      "path": "dist/summary.txt",
+      "status": "observed",
+      "attributable": true,
+      "generated": true,
+      "chain": [
+       {
+        "file": "dist/summary.txt",
+        "by": "python3 tools/build.py",
+        "inputs": [
+         "tools/build.py",
+         "content/report.json"
+        ],
+        "moved_from": [
+         ".work/summary.part"
+        ]
+       }
+      ],
+      "edit": [
+       "tools/build.py",
+       "content/report.json"
+      ],
+      "hidden_inputs": 4
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 97.2,
+   "reduction_vs_pilot_observed_percent": 96.9
+  },
+  {
+   "case": "case07",
+   "task_class": "observation-gap",
+   "pilot_observed": {
+    "whyfs_commands": 10,
+    "whyfs_operations": 21,
+    "bytes": 22441
+   },
+   "old_equivalent": {
+    "calls": 2,
+    "bytes": 3195,
+    "detail": [
+     {
+      "call": "why vendor/cache/module.dat",
+      "bytes": 5
+     },
+     {
+      "call": "label vendor/cache/module.dat",
+      "bytes": 3190
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 313,
+    "detail": [
+     {
+      "call": "ask origin path=vendor/cache/module.dat",
+      "bytes": 313
+     }
+    ],
+    "answers": [
+     {
+      "q": "origin",
+      "path": "vendor/cache/module.dat",
+      "attributable": false,
+      "complete": false,
+      "status": "unknown",
+      "reason": "no_observed_write",
+      "possible": [
+       "created before whyfs recorded it",
+       "outside the recording scope",
+       "written by a process you cannot see"
+      ],
+      "recording_since": "2026-09-27T17:14:14-07:00"
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 90.2,
+   "reduction_vs_pilot_observed_percent": 98.6
+  },
+  {
+   "case": "case08",
+   "task_class": "multiple-generators",
+   "pilot_observed": {
+    "whyfs_commands": 3,
+    "whyfs_operations": 5,
+    "bytes": 6180
+   },
+   "old_equivalent": {
+    "calls": 2,
+    "bytes": 11995,
+    "detail": [
+     {
+      "call": "why dist/package.json",
+      "bytes": 1006
+     },
+     {
+      "call": "label dist/package.json",
+      "bytes": 10989
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 804,
+    "detail": [
+     {
+      "call": "ask origin path=dist/package.json",
+      "bytes": 804
+     }
+    ],
+    "answers": [
+     {
+      "q": "origin",
+      "path": "dist/package.json",
+      "status": "observed",
+      "attributable": true,
+      "written_by": {
+       "cmd": "python3 tools/build_legacy.py",
+       "program": "python3.12",
+       "at": "2026-09-28T21:23:22-07:00"
+      },
+      "created": "2026-09-28T21:11:30-07:00",
+      "user": "ftmon",
+      "agent": {
+       "name": "Codex CLI",
+       "session": "detected:codex-cli:daemon-c456abef3baf41afa201004ecf552631:69914872544",
+       "source": "detected"
+      },
+      "complete": true,
+      "later_gaps": [
+       "whyfs was not recording from 2026-09-28T21:27:08-07:00 to 2026-09-28T21:29:15-07:00 (the observer stopped unexpectedly)",
+       "whyfs was not recording from 2026-09-28T21:29:48-07:00 to 2026-09-28T21:30:28-07:00 (the observer stopped unexpectedly)",
+       "whyfs was not recording from 2026-09-28T21:30:28-07:00 to 2026-09-28T21:31:18-07:00 (the observer stopped unexpectedly)"
+      ]
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 93.3,
+   "reduction_vs_pilot_observed_percent": 87.0
+  },
+  {
+   "case": "case09",
+   "task_class": "downstream-safety",
+   "pilot_observed": {
+    "whyfs_commands": 3,
+    "whyfs_operations": 11,
+    "bytes": 8465
+   },
+   "old_equivalent": {
+    "calls": 2,
+    "bytes": 11511,
+    "detail": [
+     {
+      "call": "impact cache/schema.idx",
+      "bytes": 332
+     },
+     {
+      "call": "label cache/schema.idx",
+      "bytes": 11179
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 590,
+    "detail": [
+     {
+      "call": "ask dependents path=cache/schema.idx",
+      "bytes": 590
+     }
+    ],
+    "answers": [
+     {
+      "q": "dependents",
+      "path": "cache/schema.idx",
+      "observed": [
+       {
+        "file": "dist/app.bundle",
+        "via": "python3 tools/compile_bundle.py"
+       }
+      ],
+      "count": 1,
+      "observed_only": true,
+      "not_proof_of_safety": true,
+      "gaps_since_written": [
+       "whyfs was not recording from 2026-09-28T21:27:08-07:00 to 2026-09-28T21:29:15-07:00 (the observer stopped unexpectedly)",
+       "whyfs was not recording from 2026-09-28T21:29:48-07:00 to 2026-09-28T21:30:28-07:00 (the observer stopped unexpectedly)",
+       "whyfs was not recording from 2026-09-28T21:30:28-07:00 to 2026-09-28T21:31:18-07:00 (the observer stopped unexpectedly)"
+      ]
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 94.9,
+   "reduction_vs_pilot_observed_percent": 93.0
+  },
+  {
+   "case": "case10",
+   "task_class": "recent-build",
+   "pilot_observed": {
+    "whyfs_commands": 3,
+    "whyfs_operations": 13,
+    "bytes": 7944
+   },
+   "old_equivalent": {
+    "calls": 1,
+    "bytes": 16211,
+    "detail": [
+     {
+      "call": "recent .",
+      "bytes": 16211
+     }
+    ]
+   },
+   "new": {
+    "calls": 1,
+    "bytes": 1220,
+    "detail": [
+     {
+      "call": "ask changes under=.",
+      "bytes": 1220
+     }
+    ],
+    "answers": [
+     {
+      "q": "changes",
+      "under": ".",
+      "since": "2026-09-27T23:04:22-07:00",
+      "groups": [
+       {
+        "by": "python3 tools/build_deploy.py",
+        "at": "2026-09-28T21:26:40-07:00",
+        "agent": {
+         "name": "Codex CLI",
+         "source": "detected"
+        },
+        "written": [
+         "logs/build-summary.json",
+         "dist/web.js",
+         "dist/api.json"
+        ]
+       },
+       {
+        "by": "node /usr/local/bin/codex exec --json --ignore-user-config --model gpt-5.6-sol -c 'model_reasoning_effort=\"medium\"' --dangerously-bypass-approvals-and-sandbox \u2026",
+        "at": "2026-09-28T21:26:33-07:00",
+        "agent": null,
+        "written": [
+         "config/deploy.json"
+        ]
+       },
+       {
+        "by": "python3 /mnt/c/Users/ftmon/Downloads/githubtestwhyfs/benchmark_tools/whyfs_benchmark.py setup-public /home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128 /\u2026",
+        "at": "2026-09-28T21:11:32-07:00",
+        "agent": null,
+        "written": [
+         "docs/reference.md",
+         "tools/check.py",
+         "tools/build_deploy.py",
+         "tools/build_docs.py",
+         "README.md",
+         ".gitignore"
+        ]
+       }
+      ],
+      "vcs_metadata": 39,
+      "recording_gaps": [
+       {
+        "from": "2026-09-28T07:28:57-07:00",
+        "to": "2026-09-28T08:27:40-07:00",
+        "after_crash": true
+       },
+       {
+        "from": "2026-09-28T08:28:03-07:00",
+        "to": "2026-09-28T08:29:03-07:00",
+        "after_crash": true
+       },
+       {
+        "from": "2026-09-28T08:29:03-07:00",
+        "to": "2026-09-28T08:58:40-07:00",
+        "after_crash": true
+       }
+      ]
+     }
+    ]
+   },
+   "reduction_vs_old_equivalent_percent": 92.5,
+   "reduction_vs_pilot_observed_percent": 84.6
+  }
+ ],
+ "discovery_bytes": {
+  "--help": 2444,
+  "ask": 724
+ }
+}

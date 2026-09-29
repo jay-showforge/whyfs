@@ -45,6 +45,7 @@ from the request.
 
 | Op | Params | Result |
 |---|---|---|
+| `ask` | `question` (`origin`, `sources`, `dependents`, `session`, `changes`), `path` or `task`/`session`/`agent`/`under`/`since_ns`, `base?` | one small answer ([Questions](#questions-whyfs-ask)) |
 | `explain_file` | `path` | `{"label": <label>, "text": <human label>}` |
 | `get_file_provenance` | `path`, `include_noise?` | the label (below) |
 | `get_file_history` | `path`, `limit?` | writes, moves, deletes, and the first read by each other process; newest first |
@@ -60,6 +61,69 @@ from the request.
 | `why` / `history` / `impact` | `path` … | the JSON of `whyfs why/history/impact --json` |
 | `status` | — | collector state, `collector_ready`, loss counters, store size, retention policy, scope rules, your view |
 | `forget` | `path` or `everything: true` | deletes records: your own, or anyone's for an administrator |
+
+## Questions (`whyfs ask`)
+
+One provenance question, one small JSON answer: the questions an agent actually asks before it
+edits, deletes or attributes a file.  Each answer is a compact projection over the same evidence
+and rules as the label, `why`, `impact` and the session operations; it never decides differently,
+and it keeps every qualifier that could change a decision.  Lists are bounded (20 entries; the
+rest are counted as `<list>_more`).  Paths under `base` (the CLI passes its working directory)
+are relative to it.  Full evidence: `whyfs label FILE --json`, `whyfs impact FILE`,
+`whyfs history FILE --limit 0`.
+
+```
+whyfs ask                      the questions (about 700 bytes)
+whyfs ask --schema             the same, as JSON tool definitions
+whyfs ask origin FILE          whyfs ask sources FILE          whyfs ask dependents FILE
+whyfs ask session --task TEXT | --session ID | --agent NAME [--under DIR] [--since 2h]
+whyfs ask changes [DIR] [--since 2h]
+```
+
+**`origin`** -- who or what wrote the file, and whether attribution is justified.
+
+| `status` | `attributable` | fields |
+|---|---|---|
+| `observed` | `true` | `written_by` {`cmd` (redacted, at most 160 characters), `program`, `at`}, `created` (when earlier than the last write), `user`, `moved_from`, `agent` {`name`, `session`, `source`: `registered` \| `detected`, `task` only when the session supplied one}, `complete`, `gaps`, `later_gaps`, `identity` (only when not `match`), `note` |
+| `unknown` | `false` | `reason`: `no_observed_write` (with `possible` causes), `observation_gap` (`gap` {`from`, `to`, `after_crash`}, `file_time`), `before_recording` (`file_time`, `recording_since`), `no_record` (the file does not exist) |
+| `replaced` | `false` | `reason`: `identity_mismatch` \| `removed_then_unobserved`; `previous_file` {`cmd`, `program`, `at`}: the file observed there before, which is not this one |
+
+```json
+{"q": "origin", "path": "dist/banner.txt", "status": "observed", "attributable": true,
+ "written_by": {"cmd": "python3 tools/build.py", "program": "python3.12", "at": "2026-09-28T21:11:30-07:00"},
+ "user": "jay", "agent": null, "complete": true}
+{"q": "origin", "path": "vendor/cache/module.dat", "attributable": false, "complete": false, "status": "unknown",
+ "reason": "observation_gap", "file_time": {"last_modified": "..."}, "gap": {"from": "...", "to": "...", "after_crash": true}}
+```
+
+**`sources`** -- what to edit.  `generated` (an observed process wrote it after reading inputs,
+and did not write so many files that which input produced it is unknowable); `chain` (each
+generated file on the way: `file`, `by`, `inputs`); `edit` (the inputs at the end of the chain:
+sources and the tools that read them); `hidden_inputs` (system/runtime/dependency reads not
+shown); `ambiguous` when the writer wrote many files.  When the origin is not `observed`, `edit`
+is `null` and the `origin` reason is given.
+
+**`dependents`** -- observed downstream outputs.  `observed` [{`file`, `from` (when reached
+through another file), `via` (the command), `one_of` (the reader wrote this many outputs after
+reading it: which used it is not observable)}], `count`; `broad_readers` [{`via`, `wrote`}]
+(programs that wrote more files after reading it than the label's ambiguity limit -- an agent
+or an editor saving its own state, an indexer -- counted, not listed, with everything reached
+through them); `vcs_metadata` (version-control bookkeeping such as `.git/index` written after
+reading it, counted); always `observed_only: true` and `not_proof_of_safety: true`: an empty
+list never means removing or changing the file is safe; `gaps_since_written` when recording
+was interrupted since.
+
+**`session`** -- files written by the agent sessions whose supplied `task` text, `session` id or
+`agent` name matches.  `matched` [{`session`, `agent`, `source`, `started`, `task` as supplied}];
+with `under`, only sessions that wrote there are listed (`matched_elsewhere` counts the others),
+and `other_writers_under` lists the other files there with who wrote them; `files` [{`path`,
+`action`, `session` (index into `matched` when several)}].  A task is known only when a session
+supplied one; whyfs never infers one.
+
+**`changes`** -- recent changes under a directory, newest first, grouped by the command that
+made them (a build driver's child processes join its group; a shell or an agent does not):
+`groups` [{`by`, `at`, `agent`, `written`, `moved_here`, `deleted`}], `more_groups`,
+`vcs_metadata`, `recording_gaps` in the window.
 
 ## The label (`whyfs-label/1`)
 

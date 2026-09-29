@@ -1,0 +1,485 @@
+[
+ {
+  "case": "case01",
+  "commands": 0,
+  "ops": {},
+  "whyfs_bytes": 0,
+  "calls": []
+ },
+ {
+  "case": "case02",
+  "commands": 3,
+  "ops": {
+   "(bare)": 1,
+   "--help": 1,
+   "why": 4,
+   "history": 1,
+   "impact": 1
+  },
+  "whyfs_bytes": 9238,
+  "calls": [
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 3213,
+    "cmd": "/bin/bash -lc \"git status --short; git log --oneline --decorate -8; sed -n '1,220p' README.md; for f in tools/*.py src/release.json .build/release.json dist/release.txt .gitignore; do echo \\\"### \"'$f\"; sed -n '\"'1,240p' \\\"\"'$f\"; done; command -v whyfs || true; whyfs --help 2>&1 | sed -n '\"'1,220p'\"",
+    "out_head": "3c59987 (HEAD -> master) fixture state\nThe release pipeline is `python3 tools/build.py`.\n### tools/build.py\nimport subprocess,sys\nsubprocess.run([sys.executable,'tools/stage1.py'],check=True)\nsubproce"
+   },
+   {
+    "ops": [
+     "why",
+     "why",
+     "history",
+     "impact"
+    ],
+    "bytes": 5452,
+    "cmd": "/bin/bash -lc \"whyfs why dist/release.txt 2>&1; whyfs why .build/release.json 2>&1; whyfs history dist/release.txt 2>&1 | sed -n '1,240p'; whyfs impact src/release.json 2>&1 | sed -n '1,240p'\"",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case02-whyfs/src/release.json\n\u251c\u2500\u2500 /home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case02-whyfs/.git/index.lock\n\u2502   via /us"
+   },
+   {
+    "ops": [
+     "why",
+     "why"
+    ],
+    "bytes": 573,
+    "cmd": "/bin/bash -lc \"python3 tools/build.py && python3 tools/check.py && printf 'source: '; cat src/release.json; printf 'stage1: '; cat .build/release.json; printf 'stage2: '; cat dist/release.txt; git diff --check; git diff -- src/release.json; git status --short; whyfs why dist/release.txt 2>&1; whyfs ",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case02-whyfs/.build/release.json\n\u2514\u2500\u2500 created by /usr/bin/python3.12  (pid 459)\n    run: /usr/bin/python3 tools/stage1.py\n    parent: /usr"
+   }
+  ]
+ },
+ {
+  "case": "case03",
+  "commands": 3,
+  "ops": {
+   "(bare)": 2,
+   "--help": 1,
+   "impact": 2
+  },
+  "whyfs_bytes": 9125,
+  "calls": [
+   {
+    "ops": [
+     "(bare)"
+    ],
+    "bytes": 302,
+    "cmd": "/bin/bash -lc \"pwd && rg --files -g '\"'!*node_modules*'\"' -g '\"'!*.git*'\"' | sed -n '1,200p' && rg -n \\\"colors\\\\.json|#336699|WhyFS|whyfs\\\" . -g '\"'!*node_modules*'\"' -g '\"'!*.git*'\"'\"",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case03-whyfs\nREADME.md\nsrc/colors.json\ntools/build.py\ntools/check.py\n./src/colors.json:1:{\"primary\": \"#336699\", \"accent\": \"#D97706\"}\n./to"
+   },
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 2945,
+    "cmd": "/bin/bash -lc \"git status --short && find . -maxdepth 3 -type f -not -path './.git/*' -print | sort && sed -n '1,240p' README.md && sed -n '1,240p' tools/build.py && sed -n '1,240p' tools/check.py && command -v whyfs || true && whyfs --help 2>/dev/null | sed -n '1,160p'\"",
+    "out_head": "./.gitignore\n./README.md\n./dist/theme.json\n./dist/web.css\n./docs/palette.md\n./src/colors.json\n./tools/build.py\n./tools/check.py\nBuild all theme formats with `python3 tools/build.py`.\nfrom pathlib impo"
+   },
+   {
+    "ops": [
+     "impact",
+     "impact"
+    ],
+    "bytes": 5878,
+    "cmd": "/bin/bash -lc 'whyfs impact --help && whyfs impact src/colors.json'",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case03-whyfs/src/colors.json\n\u251c\u2500\u2500 /home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case03-whyfs/.git/index.lock\n\u2502   via /usr"
+   }
+  ]
+ },
+ {
+  "case": "case04",
+  "commands": 3,
+  "ops": {
+   "(bare)": 1,
+   "--help": 1,
+   "why": 5,
+   "history": 3,
+   "impact": 1
+  },
+  "whyfs_bytes": 11842,
+  "calls": [
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 3118,
+    "cmd": "/bin/bash -lc \"git log --oneline --decorate --all --max-count=20 && git log -p -- config/targets.json tools/build.py src/api.json dist/mobile.json dist/web.json && command -v whyfs || true && whyfs --help 2>&1 | sed -n '1,220p'\"",
+    "out_head": "998f148 (HEAD -> master) fixture state\ncommit 998f148b4511d62748ac1b18f1e04a9d59617628\nAuthor: WhyFS Benchmark <benchmark@example.invalid>\nDate:   Mon Sep 28 21:11:29 2026 -0700\n\n    fixture state\n\ndi"
+   },
+   {
+    "ops": [
+     "why",
+     "history",
+     "why",
+     "history",
+     "why",
+     "history",
+     "impact"
+    ],
+    "bytes": 7129,
+    "cmd": "/bin/bash -lc 'whyfs why dist/mobile.json 2>&1; whyfs history dist/mobile.json 2>&1; whyfs why dist/web.json 2>&1; whyfs history dist/web.json 2>&1; whyfs why config/targets.json 2>&1; whyfs history config/targets.json 2>&1; whyfs impact config/targets.json 2>&1'",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case04-whyfs/config/targets.json\n\u2514\u2500\u2500 created by /usr/bin/python3.12  (pid 428)\n    run: python3 /mnt/c/Users/ftmon/Downloads/githubtestwh"
+   },
+   {
+    "ops": [
+     "why",
+     "why"
+    ],
+    "bytes": 1595,
+    "cmd": "/bin/bash -lc \"cat .gitignore && git ls-files dist || true && stat -c '%n %y' dist/web.json dist/mobile.json && whyfs why dist/mobile.json 2>&1 | sed -n '1,40p'; whyfs why dist/web.json 2>&1 | sed -n '1,40p'\"",
+    "out_head": "__pycache__/\n*.pyc\ndist/\ndist/web.json 2026-09-28 21:16:26.236561782 -0700\ndist/mobile.json 2026-09-28 21:16:26.236561782 -0700\n/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case04-wh"
+   }
+  ]
+ },
+ {
+  "case": "case05",
+  "commands": 5,
+  "ops": {
+   "help": 1,
+   "--help": 1,
+   "status": 1,
+   "recent": 2,
+   "search": 1,
+   "label": 2,
+   "api:list_agent_sessions": 1
+  },
+  "whyfs_bytes": 95078,
+  "calls": [
+   {
+    "ops": [
+     "help",
+     "--help"
+    ],
+    "bytes": 2396,
+    "cmd": "/bin/bash -lc \"git status --short && git log --oneline --decorate -8 && printf '%s\\\\n' '--- file contents ---' && for f in work/*; do printf '%s\\\\n' \\\"[\"'$f]\"; sed -n '\"'1,160p' \\\"\"'$f\"; done && printf '\"'%s\\\\n' '--- whyfs help ---' && whyfs --help\"",
+    "out_head": "c01db55 (HEAD -> master) fixture state\n--- file contents ---\n[work/alpha.md]\n# Dependency audit\n\nstatus=pending\n[work/beta.json]\n{\"packages\": [\"core\", \"ui\"], \"risk\": \"low\"}\n[work/delta.json]\n{\"cache_e"
+   },
+   {
+    "ops": [
+     "status",
+     "recent",
+     "search",
+     "label"
+    ],
+    "bytes": 1504,
+    "cmd": "/bin/bash -lc 'whyfs status && whyfs recent --help && whyfs search --help && whyfs label --help'",
+    "out_head": "usage: whyfs recent [-h] [--hours HOURS] [--under UNDER] [--limit LIMIT]\n                    [--json]\n\noptions:\n  -h, --help     show this help message and exit\n  --hours HOURS\n  --under UNDER  only p"
+   },
+   {
+    "ops": [
+     "api:list_agent_sessions"
+    ],
+    "bytes": 72754,
+    "cmd": "/bin/bash -lc \"whyfs api list_agent_sessions '{}'\"",
+    "out_head": "{\n  \"v\": 1,\n  \"ok\": true,\n  \"result\": [\n    {\n      \"session_id\": \"detected:codex-cli:daemon-c456abef3baf41afa201004ecf552631:37329316164\",\n      \"agent_name\": \"Codex CLI\",\n      \"agent_version\": null"
+   },
+   {
+    "ops": [
+     "label"
+    ],
+    "bytes": 16940,
+    "cmd": "/bin/bash -lc 'for f in work/*; do echo \"[$f]\"; whyfs label --json \"$f\"; done'",
+    "out_head": "[work/alpha.md]\n{\n  \"schema\": \"whyfs-label/1\",\n  \"path\": \"/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case05-whyfs/work/alpha.md\",\n  \"exists\": true,\n  \"history\": [\n    {\n      \"ts_n"
+   },
+   {
+    "ops": [
+     "recent"
+    ],
+    "bytes": 1484,
+    "cmd": "/bin/bash -lc 'whyfs recent --under \"$PWD/work\" --hours 24 --limit 50 --json'",
+    "out_head": "[\n  {\n    \"path\": \"/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case05-whyfs/work/delta.json\",\n    \"action\": \"written\",\n    \"ts_ns\": 1790655090685416581,\n    \"at\": \"2026-09-28T21:11:"
+   }
+  ]
+ },
+ {
+  "case": "case06",
+  "commands": 3,
+  "ops": {
+   "(bare)": 1,
+   "--help": 1,
+   "status": 1,
+   "why": 2,
+   "history": 1,
+   "impact": 1
+  },
+  "whyfs_bytes": 11101,
+  "calls": [
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 3112,
+    "cmd": "/bin/bash -lc \"ls -la\nsed -n '1,240p' README.md\nsed -n '1,240p' tools/build.py\nsed -n '1,200p' tools/check.py\ngit status --short --branch\ncommand -v whyfs || true\nwhyfs --help 2>&1 | sed -n '1,240p'\"",
+    "out_head": "total 36\ndrwxr-xr-x  7 ftmon ftmon 4096 Sep 28 21:11 .\ndrwxr-xr-x 22 ftmon ftmon 4096 Sep 28 21:11 ..\ndrwxr-xr-x  8 ftmon ftmon 4096 Sep 28 21:11 .git\n-rw-r--r--  1 ftmon ftmon   32 Sep 28 21:11 .giti"
+   },
+   {
+    "ops": [
+     "status",
+     "why",
+     "history",
+     "impact"
+    ],
+    "bytes": 6763,
+    "cmd": "/bin/bash -lc 'whyfs status 2>&1\nwhyfs why dist/summary.txt 2>&1\nwhyfs history dist/summary.txt 2>&1\nwhyfs impact content/report.json 2>&1'",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case06-whyfs/dist/summary.txt\n\u251c\u2500\u2500 moved from /home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case06-whyfs/.work/summary.pa"
+   },
+   {
+    "ops": [
+     "why"
+    ],
+    "bytes": 1226,
+    "cmd": "/bin/bash -lc \"python3 tools/build.py\npython3 tools/check.py\nrg -n --hidden -g '\"'!.git'\"' \\\"Quarterly Summry|Quarterly Summary\\\" . || true\ngit status --short\ngit diff -- content/report.json dist/summary.txt\nwhyfs why dist/summary.txt 2>&1\"",
+    "out_head": "ok\n./content/report.json:1:{\"title\": \"Quarterly Summary\", \"quarter\": \"Q3\"}\n./tools/check.py:3:assert (r/'dist/summary.txt').read_text() == 'Quarterly Summary (Q3)\\n'\n M content/report.json\ndiff --git "
+   }
+  ]
+ },
+ {
+  "case": "case07",
+  "commands": 10,
+  "ops": {
+   "(bare)": 4,
+   "--help": 1,
+   "why": 3,
+   "history": 2,
+   "label": 2,
+   "status": 1,
+   "search": 3,
+   "recent": 2,
+   "--since": 2,
+   "--limit": 1
+  },
+  "whyfs_bytes": 22441,
+  "calls": [
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 4598,
+    "cmd": "/bin/bash -lc \"command -v whyfs || true\nwhyfs --help 2>&1 | sed -n '1,240p'\nstat -c '%n | inode=%i | size=%s | mode=%a | mtime=%y | ctime=%z | birth=%w' vendor/cache/module.dat fixtures/vendor_seed.bin tools/cache_vendor.py\nsha256sum vendor/cache/module.dat fixtures/vendor_seed.bin\ngit show --stat -",
+    "out_head": "/usr/bin/whyfs\nusage: whyfs [-h] [--version]\n             {init,trace,label,agent,recent,search,ui,status,forget,api,machine,why,history,impact,stats,doctor,daemon,service,_daemon-worker}\n            "
+   },
+   {
+    "ops": [
+     "why",
+     "history",
+     "label",
+     "status"
+    ],
+    "bytes": 250,
+    "cmd": "/bin/bash -lc \"whyfs why --help 2>&1 | sed -n '1,220p'\nwhyfs history --help 2>&1 | sed -n '1,220p'\nwhyfs label --help 2>&1 | sed -n '1,220p'\nwhyfs status 2>&1 | sed -n '1,240p'\"",
+    "out_head": "whyfs service: collector running (since 2026-09-28 21:11)\n  your view: ftmon\n  labelled files 18690 \u00b7 events 327939 \u00b7 processes 62193 \u00b7 agent sessions 9\n  store 179.0 MiB \u00b7 lost events 0\n  retention: "
+   },
+   {
+    "ops": [
+     "why"
+    ],
+    "bytes": 5,
+    "cmd": "/bin/bash -lc 'whyfs why --json vendor/cache/module.dat'",
+    "out_head": "null\n"
+   },
+   {
+    "ops": [
+     "label"
+    ],
+    "bytes": 2195,
+    "cmd": "/bin/bash -lc 'whyfs label --json vendor/cache/module.dat'",
+    "out_head": "{\n  \"schema\": \"whyfs-label/1\",\n  \"path\": \"/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case07-whyfs/vendor/cache/module.dat\",\n  \"exists\": true,\n  \"history\": [\n    {\n      \"ts_ns\": 17"
+   },
+   {
+    "ops": [
+     "history"
+    ],
+    "bytes": 3,
+    "cmd": "/bin/bash -lc 'whyfs history --json vendor/cache/module.dat'",
+    "out_head": "[]\n"
+   },
+   {
+    "ops": [
+     "why"
+    ],
+    "bytes": 5,
+    "cmd": "/bin/bash -lc 'whyfs why --machine --json vendor/cache/module.dat'",
+    "out_head": "null\n"
+   },
+   {
+    "ops": [
+     "search",
+     "recent"
+    ],
+    "bytes": 1259,
+    "cmd": "/bin/bash -lc \"whyfs search --help 2>&1 | sed -n '1,260p'\nwhyfs recent --help 2>&1 | sed -n '1,220p'\npython3 tools/check.py\ngit diff --check\ngit status --short --ignored\"",
+    "out_head": "usage: whyfs search [-h] [--path PATH] [--under UNDER] [--creator CREATOR]\n                    [--user USER] [--agent AGENT] [--session SESSION]\n                    [--since SINCE] [--until UNTIL]\n   "
+   },
+   {
+    "ops": [
+     "search",
+     "(bare)",
+     "--since"
+    ],
+    "bytes": 3,
+    "cmd": "/bin/bash -lc 'whyfs search module.dat --under /home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case07-whyfs --since 2026-09-28T21:10:00-07:00 --until 2026-09-28T21:13:00-07:00 --json'",
+    "out_head": "[]\n"
+   },
+   {
+    "ops": [
+     "search",
+     "(bare)",
+     "--since"
+    ],
+    "bytes": 496,
+    "cmd": "/bin/bash -lc 'whyfs search vendor_seed.bin --under /home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case07-whyfs --since 2026-09-28T21:10:00-07:00 --until 2026-09-28T21:13:00-07:00 --json'",
+    "out_head": "[\n  {\n    \"path\": \"/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case07-whyfs/fixtures/vendor_seed.bin\",\n    \"last_action\": \"written\",\n    \"ts_ns\": 1790655090772529884,\n    \"at\": \"202"
+   },
+   {
+    "ops": [
+     "recent",
+     "(bare)",
+     "--limit"
+    ],
+    "bytes": 13627,
+    "cmd": "/bin/bash -lc 'whyfs recent --hours 1 --under /home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case07-whyfs --limit 100 --json'",
+    "out_head": "[\n  {\n    \"path\": \"/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case07-whyfs/.git/index.lock\",\n    \"action\": \"deleted\",\n    \"ts_ns\": 1790655669113310003,\n    \"at\": \"2026-09-28T21:21:"
+   }
+  ]
+ },
+ {
+  "case": "case08",
+  "commands": 3,
+  "ops": {
+   "(bare)": 1,
+   "--help": 1,
+   "why": 2,
+   "history": 1
+  },
+  "whyfs_bytes": 6180,
+  "calls": [
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 3291,
+    "cmd": "/bin/bash -lc \"find . -maxdepth 3 -type f -not -path './.git/*' -printf '%p\\\\n' | sort && git log --oneline --decorate -10 && git status --short && ls -la dist config tools && stat dist/package.json && command -v whyfs || true && whyfs --help 2>&1 | head -100\"",
+    "out_head": "./.gitignore\n./README.md\n./config/package.json\n./dist/package.json\n./tools/build_legacy.py\n./tools/build_standard.py\n./tools/check.py\na2add13 (HEAD -> master) fixture state\nconfig:\ntotal 12\ndrwxr-xr-x"
+   },
+   {
+    "ops": [
+     "why",
+     "history"
+    ],
+    "bytes": 1535,
+    "cmd": "/bin/bash -lc \"whyfs why dist/package.json && whyfs history dist/package.json && sed -n '1,200p' README.md && sed -n '1,120p' tools/build_legacy.py && sed -n '1,120p' tools/build_standard.py && cat config/package.json dist/package.json\"",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case08-whyfs/dist/package.json\n\u2514\u2500\u2500 created by /usr/bin/python3.12  (pid 566)\n    run: python3 tools/build_legacy.py\n    parent: /usr/bin/"
+   },
+   {
+    "ops": [
+     "why"
+    ],
+    "bytes": 1354,
+    "cmd": "/bin/bash -lc \"python3 tools/build_legacy.py && python3 tools/check.py && git diff --check && git diff -- tools/build_legacy.py dist/package.json && python3 - <<'PY'\nimport json\nfrom pathlib import Path\np = Path('dist/package.json')\ndata = json.loads(p.read_text())\nassert data['compression'] == 'def",
+    "out_head": "ok\ndiff --git a/tools/build_legacy.py b/tools/build_legacy.py\nindex 2a9e96f..513c4ef 100644\n--- a/tools/build_legacy.py\n+++ b/tools/build_legacy.py\n@@ -1,3 +1,3 @@\n from pathlib import Path\n import js"
+   }
+  ]
+ },
+ {
+  "case": "case09",
+  "commands": 3,
+  "ops": {
+   "(bare)": 1,
+   "--help": 1,
+   "status": 1,
+   "why": 3,
+   "history": 2,
+   "impact": 2,
+   "label": 1
+  },
+  "whyfs_bytes": 8465,
+  "calls": [
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 3189,
+    "cmd": "/bin/bash -lc \"command -v whyfs || true\nwhyfs --help 2>&1 | sed -n '1,240p'\nprintf '%s\\\\n' '--- repository history ---'\ngit log --oneline --decorate --all --stat\ngit log --all -- .gitignore README.md tools src\nprintf '%s\\\\n' '--- all textual references ---'\nrg -n --hidden --no-ignore -g '\"'!.git/obj",
+    "out_head": "/usr/bin/whyfs\nusage: whyfs [-h] [--version]\n             {init,trace,label,agent,recent,search,ui,status,forget,api,machine,why,history,impact,stats,doctor,daemon,service,_daemon-worker}\n            "
+   },
+   {
+    "ops": [
+     "status",
+     "why",
+     "history",
+     "impact",
+     "label",
+     "why",
+     "history",
+     "impact"
+    ],
+    "bytes": 3954,
+    "cmd": "/bin/bash -lc \"whyfs status\nprintf '%s\\\\n' '--- why help ---'\nwhyfs why --help\nprintf '%s\\\\n' '--- history help ---'\nwhyfs history --help\nprintf '%s\\\\n' '--- impact help ---'\nwhyfs impact --help\nprintf '%s\\\\n' '--- label ---'\nwhyfs label cache/schema.idx 2>&1 || true\nprintf '%s\\\\n' '--- why ---'\nwhy",
+    "out_head": "whyfs service: collector running (since 2026-09-28 21:11)\n  your view: ftmon\n  labelled files 20444 \u00b7 events 340534 \u00b7 processes 65518 \u00b7 agent sessions 9\n  store 185.9 MiB \u00b7 lost events 0\n  retention: "
+   },
+   {
+    "ops": [
+     "why"
+    ],
+    "bytes": 1322,
+    "cmd": "/bin/bash -lc \"printf '%s\\\\n' '--- source/index/bundle ---'\nsed -n '1,120p' src/schema.json\nsha256sum src/schema.json cache/schema.idx dist/app.bundle\nxxd -g1 dist/app.bundle\nprintf '%s\\\\n' '--- bundle provenance ---'\nwhyfs why dist/app.bundle\nprintf '%s\\\\n' '--- project checker ---'\npython3 tools/c",
+    "out_head": "--- source/index/bundle ---\n{\"entities\": [\"User\", \"Team\", \"Project\"]}\n5bc033c344608c5b83ef6e778fc976f518aa06ad753977665b1f4ef68c481f25  src/schema.json\na72799319980ad4f998f32b5c89cf6ce6a0a0e945857ffe6"
+   }
+  ]
+ },
+ {
+  "case": "case10",
+  "commands": 3,
+  "ops": {
+   "(bare)": 1,
+   "--help": 1,
+   "status": 1,
+   "recent": 1,
+   "why": 7,
+   "history": 2
+  },
+  "whyfs_bytes": 7944,
+  "calls": [
+   {
+    "ops": [
+     "(bare)",
+     "--help"
+    ],
+    "bytes": 4411,
+    "cmd": "/bin/bash -lc \"ls -la\nfind . -maxdepth 3 -type f -printf '%TY-%Tm-%Td %TH:%TM:%TS %p\\\\n' | sort -r | sed -n '1,120p'\ngit status --short\ngit log -5 --oneline --decorate\ncommand -v whyfs && whyfs --help\"",
+    "out_head": "total 40\ndrwxr-xr-x  8 ftmon ftmon 4096 Sep 28 21:11 .\ndrwxr-xr-x 22 ftmon ftmon 4096 Sep 28 21:11 ..\ndrwxr-xr-x  8 ftmon ftmon 4096 Sep 28 21:11 .git\n-rw-r--r--  1 ftmon ftmon   49 Sep 28 21:11 .giti"
+   },
+   {
+    "ops": [
+     "status",
+     "recent",
+     "why",
+     "why",
+     "why",
+     "why"
+    ],
+    "bytes": 3275,
+    "cmd": "/bin/bash -lc 'whyfs status\nwhyfs recent --help\nwhyfs recent .\nwhyfs why dist/api.json\nwhyfs why dist/web.js\nwhyfs why logs/build-summary.json\nwhyfs why docs/reference.md'",
+    "out_head": "usage: whyfs recent [-h] [--hours HOURS] [--under UNDER] [--limit LIMIT]\n                    [--json]\n\noptions:\n  -h, --help     show this help message and exit\n  --hours HOURS\n  --under UNDER  only p"
+   },
+   {
+    "ops": [
+     "why",
+     "why",
+     "why",
+     "history",
+     "history"
+    ],
+    "bytes": 258,
+    "cmd": "/bin/bash -lc \"cat .gitignore\ngit ls-files\nstat -c '%y %n' dist/api.json dist/web.js logs/build-summary.json docs/reference.md\nfor f in dist/api.json dist/web.js logs/build-summary.json; do echo \\\"FILE \"'$f\"; cat \"$f\"; done\nwhyfs why dist/api.json\nwhyfs why dist/web.js\nwhyfs why logs/build-summary.j",
+    "out_head": "/home/ftmon/whyfs-agent-efficiency-pilot-20260928T211128/cases/case10-whyfs/dist/api.json\n2026-09-28 21:26:40  io       /usr/bin/python3.12  \u00b7 python3 tools/build_deploy.py\n2026-09-28 21:11:33  io    "
+   }
+  ]
+ }
+]

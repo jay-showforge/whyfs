@@ -323,6 +323,24 @@ def op_get_files_by_agent(ctx, con, params):
     return sorted(files.values(), key=lambda f: -f["ts_ns"])[:limit]
 
 
+def op_ask(ctx, con, params):
+    """One provenance question, one small JSON answer (whyfs.ask; docs/AGENT_PROTOCOL.md "Questions").
+    params: question (origin | sources | dependents | session | changes), path, base (paths under it
+    are returned relative to it), task / session / agent / under / since_ns."""
+    from . import ask
+    q = str(params.get("question") or "")
+    p = dict(params)
+    if q in ("origin", "sources", "dependents"):
+        p["path"] = _path(params)
+    for k in ("base", "under"):
+        if p.get(k) and not os.path.isabs(str(p[k])):
+            raise ApiError(f"{k} must be absolute")
+    try:
+        return ask.ask(con, q, p, ctx)
+    except ask.ApiError as exc:
+        raise ApiError(str(exc))
+
+
 def op_why(ctx, con, params):
     """query.why, as `whyfs why --json` prints it (for tools written against the CLI)."""
     from .query import raw_process_events

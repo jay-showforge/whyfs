@@ -495,6 +495,48 @@ def cmd_search(a):
     return 0
 
 
+def cmd_ask(a):
+    """One provenance question, one small JSON answer (whyfs.ask)."""
+    from . import ask
+    if a.schema:
+        print(json.dumps(ask.SCHEMA, separators=(",", ":")))
+        return 0
+    if not a.question:
+        print(ask.INDEX)
+        return 0
+    if a.question not in ask.SCHEMA["questions"]:
+        raise SystemExit(f"whyfs ask: unknown question {a.question!r}\n{ask.INDEX}")
+    params = {"question": a.question, "base": os.getcwd()}
+    if a.question in ("origin", "sources", "dependents"):
+        if not a.target:
+            raise SystemExit(f"whyfs ask {a.question} FILE")
+        target = params["path"] = os.path.abspath(a.target)
+    else:
+        under = a.under or (a.target if a.question == "changes" else None)
+        if under:
+            params["under"] = os.path.abspath(under)
+        elif a.question == "changes":
+            params["under"] = os.getcwd()
+        for k in ("task", "session", "agent"):
+            if getattr(a, k):
+                params[k] = getattr(a, k)
+        if a.since:
+            params["since_ns"] = _when(a.since)
+        target = os.path.join(params.get("under") or os.getcwd(), ".")
+    if _workspace_of(target) is None:
+        result = _service("ask", **params)
+    else:  # an explicit workspace store (whyfs init): answered from it
+        _root, con = _root_and_con(target)
+        try:
+            result = ask.ask(con, a.question, params)
+        except ask.ApiError as exc:
+            raise SystemExit(f"whyfs ask: {exc}")
+        finally:
+            con.close()
+    print(json.dumps(result, ensure_ascii=False, separators=(", ", ": ")))
+    return 0
+
+
 def cmd_ui(a):
     """The WhyFS window: search and file labels in the browser (the menu entries run this)."""
     from . import ui
@@ -551,9 +593,23 @@ def cmd_daemon_worker(a):
 
 
 def parser():
-    p = argparse.ArgumentParser(prog="whyfs", description="Ask your filesystem where files came from.")
+    p = argparse.ArgumentParser(prog="whyfs", description="Ask your filesystem where files came from.  "
+                                "AI agents and scripts: `whyfs ask` answers one provenance question with one small "
+                                "JSON reply (origin, sources, dependents, session, changes).")
     p.add_argument("--version", action="version", version=f"whyfs {VERSION}")
     sp = p.add_subparsers(dest="cmd", required=True)
+
+    q = sp.add_parser("ask", help="for AI agents and scripts: one provenance question, one small JSON answer "
+                                  "(run `whyfs ask` for the questions)")
+    q.add_argument("question", nargs="?", help="origin | sources | dependents | session | changes")
+    q.add_argument("target", nargs="?", help="the file (origin, sources, dependents) or directory (changes)")
+    q.add_argument("--task", help="session: text in the task the agent session supplied")
+    q.add_argument("--session", help="session: session id")
+    q.add_argument("--agent", help="session: agent name")
+    q.add_argument("--under", help="session, changes: only files under this directory")
+    q.add_argument("--since", help="session, changes: 2h, 3d, today, or an ISO date/time")
+    q.add_argument("--schema", action="store_true", help="print the questions as JSON tool definitions")
+    q.set_defaults(func=cmd_ask)
 
     q = sp.add_parser("init")
     q.add_argument("path", nargs="?", default=".")

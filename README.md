@@ -64,8 +64,16 @@ A label answers, where evidence exists:
 
 ## For AI agents and tools
 
-Agents should ask WhyFS instead of guessing.  The local API speaks one JSON request and reply
-per line over:
+Agents should ask WhyFS instead of guessing.  The shortest way is `whyfs ask`: one question,
+one small JSON answer that keeps its uncertainty (`origin`, `sources`, `dependents`, `session`,
+`changes`; run `whyfs ask` for the list):
+
+```bash
+whyfs ask sources dist/app.js        # what to edit: the observed chain down to its source inputs
+whyfs ask origin vendor/blob.bin     # who wrote it, or attributable=false and why not
+```
+
+The local API speaks one JSON request and reply per line over:
 - Linux: `/run/whyfs/api.sock`;
 - Windows: `\\.\pipe\whyfs-api`.
 
