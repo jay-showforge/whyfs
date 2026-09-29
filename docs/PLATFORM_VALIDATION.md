@@ -1,7 +1,9 @@
 # Platform validation
 
 WhyFS 1.0 supports exactly: **Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.**
-macOS is not supported (a future/community target).
+macOS is not part of 1.0.0. It is in development on the `macos-support` branch:
+- it is functionally validated on SIP-disabled hosted runners;
+- its performance FAILED ([details below](#macos-development-branch-macos-support)).
 
 A platform counts as supported only with **native runtime evidence**: the package installs
 from a clean state, the collector runs on that CPU and kernel, the shared corpus and the
@@ -18,7 +20,7 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 | Linux x86-64 | **Supported** | GitHub `ubuntu-24.04`: kernel 6.17.0-1022-azure.  Also WSL2 (kernel 6.6.87.2) |
 | Linux ARM64 | **Supported** | GitHub `ubuntu-24.04-arm`: kernel 6.17.0-1022-azure, aarch64 |
 | WSL2 | **Supported** | covered by the Linux x86-64 package and gates, with systemd running `whyfs.service` |
-| macOS | **Not in 1.0.0.  In development** (branch `macos-support`): every executed gate passes on GitHub-hosted Intel and Apple Silicon Macs, which run with SIP disabled; a standard Mac needs Apple's Endpoint Security entitlement (BLOCKED_EXTERNAL).  [docs/MACOS.md](MACOS.md) and [the macOS section](#macos-development-branch-macos-support) | GitHub `macos-15-intel` (x86_64), `macos-15`, `macos-14`, `macos-26` (arm64) |
+| macOS | **Not in 1.0.0.  In development** (branch `macos-support`): functionally validated on GitHub-hosted Intel and Apple Silicon Macs, which run with SIP disabled.  **Performance FAILED:** Intel `make` +6.78 %, Apple Silicon spawn ×300 +6.29 %, and the long-history label gate on both.  A standard Mac needs Apple's Endpoint Security entitlement (BLOCKED_EXTERNAL, not tested).  [docs/MACOS.md](MACOS.md) and [the macOS section](#macos-development-branch-macos-support) | GitHub `macos-15-intel` (x86_64), `macos-15`, `macos-14`, `macos-26` (arm64) |
 
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
@@ -431,6 +433,137 @@ before the native runs:
 
 No timing claims were made from emulation, and none of it substitutes for the native results
 above.
+
+## macOS development branch (macos-support)
+
+**Status: MACOS FUNCTIONALLY VALIDATED — PERFORMANCE FAILED.**
+- macOS is **not part of 1.0.0**; tag `v1.0.0` is unchanged.
+- Every run below is GitHub-hosted, on the `macos-support` branch.
+- The hosted Macs run with **SIP disabled**, so an ad hoc signed collector can hold the Endpoint
+  Security entitlement there.
+- **No standard (SIP-enabled) Mac has been validated.** That needs Apple's entitlement, which is
+  external ([MACOS.md](MACOS.md#external-requirement-apple-endpoint-security-entitlement)).
+- Evidence for every run below, failed or not, is kept in `results/macos/<run id>/`.
+
+### Functional validation — PASS (run 36538771040, commit 42e060f, final code)
+
+| Runner | Arch | macOS | Xcode / clang |
+|---|---|---|---|
+| `macos-15-intel` | x86_64 | 15.7.9 | 16.4 / Apple clang 17.0.0 |
+| `macos-15` | arm64 | 15.7.9 | 16.4 / Apple clang 17.0.0 |
+| `macos-14` | arm64 | 14.8.9 | 15.4 / Apple clang 15.0.0 |
+| `macos-26` | arm64 | 26.6.2 | 26.6 / Apple clang 21.0.0 |
+
+Every gate passed on all four runners:
+- build with warnings on;
+- shared and macOS tests OK (38 skips, all Linux/Windows only);
+- live Endpoint Security PASS;
+- package install, upgrade, uninstall and purge: 34/34;
+- product gate: 49/49;
+- corpus: 79/79, lost 0;
+- secret redaction: 22/22;
+- outage / observation integrity: 13/13;
+- the Linux collector's object code is byte-identical to v1.0.0 (`linux-collector-unchanged`).
+
+**Development packages from that run.** They are UNSIGNED DEVELOPMENT ARTIFACTS — NOT FOR PUBLIC
+RELEASE, and were not published.
+
+| Runner | Package | SHA-256 |
+|---|---|---|
+| `macos-15-intel` | `whyfs-1.0.0.131-macos-x86_64-dev-42e060f-36538771040-UNSIGNED.pkg` | `3dbb1eb0eb93865bce0eba501a12344785aa2702dcd21063d508ed56ee051c67` |
+| `macos-15` | `whyfs-1.0.0.131-macos-arm64-dev-42e060f-36538771040-UNSIGNED.pkg` | `08e5ac014f85fedfc19e9b041609129bf813548a576e6db40929d7b357519e4f` |
+| `macos-14` | `whyfs-1.0.0.131-macos-arm64-dev-42e060f-36538771040-UNSIGNED.pkg` | `e7d9d9931dd3057577a3c0b49ce11d3b2a244a34bcbd2a6b5265e70309f9c149` |
+| `macos-26` | `whyfs-1.0.0.131-macos-arm64-dev-42e060f-36538771040-UNSIGNED.pkg` | `d708e7baeda07838e48d01ed141acca28271c7078ed8c0fcaecc993b1ba931e0` |
+
+- The upgrade-test packages (`1.0.0.132`) have their hashes in each runner's `pkg-sha256.txt`.
+- The arm64 packages differ per runner: they are not reproducible bit for bit.
+
+### Performance — FAIL (run 36538771037, commit 42e060f, final code)
+
+**Protocol:**
+- the unchanged `machine_perf` protocol;
+- the frozen 1.0 contract: 150 counterbalanced pairs, 5 % threshold, CI90 measurability rule;
+- on the installed development package, with 10 minutes idle.
+
+The workflow jobs show "success" only because the gate steps are `|| true`. The verdicts are in the
+JSON files.
+
+| | Intel `macos-15-intel` | Apple Silicon `macos-15` |
+|---|---|---|
+| Machine | i7-8700B, 4 CPUs, macOS 15.7.9 | Apple M1 (Virtual), 3 CPUs, macOS 15.7.9 |
+| Idle CPU (limit 1 % of a core) | 0.66 %: PASS | 0.283 %: PASS |
+| Idle memory | 37.1 MB | 34.8 MB |
+| Idle events / store growth | 404 /min, 813 MB/day | 269 /min, 441 MB/day |
+| `make -j8` (36 units), n=150 | 0.671 → 0.717 s, **+6.78 %**, CI90 +5.04..+8.53: **FAIL** | 2.76 %, CI90 +0.93..+3.75: PASS |
+| Vite build, n=150 | 0.577 → 0.590 s, +0.96 %, CI90 −0.09..+2.16: PASS | −3.30 %, CI90 −4.31..−1.02: PASS |
+| Process spawn ×300 (historical < 5 % rule) | 2.483 → 2.557 s, +4.13 %, CI90 +1.53..+5.43: PASS | 1.043 → 1.122 s, **+6.29 %**, CI90 +5.32..+7.52: **FAIL** |
+| Event loss | 0 | 0 |
+| `why` / `label` median (p95), limit 100 ms | 50.7 (57.5) / 56.5 (63.4) ms: PASS | 27.6 (32.2) / 31.1 (35.0) ms: PASS |
+| Contract A verdict | **FAIL** (make) | PASS |
+| `machine_perf` verdict | **FAIL** | **FAIL** (spawn ×300) |
+| Long-history label gate | **FAIL** (below) | **FAIL** (below) |
+
+**Development packages built by this run:**
+- Intel: `whyfs-1.0.0.41-macos-x86_64-dev-42e060f-36538771037-UNSIGNED.pkg`,
+  SHA-256 `3f21444a346bbfaa634eb555ab8e6ecb8529eae0c16b3bf168ca4dd79cc57b51`.
+- Apple Silicon: `whyfs-1.0.0.41-macos-arm64-dev-42e060f-36538771037-UNSIGNED.pkg`,
+  SHA-256 `08e4d67214b1dfd24591db2b7192c02064cca88c9aa0da710ba5e262ba3712cd`.
+
+### Long-history label gate (1 to 5,000 generations) — FAIL on both
+
+**Intel: FAIL, reproduced.**
+- `label` median by generations:
+
+  | Generations | 1 | 100 | 300 | 600 | 1000 | 5000 |
+  |---|---|---|---|---|---|---|
+  | `label` median (ms) | 84.6 | 91.2 | 94.0 | **100.8** | 98.5 | 98.6 |
+
+- The 600-generation row misses the 100 ms limit.
+- Run 36524883817 also missed it (102–104 ms at 600 generations and up).
+- New in this run: at 5,000 generations, `history` returned **4,994 of 5,000** writes
+  (`complete_history_has_every_generation` false), while loss 0 was reported.
+- Cause: **UNRESOLVED** (not investigated further).
+
+**Apple Silicon: FAIL, reproduced.**
+- **What works:** every file is labelled with the right identity and its full history, and `label`
+  takes 54.0–67.5 ms.
+- **The failure:** the label reports its observation as incomplete (`observation_complete` false)
+  at 1, 100, 300, 600 and 1000 generations; at 5000 it is true.
+- Run 36524883817 showed the same at 300 generations and up.
+- The 1,000-generation diagnostic burst (36538771021) delivered every event with no drops, so
+  measured loss does not explain it.
+- Cause: **UNRESOLVED**.
+
+### Superseded performance runs (kept; each reran after a change)
+
+| Run (commit) | Intel | Apple Silicon | Changed next |
+|---|---|---|---|
+| 36518817215 (f25c198) | make +12.46 % FAIL; Vite +2.09 %; spawn +7.83 %; idle 0.723 %; label PASS (≤ 93.6 ms) | make +4.82 % UNMEASURABLE; Vite −2.23 %; spawn +4.15 %; idle **1.932 % FAIL**; label PASS | excluded paths muted in the kernel (6dbc237) |
+| 36524883817 (6dbc237) | make +5.62 % FAIL; Vite +1.93 %; spawn +8.69 %; idle 0.631 %; label FAIL (102–104 ms at 600+) | make +1.12 % PASS; Vite −6.21 %; spawn +2.74 %; idle **1.207 % FAIL**; label FAIL (incomplete at 300+) | excluded-image processes muted (ef0c2fb → 42e060f) |
+| 36538531460 (ef0c2fb) | did not build (missing forward declaration) | did not build | fixed in 42e060f |
+
+**Diagnostic runs (not gates):**
+- 36536391808 failed on a defect in the diagnostic script.
+- 36537604817 and 36538771021 measured idle Endpoint Security messages before and after process
+  muting: Intel 16,654 → 4,942 /min; Apple Silicon 89,559 → 12,146 /min.
+- The same two runs sent a 1,000-generation burst, with 0 drops on both.
+- 36538531411 (ef0c2fb) did not build.
+
+### Functional run history (kept)
+
+- **36514213130, the entitlement probe** (all four runners): an unsigned client gets
+  `ERR_NOT_ENTITLED`; one ad hoc signed with the entitlement starts, because SIP is disabled.
+- **36515824372, 36516181481, 36516681324, 36517494085, 36518332964, 36518817198: FAIL.** Each
+  defect was fixed before the next run.
+  - Test defects: SQLite NOFOLLOW on the `/var` symlink; root-owned artifacts; the Quick Action
+    environment; a shell step optimised into an exec; launchd respawning in the outage gate; the
+    collector-count check.
+  - Product defects: the service compiled its own collector instead of using the installed one;
+    uninstall and preinstall did not wait for bootout; the runtime download had no retry.
+- **36519317909 (e026d69):** the first all-green run (Intel, `macos-15`, `macos-14`, `macos-26`).
+- **36524883835:** `macos-26` failed on a network download; the others passed. It is superseded by
+  36525419967 (926ff9b), all green.
+- **36538531429 (ef0c2fb):** did not build. It is superseded by 36538771040 (42e060f), all green.
 
 ## Reproducing
 

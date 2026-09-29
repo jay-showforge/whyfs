@@ -199,6 +199,12 @@ exec, fork, exit, rename and unlink of everything else are never muted.
 
 ## Validation status
 
+**MACOS FUNCTIONALLY VALIDATED — PERFORMANCE FAILED.**
+- It is functionally validated on SIP-disabled GitHub-hosted runners.
+- Performance and the long-history label gate fail: final run 36538771037, commit 42e060f.
+- A standard Mac is externally blocked, and was not tested.
+- macOS is not part of 1.0.0.
+
 See [PLATFORM_VALIDATION.md](PLATFORM_VALIDATION.md#macos-development-branch-macos-support) for
 runs, commits and hashes.
 
@@ -215,7 +221,11 @@ runs, commits and hashes.
 | Secret redaction | PASS 22/22 | PASS 22/22 |
 | Observation integrity (outage) | PASS 13/13 | PASS 13/13 |
 | Finder Quick Actions | PASS (run by Automator, observed by Endpoint Security) | PASS |
-| Performance | see PLATFORM_VALIDATION.md | see PLATFORM_VALIDATION.md |
+| Idle CPU (< 1 % of a core) | PASS 0.66 % | PASS 0.283 % (`macos-15`) |
+| Performance contract A (`make -j8`, Vite; 150 pairs, 5 %) | **FAIL**: `make` +6.78 % (CI90 +5.04..+8.53); Vite +0.96 % | PASS: `make` +2.76 %, Vite −3.30 % |
+| Process spawn ×300 (historical < 5 % rule) | PASS +4.13 % | **FAIL** +6.29 % (CI90 +5.32..+7.52) |
+| Event loss, CLI latency (< 100 ms) | PASS: lost 0, `label` 56.5 ms | PASS: lost 0, `label` 31.1 ms |
+| Long-history label gate (1–5,000 generations) | **FAIL**: 100.8 ms at 600 generations; 4,994 of 5,000 history writes at 5,000 (cause unresolved) | **FAIL**: label reports incomplete observation at 1–1,000 generations (cause unresolved; no measured loss) |
 | Standard Mac (SIP on), Developer ID | BLOCKED_EXTERNAL — entitlement | BLOCKED_EXTERNAL — entitlement |
 
 Tested macOS versions: 15.7.9 (Intel and Apple Silicon), 14.8.9 and 26.6.2 (Apple Silicon).
@@ -229,3 +239,11 @@ Intel on macOS 14 and 26 was not tested: hosted Intel runners are macOS 15 only.
 - Workspace mode (`whyfs init`, `whyfs daemon`) is Linux and Windows only; macOS is machine-wide.
 - Paths are matched case-sensitively in scope rules, in the stored case.
 - The development packages are not reproducible bit for bit across runners.
+- **Performance fails the 1.0 thresholds on the hosted runners:**
+  - Intel `make -j8` is +6.78 %;
+  - Apple Silicon process spawn ×300 is +6.29 %.
+- **The long-history label gate fails; neither cause is resolved:**
+  - Intel: 100.8 ms at 600 generations, and 4,994 of 5,000 history writes at 5,000.
+  - Apple Silicon: labels report incomplete observation at 1–1,000 generations.
+- **Not validated:** a standard Mac with SIP on, a Developer ID signed build, notarization, and
+  the Full Disk Access grant flow. See the external requirement above.

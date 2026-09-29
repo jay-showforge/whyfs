@@ -43,7 +43,13 @@ or who caused them to exist.
   the local API, and power users use the CLI.  All three read the same records.
 
 Support matrix (frozen for 1.0): Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.  macOS
-is not in 1.0.0; it is in development on the `macos-support` branch ([docs/MACOS.md](docs/MACOS.md)).
+is not in 1.0.0. It is in development on the `macos-support` branch ([docs/MACOS.md](docs/MACOS.md)).
+- **Status:** MACOS FUNCTIONALLY VALIDATED — PERFORMANCE FAILED.
+- **Functional:** every functional gate passes on SIP-disabled hosted Intel and Apple Silicon
+  runners.
+- **Performance:** Intel `make` +6.78 %, Apple Silicon spawn ×300 +6.29 %, and the
+  long-history label gate fails on both.
+- **Standard Macs:** they need Apple's Endpoint Security entitlement (externally blocked).
 
 | Platform | Native evidence (run 36374200705, commit f2b9ca6; Windows x64 spawn after the reduction, run 36391350371: +4.17 %) |
 |---|---|

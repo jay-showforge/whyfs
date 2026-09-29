@@ -39,7 +39,15 @@ release.  Past defects and their fixes are recorded in [KNOWN_ISSUES.md](KNOWN_I
 - **Validated OS builds:** Windows 11 (x64 desktop, ARM64 runner), Windows Server 2022 (x64),
   Ubuntu 24.04 (x86-64, ARM64, WSL2).  Windows 10 and other Linux distributions have not been
   validated separately.
-- **Not in 1.0.0:** macOS, in development ([MACOS.md](MACOS.md)).  Other architectures are not supported.
+- **Not in 1.0.0:** macOS, in development on the `macos-support` branch ([MACOS.md](MACOS.md)).
+  Other architectures are not supported.
+  - **Functionally validated** only on GitHub-hosted runners, which have SIP disabled.
+  - **Performance FAILED:**
+    - Intel `make -j8` is +6.78 %;
+    - Apple Silicon process spawn ×300 is +6.29 %;
+    - the long-history label gate fails on both architectures, and neither cause is resolved.
+  - **A standard Mac needs Apple's Endpoint Security entitlement,** plus Developer ID signing,
+    notarization and Full Disk Access. That is externally blocked and not tested.
 - **Linux requirements.**
   - A kernel with BTF and BPF trampolines (fentry), 5.x or later as shipped by current
     Ubuntu/Debian.  `whyfs doctor` checks.
