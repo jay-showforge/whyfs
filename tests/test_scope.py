@@ -21,7 +21,7 @@ V = json.loads((HERE / "scope_vectors.json").read_text(encoding="utf-8"))
 
 class ReferenceTests(unittest.TestCase):
     def test_linux_vectors(self):
-        s = Scope(False).add(V["linux_extra"])
+        s = Scope(False, mac=False).add(V["linux_extra"])
         for p, want in V["linux"]:
             self.assertEqual(s.classify(p), want, p)
         for p, want in V["linux_images"]:

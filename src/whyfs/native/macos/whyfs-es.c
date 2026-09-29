@@ -60,7 +60,10 @@ static int mac_arg(const char *a, const char *v, int *i) {
     if (!strcmp(a, "--es")) { mac_mode = 1; mac_live = 1; return 1; }
     if (!strcmp(a, "--es-replay") && v) { mac_mode = 1; mac_replay_path = v; (*i)++; return 1; }
     if (!strcmp(a, "--es-record") && v) {
-        mac_record_fp = fopen(v, "wx");
+        // A diagnostic capture holds raw messages (unredacted command lines, as Linux --record
+        // holds raw ring payloads): created new, readable by its owner only.
+        int fd = open(v, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+        mac_record_fp = fd >= 0 ? fdopen(fd, "w") : NULL;
         if (!mac_record_fp) die("es-record %s: %s", v, strerror(errno));
         (*i)++;
         return 1;

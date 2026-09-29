@@ -63,7 +63,8 @@ def main() -> int:
     result["env"]["binary_arch"] = sh(["lipo", "-archs", str(binary)]).stdout.strip()
     result["env"]["codesign"] = sh(["codesign", "-dv", "--entitlements", "-", str(binary)]).stderr.strip()[-600:]
 
-    root = Path(tempfile.mkdtemp(prefix="whyfs-live-store-"))
+    # the writer refuses a store path through a symbolic link (SQLITE_OPEN_NOFOLLOW): /var is one
+    root = Path(macos.true_path(tempfile.mkdtemp(prefix="whyfs-live-store-")))
     os.chmod(root, 0o700)
     con = connect(root)
     con.execute("INSERT INTO runs(id,started_ns,cwd,command,workspace,collector) VALUES(?,?,?,?,?,?)",
@@ -163,8 +164,11 @@ def main() -> int:
     c["copy_labelled"] = by("copied.txt").get("status") == "labelled" and os.path.basename(exe("copied.txt") or "") == "cp"
     c["reused_path_is_the_second_writer"] = "python" in (exe("reused.txt") or "")
     c["report_dependents_include_final"] = str(work / "final.txt") in json.dumps(by("report.txt").get("dependents"))
-    commands = " ".join(r.get("command") or "" for r in rows)
-    c["secret_redacted"] = "LIVESECRET123" not in commands and "LIVESECRET123" not in cap.read_text()
+    # nothing persisted in the evidence store holds the secret (the --es-record capture is a raw
+    # diagnostic, owner-only, like Linux --record)
+    dump = "\n".join(con.iterdump())
+    c["secret_redacted_in_store"] = "LIVESECRET123" not in dump and any("--token" in (r.get("command") or "") for r in rows)
+    c["capture_owner_only"] = (cap.stat().st_mode & 0o077) == 0
     c["user_attributed"] = all((r.get("user") in (f"uid:{uid}", None)) for r in rows if r["is_write"])
     c["no_loss"] = stats.get("kernel_drops", 0) == 0 and stats.get("queue_drops", 0) == 0
     c["unlinked_recorded"] = any(r["kind"] == "unlink" and r["path"] == str(work / "scratch.txt") for r in rows)

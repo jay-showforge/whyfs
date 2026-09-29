@@ -66,9 +66,9 @@ class Stream:
         self.add("exec", child, target=target, argv=argv, **({"cwd": cwd} if cwd else {}))
         return target
 
-    def write(self, p, path, ino):
-        self.add("open", p, f1=f(path, ino), fflag=0x0602)  # FWRITE|O_CREAT|O_TRUNC
-        self.add("close", p, f1=f(path, ino), modified=1)
+    def write(self, p, path, ino, dev=DEV):
+        self.add("open", p, f1=f(path, ino, dev), fflag=0x0602)  # FWRITE|O_CREAT|O_TRUNC
+        self.add("close", p, f1=f(path, ino, dev), modified=1)
 
     def read(self, p, path, ino):
         self.add("open", p, f1=f(path, ino), fflag=0x0001)  # FREAD
@@ -114,7 +114,7 @@ class ReplayTranslation(unittest.TestCase):
     def setUp(self):
         self.s = Stream()
         self.launchd = proc(1, "/sbin/launchd", ppid=0, ruid=0)
-        self.shell = self.s.spawn(self.launchd, 300, "/bin/zsh", ["-zsh"], cwd="/Users/jay")
+        self.shell = self.s.spawn(self.launchd, 300, "/bin/zsh", ["-zsh"], cwd="/Users/jay", ruid=501)
 
     def test_write_is_evidence_with_identity_and_ancestry(self):
         py = self.s.spawn(self.shell, 301, "/usr/bin/python3", ["python3", "gen.py"], cwd="/Users/jay/proj")
@@ -181,7 +181,7 @@ class ReplayTranslation(unittest.TestCase):
         self.assertIn("curl", me["command"])
 
     def test_scope_filtering_and_image_exclusion(self):
-        app = self.s.spawn(self.shell, 307, "/Applications/Safari.app/Contents/MacOS/Safari", ["Safari"])
+        app = self.s.spawn(self.shell, 307, "/Applications/WhyfsTestBrowser.app/Contents/MacOS/Browser", ["Browser"])
         self.s.write(app, "/Users/jay/Library/Caches/com.apple.Safari/x.db", 40)
         self.s.write(app, "/System/Library/x", 41)
         self.s.write(app, "/Library/Preferences/p.plist", 42)
@@ -190,7 +190,7 @@ class ReplayTranslation(unittest.TestCase):
         self.s.write(mds, "/Users/jay/Documents/indexed.txt", 43)
         self.s.write(app, "/Users/jay/Downloads/page.html", 44)
         recs, stats = run(self.s)
-        paths = {r["path"] for r in recs if r["kind"] != "process"}
+        paths = {r["path"] for r in recs if r["kind"] == "io"}
         self.assertEqual(paths, {"/Users/jay/Downloads/page.html"})
         self.assertGreaterEqual(stats["excluded_image"], 1)
         self.assertGreater(stats["filtered"], 0)
@@ -315,8 +315,7 @@ class ReplayIntoStore(unittest.TestCase):
         self.assertIn(src, [i["path"] if isinstance(i, dict) else i for i in lb["inputs"]])
         self.assertEqual(lb["identity"]["check"], "match")
         self.assertIn(pub, json.dumps(lb["dependents"]))
-        hist = [h["kind"] for h in lb["history"]]
-        self.assertIn("io", hist)
+        self.assertIn("written", [h["action"] for h in lb["history"]])
 
     def test_path_reuse_never_attaches_old_evidence(self):
         """The file observed at a path was replaced (unobserved) by another file: new inode."""
@@ -325,7 +324,7 @@ class ReplayIntoStore(unittest.TestCase):
         s = Stream()
         sh = proc(410, "/bin/zsh", ruid=os.getuid())
         gen = s.spawn(sh, 411, "/usr/bin/python3", ["python3", "gen.py"], cwd=str(self.work))
-        s.write(gen, out, oi)
+        s.write(gen, out, oi, dev)
         con = self.store(s)
         self.assertEqual(explain_file(con, out)["status"], "labelled")
         os.unlink(out)  # replaced while nothing was observed: APFS gives the new file a new inode
@@ -342,7 +341,7 @@ class ReplayIntoStore(unittest.TestCase):
         s = Stream()
         sh = proc(420, "/bin/zsh", ruid=os.getuid())
         gen = s.spawn(sh, 421, "/usr/bin/python3", ["python3"], cwd=str(self.work))
-        s.write(gen, out, oi)
+        s.write(gen, out, oi, dev)
         con = self.store(s)
         via_var = out.replace("/private/var/", "/var/", 1)  # the symlinked spelling users see
         self.assertEqual(explain_file(con, via_var)["status"], "labelled")
@@ -386,7 +385,7 @@ class PlatformHelpers(unittest.TestCase):
         me = os.getpid()
         parent, image, cmd = macos.parent_and_image(me)
         self.assertEqual(parent, os.getppid())
-        self.assertTrue(image and os.path.basename(image).startswith("python"), image)
+        self.assertTrue(image and os.path.isabs(image) and os.access(image, os.X_OK), image)  # a framework build runs Python.app
         self.assertIn("unittest", cmd or "")
         self.assertEqual(macos.process_user(me), f"uid:{os.getuid()}")
         start = agents.proc_start_ns(me)
