@@ -1,0 +1,35 @@
+== unsigned, as user
+es_new_client: 5 ERR_NOT_PRIVILEGED
+exit 3
+== unsigned, as root
+es_new_client: 3 ERR_NOT_ENTITLED
+exit 3
+probe/es_probe_adhoc: replacing existing signature
+Executable=/Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc
+[Dict]
+	[Key] com.apple.developer.endpoint-security.client
+	[Value]
+		[Bool] true
+== ad-hoc signed with the ES entitlement, as root
+es_new_client: 0 SUCCESS
+exit 0
+2026-09-29 02:47:28.231 Df kernel[0:57f0] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:28.233 Df kernel[0:57f1] (AppleMobileFileIntegrity) AMFI: '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python' is adhoc signed.
+2026-09-29 02:47:28.233 Df amfid[92:56a9] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:28.233 Df kernel[0:57f1] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:28.271 Df kernel[0:57f1] (AppleMobileFileIntegrity) AMFI: '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python' is adhoc signed.
+2026-09-29 02:47:28.272 Df amfid[92:56a9] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:28.272 Df kernel[0:57f1] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:28.938 Df kernel[0:598c] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe' has no CMS blob?
+2026-09-29 02:47:28.938 Df kernel[0:598c] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe': Unrecoverable CT signature issue, bailing out.
+2026-09-29 02:47:28.938 Df kernel[0:598c] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:28.972 Df sudo[7229:5998]   runner : PWD=/Users/runner/work/whyfs/whyfs ; USER=root ; COMMAND=./probe/es_probe
+2026-09-29 02:47:29.034 Df sudo[7242:59b3]   runner : PWD=/Users/runner/work/whyfs/whyfs ; USER=root ; COMMAND=./probe/es_probe_adhoc
+2026-09-29 02:47:29.034 Df kernel[0:59b6] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc' is adhoc signed.
+2026-09-29 02:47:29.034 E  amfid[92:56a9] [com.apple.MobileFileIntegrity.framework:default] Restricted entitlements not validated, bailing out. Error: Error Domain=AppleMobileFileIntegrityError Code=-420 "The signature on the file is invalid" UserInfo={NSURL=<private>, NSLocalizedDescription=The signature on the file is invalid}
+2026-09-29 02:47:29.035 Df amfid[92:56a9] /Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc not valid: Error Domain=AppleMobileFileIntegrityError Code=-420 "The signature on the file is invalid" UserInfo={NSURL=file:///Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc, NSLocalizedDescription=The signature on the file is invalid}
+2026-09-29 02:47:29.035 Df kernel[0:59b6] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:29.035 Df kernel[0:59b6] (AppleMobileFileIntegrity) Couldn't build index for es_probe_adhoc-555549441e7dc0e7c285310f8593fd61d12e637b: Not eligible for acceleration
+2026-09-29 02:47:29.037 Df kernel[0:70] (EndpointSecurity) Client disconnected (pid 7244, es_probe_adhoc)
+2026-09-29 02:47:29.066 Df sudo[7247:59bf]   runner : PWD=/Users/runner/work/whyfs/whyfs ; USER=root ; COMMAND=/usr/bin/log show --last 2m --predicate 'sender == "AppleMobileFileIntegrity" OR process == "amfid" OR eventMessage CONTAINS "es_probe"' --style compact
+2026-09-29 02:47:29.073 Df log[7250:59c4] [com.apple.log:] log run noninteractively, parent: 7247 (sudo), args: 'log' 'show' '--last' '2m' '--predicate' 'sender == "AppleMobileFileIntegrity" OR process == "amfid" OR eventMessage CONTAINS "es_probe"' '--style' 'compact'

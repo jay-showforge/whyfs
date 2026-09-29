@@ -1,0 +1,795 @@
+{
+  "input.csv": {
+    "schema": "whyfs-label/1",
+    "path": "/Users/runner/whyfs-live-c58ulc1_/input.csv",
+    "exists": true,
+    "history": [
+      {
+        "ts_ns": 1790653435547261735,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "read",
+        "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2821,
+        "command": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c 'd=open('\"'\"'input.csv'\"'\"').read(); open('\"'\"'report.txt'\"'\"','\"'\"'w'\"'\"').write(d.upper())' --token '<redacted>'",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/input.csv",
+        "path2": null,
+        "evidence": "es:open-read"
+      },
+      {
+        "ts_ns": 1790653433789722096,
+        "at": "2026-09-29T03:43:53+00:00",
+        "action": "written",
+        "exe": "/bin/bash",
+        "pid": 2820,
+        "command": "/bin/sh -c 'printf '\"'\"'a,b\\n1,2\\n'\"'\"' > input.csv'",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/input.csv",
+        "path2": null,
+        "evidence": "es:close-modified"
+      }
+    ],
+    "identity": {
+      "current": "mac:16777220:12888347231",
+      "recorded": "mac:16777220:12888347231",
+      "check": "match"
+    },
+    "status": "labelled",
+    "note": null,
+    "created_ns": 1790653433789722096,
+    "created": "2026-09-29T03:43:53+00:00",
+    "last_written_ns": 1790653433789722096,
+    "last_written": "2026-09-29T03:43:53+00:00",
+    "user": "uid:501",
+    "user_name": "runner",
+    "created_by": {
+      "exe": "/bin/bash",
+      "pid": 2820,
+      "command": "/bin/sh -c 'printf '\"'\"'a,b\\n1,2\\n'\"'\"' > input.csv'",
+      "cwd": "/Users/runner/whyfs-live-c58ulc1_",
+      "process_key": 272632580,
+      "run_id": "live"
+    },
+    "process_chain": [
+      {
+        "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2648,
+        "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python scripts/macos_live_es.py --out ci-results/live-es --binary ci-results/whyfs-collect",
+        "user": "uid:0"
+      },
+      {
+        "exe": "/bin/bash",
+        "pid": 2820,
+        "command": "/bin/sh -c 'printf '\"'\"'a,b\\n1,2\\n'\"'\"' > input.csv'",
+        "user": "uid:501"
+      }
+    ],
+    "inputs": [],
+    "inputs_hidden": 0,
+    "inputs_via_temporaries": [],
+    "shared_by_outputs": 0,
+    "renamed_from": [],
+    "dependents": [
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/input.csv",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+        "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+        "exe": "/bin/cat",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "exe": "/bin/mv (rename)",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+        "exe": "/bin/cp",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+        "exe": "/bin/cp",
+        "run_id": "live",
+        "shared": 0
+      }
+    ],
+    "agent": null,
+    "intent": {
+      "task": null,
+      "note": "no intent context was provided; whyfs does not infer intent"
+    },
+    "causal_why": "input.csv exists because bash wrote it (no input files were observed).",
+    "observation": {
+      "complete": true,
+      "gaps": [],
+      "later_gaps": [],
+      "file_time_in_gap": null,
+      "notes": [],
+      "observing_since": "2026-09-29T03:43:52+00:00"
+    },
+    "impact": {
+      "generated_outputs": [
+        "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/report.txt"
+      ],
+      "possibly_affected": [],
+      "dependents": [
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/input.csv",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+          "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+          "exe": "/bin/cat",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "exe": "/bin/mv (rename)",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+          "exe": "/bin/cp",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+          "exe": "/bin/cp",
+          "run_id": "live",
+          "shared": 0
+        }
+      ],
+      "readers": [
+        {
+          "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+          "processes": 1,
+          "last_read_ns": 1790653435547261735,
+          "last_read": "2026-09-29T03:43:55+00:00"
+        }
+      ],
+      "is_generated": false,
+      "no_observed_dependents": false,
+      "summary": "5 files were observed being generated from this file (directly or through intermediates); changing or removing it may affect them, and they could not be regenerated the same way without it. Observed being read by Python: programs that read it may depend on it when they run."
+    },
+    "evidence": "OS-observed"
+  },
+  "report.txt": {
+    "schema": "whyfs-label/1",
+    "path": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+    "exists": true,
+    "history": [
+      {
+        "ts_ns": 1790653435575965281,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "read",
+        "exe": "/bin/cat",
+        "pid": 2854,
+        "command": "cat report.txt",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+        "path2": null,
+        "evidence": "es:open-read"
+      },
+      {
+        "ts_ns": 1790653435547752510,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "written",
+        "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2821,
+        "command": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c 'd=open('\"'\"'input.csv'\"'\"').read(); open('\"'\"'report.txt'\"'\"','\"'\"'w'\"'\"').write(d.upper())' --token '<redacted>'",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+        "path2": null,
+        "evidence": "es:close-modified"
+      }
+    ],
+    "identity": {
+      "current": "mac:16777220:12888347263",
+      "recorded": "mac:16777220:12888347263",
+      "check": "match"
+    },
+    "status": "labelled",
+    "note": null,
+    "created_ns": 1790653435547752510,
+    "created": "2026-09-29T03:43:55+00:00",
+    "last_written_ns": 1790653435547752510,
+    "last_written": "2026-09-29T03:43:55+00:00",
+    "user": "uid:501",
+    "user_name": "runner",
+    "created_by": {
+      "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+      "pid": 2821,
+      "command": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c 'd=open('\"'\"'input.csv'\"'\"').read(); open('\"'\"'report.txt'\"'\"','\"'\"'w'\"'\"').write(d.upper())' --token '<redacted>'",
+      "cwd": "/Users/runner/whyfs-live-c58ulc1_",
+      "process_key": 276826885,
+      "run_id": "live"
+    },
+    "process_chain": [
+      {
+        "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2648,
+        "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python scripts/macos_live_es.py --out ci-results/live-es --binary ci-results/whyfs-collect",
+        "user": "uid:0"
+      },
+      {
+        "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2821,
+        "command": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c 'd=open('\"'\"'input.csv'\"'\"').read(); open('\"'\"'report.txt'\"'\"','\"'\"'w'\"'\"').write(d.upper())' --token '<redacted>'",
+        "user": "uid:501"
+      }
+    ],
+    "inputs": [
+      "/Users/runner/whyfs-live-c58ulc1_/input.csv"
+    ],
+    "inputs_hidden": 0,
+    "inputs_via_temporaries": [],
+    "shared_by_outputs": 0,
+    "renamed_from": [],
+    "dependents": [
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+        "exe": "/bin/cat",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "exe": "/bin/mv (rename)",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+        "exe": "/bin/cp",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+        "exe": "/bin/cp",
+        "run_id": "live",
+        "shared": 0
+      }
+    ],
+    "agent": null,
+    "intent": {
+      "task": null,
+      "note": "no intent context was provided; whyfs does not infer intent"
+    },
+    "causal_why": "report.txt exists because Python wrote it after reading input.csv.",
+    "observation": {
+      "complete": true,
+      "gaps": [],
+      "later_gaps": [],
+      "file_time_in_gap": null,
+      "notes": [],
+      "observing_since": "2026-09-29T03:43:52+00:00"
+    },
+    "impact": {
+      "generated_outputs": [
+        "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/published.txt"
+      ],
+      "possibly_affected": [],
+      "dependents": [
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/report.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+          "exe": "/bin/cat",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "exe": "/bin/mv (rename)",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+          "exe": "/bin/cp",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+          "exe": "/bin/cp",
+          "run_id": "live",
+          "shared": 0
+        }
+      ],
+      "readers": [
+        {
+          "exe": "/bin/cat",
+          "processes": 1,
+          "last_read_ns": 1790653435575965281,
+          "last_read": "2026-09-29T03:43:55+00:00"
+        }
+      ],
+      "is_generated": true,
+      "no_observed_dependents": false,
+      "summary": "4 files were observed being generated from this file (directly or through intermediates); changing or removing it may affect them, and they could not be regenerated the same way without it. Observed being read by cat: programs that read it may depend on it when they run. This file is generated: Python wrote it from 1 observed input; rerunning that process may recreate it (whyfs does not verify this)."
+    },
+    "evidence": "OS-observed"
+  },
+  "final.txt": {
+    "schema": "whyfs-label/1",
+    "path": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+    "exists": true,
+    "history": [
+      {
+        "ts_ns": 1790653435607960188,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "read",
+        "exe": "/bin/cp",
+        "pid": 2857,
+        "command": "/bin/cp final.txt copied.txt",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "path2": null,
+        "evidence": "es:open-read"
+      },
+      {
+        "ts_ns": 1790653435600124031,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "read",
+        "exe": "/bin/cp",
+        "pid": 2856,
+        "command": "/bin/cp -c final.txt cloned.txt",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "path2": null,
+        "evidence": "es:clone"
+      },
+      {
+        "ts_ns": 1790653435588423979,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "moved here",
+        "exe": "/bin/mv",
+        "pid": 2855,
+        "command": "/bin/mv published.txt final.txt",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+        "path2": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "evidence": "es:rename"
+      }
+    ],
+    "identity": {
+      "current": "mac:16777220:12888347264",
+      "recorded": "mac:16777220:12888347264",
+      "check": "match"
+    },
+    "status": "labelled",
+    "note": null,
+    "created_ns": 1790653435576140186,
+    "created": "2026-09-29T03:43:55+00:00",
+    "last_written_ns": 1790653435576140186,
+    "last_written": "2026-09-29T03:43:55+00:00",
+    "user": "uid:501",
+    "user_name": "runner",
+    "created_by": {
+      "exe": "/bin/cat",
+      "pid": 2854,
+      "command": "cat report.txt",
+      "cwd": "/Users/runner/whyfs-live-c58ulc1_",
+      "process_key": 415238950,
+      "run_id": "live"
+    },
+    "process_chain": [
+      {
+        "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2648,
+        "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python scripts/macos_live_es.py --out ci-results/live-es --binary ci-results/whyfs-collect",
+        "user": "uid:0"
+      },
+      {
+        "exe": "/bin/bash",
+        "pid": 2853,
+        "command": "/bin/sh -c 'cat report.txt > published.txt'",
+        "user": "uid:501"
+      },
+      {
+        "exe": "/bin/cat",
+        "pid": 2854,
+        "command": "cat report.txt",
+        "user": "uid:501"
+      }
+    ],
+    "inputs": [
+      "/Users/runner/whyfs-live-c58ulc1_/report.txt"
+    ],
+    "inputs_hidden": 0,
+    "inputs_via_temporaries": [],
+    "shared_by_outputs": 0,
+    "renamed_from": [
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/published.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "ts_ns": 1790653435588423979,
+        "exe": "/bin/mv",
+        "pid": 2855
+      }
+    ],
+    "dependents": [
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+        "exe": "/bin/cp",
+        "run_id": "live",
+        "shared": 0
+      },
+      {
+        "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+        "to": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+        "exe": "/bin/cp",
+        "run_id": "live",
+        "shared": 0
+      }
+    ],
+    "agent": null,
+    "intent": {
+      "task": null,
+      "note": "no intent context was provided; whyfs does not infer intent"
+    },
+    "causal_why": "final.txt exists because cat wrote it after reading report.txt; it was moved here from /Users/runner/whyfs-live-c58ulc1_/published.txt.",
+    "observation": {
+      "complete": true,
+      "gaps": [],
+      "later_gaps": [],
+      "file_time_in_gap": null,
+      "notes": [],
+      "observing_since": "2026-09-29T03:43:52+00:00"
+    },
+    "impact": {
+      "generated_outputs": [
+        "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+        "/Users/runner/whyfs-live-c58ulc1_/copied.txt"
+      ],
+      "possibly_affected": [],
+      "dependents": [
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+          "exe": "/bin/cp",
+          "run_id": "live",
+          "shared": 0
+        },
+        {
+          "from": "/Users/runner/whyfs-live-c58ulc1_/final.txt",
+          "to": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+          "exe": "/bin/cp",
+          "run_id": "live",
+          "shared": 0
+        }
+      ],
+      "readers": [
+        {
+          "exe": "/bin/cp",
+          "processes": 2,
+          "last_read_ns": 1790653435607960188,
+          "last_read": "2026-09-29T03:43:55+00:00"
+        }
+      ],
+      "is_generated": true,
+      "no_observed_dependents": false,
+      "summary": "2 files were observed being generated from this file (directly or through intermediates); changing or removing it may affect them, and they could not be regenerated the same way without it. Observed being read by cp: programs that read it may depend on it when they run. This file is generated: cat wrote it from 1 observed input; rerunning that process may recreate it (whyfs does not verify this)."
+    },
+    "evidence": "OS-observed"
+  },
+  "cloned.txt": {
+    "schema": "whyfs-label/1",
+    "path": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+    "exists": true,
+    "history": [
+      {
+        "ts_ns": 1790653435600124031,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "written",
+        "exe": "/bin/cp",
+        "pid": 2856,
+        "command": "/bin/cp -c final.txt cloned.txt",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/cloned.txt",
+        "path2": null,
+        "evidence": "es:clone"
+      }
+    ],
+    "identity": {
+      "current": "mac:16777220:12888347265",
+      "recorded": "mac:16777220:12888347265",
+      "check": "match"
+    },
+    "status": "labelled",
+    "note": null,
+    "created_ns": 1790653435600124031,
+    "created": "2026-09-29T03:43:55+00:00",
+    "last_written_ns": 1790653435600124031,
+    "last_written": "2026-09-29T03:43:55+00:00",
+    "user": "uid:501",
+    "user_name": "runner",
+    "created_by": {
+      "exe": "/bin/cp",
+      "pid": 2856,
+      "command": "/bin/cp -c final.txt cloned.txt",
+      "cwd": "/Users/runner/whyfs-live-c58ulc1_",
+      "process_key": 423627560,
+      "run_id": "live"
+    },
+    "process_chain": [
+      {
+        "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2648,
+        "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python scripts/macos_live_es.py --out ci-results/live-es --binary ci-results/whyfs-collect",
+        "user": "uid:0"
+      },
+      {
+        "exe": "/bin/cp",
+        "pid": 2856,
+        "command": "/bin/cp -c final.txt cloned.txt",
+        "user": "uid:501"
+      }
+    ],
+    "inputs": [
+      "/Users/runner/whyfs-live-c58ulc1_/final.txt"
+    ],
+    "inputs_hidden": 0,
+    "inputs_via_temporaries": [],
+    "shared_by_outputs": 0,
+    "renamed_from": [],
+    "dependents": [],
+    "agent": null,
+    "intent": {
+      "task": null,
+      "note": "no intent context was provided; whyfs does not infer intent"
+    },
+    "causal_why": "cloned.txt exists because cp wrote it after reading final.txt.",
+    "observation": {
+      "complete": true,
+      "gaps": [],
+      "later_gaps": [],
+      "file_time_in_gap": null,
+      "notes": [],
+      "observing_since": "2026-09-29T03:43:52+00:00"
+    },
+    "impact": {
+      "generated_outputs": [],
+      "possibly_affected": [],
+      "dependents": [],
+      "readers": [],
+      "is_generated": true,
+      "no_observed_dependents": true,
+      "summary": "No dependents were observed.  This does not mean it is safe to remove: whyfs only knows the activity it observed. This file is generated: cp wrote it from 1 observed input; rerunning that process may recreate it (whyfs does not verify this)."
+    },
+    "evidence": "OS-observed"
+  },
+  "copied.txt": {
+    "schema": "whyfs-label/1",
+    "path": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+    "exists": true,
+    "history": [
+      {
+        "ts_ns": 1790653435608369731,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "written",
+        "exe": "/bin/cp",
+        "pid": 2857,
+        "command": "/bin/cp final.txt copied.txt",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/copied.txt",
+        "path2": null,
+        "evidence": "es:close-modified"
+      }
+    ],
+    "identity": {
+      "current": "mac:16777220:12888347266",
+      "recorded": "mac:16777220:12888347266",
+      "check": "match"
+    },
+    "status": "labelled",
+    "note": null,
+    "created_ns": 1790653435608369731,
+    "created": "2026-09-29T03:43:55+00:00",
+    "last_written_ns": 1790653435608369731,
+    "last_written": "2026-09-29T03:43:55+00:00",
+    "user": "uid:501",
+    "user_name": "runner",
+    "created_by": {
+      "exe": "/bin/cp",
+      "pid": 2857,
+      "command": "/bin/cp final.txt copied.txt",
+      "cwd": "/Users/runner/whyfs-live-c58ulc1_",
+      "process_key": 427821865,
+      "run_id": "live"
+    },
+    "process_chain": [
+      {
+        "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2648,
+        "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python scripts/macos_live_es.py --out ci-results/live-es --binary ci-results/whyfs-collect",
+        "user": "uid:0"
+      },
+      {
+        "exe": "/bin/cp",
+        "pid": 2857,
+        "command": "/bin/cp final.txt copied.txt",
+        "user": "uid:501"
+      }
+    ],
+    "inputs": [
+      "/Users/runner/whyfs-live-c58ulc1_/final.txt"
+    ],
+    "inputs_hidden": 0,
+    "inputs_via_temporaries": [],
+    "shared_by_outputs": 0,
+    "renamed_from": [],
+    "dependents": [],
+    "agent": null,
+    "intent": {
+      "task": null,
+      "note": "no intent context was provided; whyfs does not infer intent"
+    },
+    "causal_why": "copied.txt exists because cp wrote it after reading final.txt.",
+    "observation": {
+      "complete": true,
+      "gaps": [],
+      "later_gaps": [],
+      "file_time_in_gap": null,
+      "notes": [],
+      "observing_since": "2026-09-29T03:43:52+00:00"
+    },
+    "impact": {
+      "generated_outputs": [],
+      "possibly_affected": [],
+      "dependents": [],
+      "readers": [],
+      "is_generated": true,
+      "no_observed_dependents": true,
+      "summary": "No dependents were observed.  This does not mean it is safe to remove: whyfs only knows the activity it observed. This file is generated: cp wrote it from 1 observed input; rerunning that process may recreate it (whyfs does not verify this)."
+    },
+    "evidence": "OS-observed"
+  },
+  "reused.txt": {
+    "schema": "whyfs-label/1",
+    "path": "/Users/runner/whyfs-live-c58ulc1_/reused.txt",
+    "exists": true,
+    "history": [
+      {
+        "ts_ns": 1790653435719212423,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "written",
+        "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2860,
+        "command": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c 'open('\"'\"'reused.txt'\"'\"','\"'\"'w'\"'\"').write('\"'\"'two'\"'\"')'",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/reused.txt",
+        "path2": null,
+        "evidence": "es:close-modified"
+      },
+      {
+        "ts_ns": 1790653435634814823,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "deleted",
+        "exe": "/bin/rm",
+        "pid": 2859,
+        "command": "/bin/rm reused.txt",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/reused.txt",
+        "path2": null,
+        "evidence": "es:unlink"
+      },
+      {
+        "ts_ns": 1790653435626077839,
+        "at": "2026-09-29T03:43:55+00:00",
+        "action": "written",
+        "exe": "/bin/bash",
+        "pid": 2858,
+        "command": "/bin/sh -c 'echo one > reused.txt'",
+        "user": "uid:501",
+        "path": "/Users/runner/whyfs-live-c58ulc1_/reused.txt",
+        "path2": null,
+        "evidence": "es:close-modified"
+      }
+    ],
+    "identity": {
+      "current": "mac:16777220:12888347268",
+      "recorded": "mac:16777220:12888347268",
+      "check": "match"
+    },
+    "status": "labelled",
+    "note": null,
+    "created_ns": 1790653435719212423,
+    "created": "2026-09-29T03:43:55+00:00",
+    "last_written_ns": 1790653435719212423,
+    "last_written": "2026-09-29T03:43:55+00:00",
+    "user": "uid:501",
+    "user_name": "runner",
+    "created_by": {
+      "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+      "pid": 2860,
+      "command": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c 'open('\"'\"'reused.txt'\"'\"','\"'\"'w'\"'\"').write('\"'\"'two'\"'\"')'",
+      "cwd": "/Users/runner/whyfs-live-c58ulc1_",
+      "process_key": 440404780,
+      "run_id": "live"
+    },
+    "process_chain": [
+      {
+        "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2648,
+        "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python scripts/macos_live_es.py --out ci-results/live-es --binary ci-results/whyfs-collect",
+        "user": "uid:0"
+      },
+      {
+        "exe": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+        "pid": 2860,
+        "command": "/Applications/Xcode_16.4.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python -c 'open('\"'\"'reused.txt'\"'\"','\"'\"'w'\"'\"').write('\"'\"'two'\"'\"')'",
+        "user": "uid:501"
+      }
+    ],
+    "inputs": [],
+    "inputs_hidden": 0,
+    "inputs_via_temporaries": [],
+    "shared_by_outputs": 0,
+    "renamed_from": [],
+    "dependents": [],
+    "agent": null,
+    "intent": {
+      "task": null,
+      "note": "no intent context was provided; whyfs does not infer intent"
+    },
+    "causal_why": "reused.txt exists because Python wrote it (no input files were observed).",
+    "observation": {
+      "complete": true,
+      "gaps": [],
+      "later_gaps": [],
+      "file_time_in_gap": null,
+      "notes": [],
+      "observing_since": "2026-09-29T03:43:52+00:00"
+    },
+    "impact": {
+      "generated_outputs": [],
+      "possibly_affected": [],
+      "dependents": [],
+      "readers": [],
+      "is_generated": false,
+      "no_observed_dependents": true,
+      "summary": "No dependents were observed.  This does not mean it is safe to remove: whyfs only knows the activity it observed."
+    },
+    "evidence": "OS-observed"
+  }
+}

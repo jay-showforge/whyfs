@@ -1,0 +1,35 @@
+== unsigned, as user
+es_new_client: 5 ERR_NOT_PRIVILEGED
+exit 3
+== unsigned, as root
+es_new_client: 3 ERR_NOT_ENTITLED
+exit 3
+probe/es_probe_adhoc: replacing existing signature
+Executable=/Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc
+[Dict]
+	[Key] com.apple.developer.endpoint-security.client
+	[Value]
+		[Bool] true
+== ad-hoc signed with the ES entitlement, as root
+es_new_client: 0 SUCCESS
+exit 0
+2026-09-29 02:47:29.314 Df amfid[102:2de3b] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14 not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:29.314 Df kernel[0:2e32e] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:29.316 Df kernel[0:2e32f] (AppleMobileFileIntegrity) AMFI: '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python' is adhoc signed.
+2026-09-29 02:47:29.317 Df amfid[102:2de3b] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:29.317 Df kernel[0:2e32f] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:29.352 Df kernel[0:2e32f] (AppleMobileFileIntegrity) AMFI: '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python' is adhoc signed.
+2026-09-29 02:47:29.354 Df amfid[102:2de3b] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:29.354 Df kernel[0:2e32f] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:30.418 Df kernel[0:2e369] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe' has no CMS blob?
+2026-09-29 02:47:30.418 Df kernel[0:2e369] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe': Unrecoverable CT signature issue, bailing out.
+2026-09-29 02:47:30.418 Df kernel[0:2e369] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:30.511 Df kernel[0:2e38a] (AppleMobileFileIntegrity) AMFI: [non-fatal] unable to accelerate context: com.apple.security.codesign | 65285
+2026-09-29 02:47:30.565 Df kernel[0:2e3a9] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc' is adhoc signed.
+2026-09-29 02:47:30.566 E  amfid[102:2de3b] [com.apple.MobileFileIntegrity.framework:default] Restricted entitlements not validated, bailing out. Error: Error Domain=AppleMobileFileIntegrityError Code=-427 "Unable to retrieve certificate chain" UserInfo={NSURL=<private>, NSLocalizedDescription=Unable to retrieve certificate chain}
+2026-09-29 02:47:30.566 E  amfid[102:2de3b] [com.apple.MobileFileIntegrity.framework:default] Adhoc signed app with restricted entitlements detected
+2026-09-29 02:47:30.566 Df amfid[102:2de3b] /Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc not valid: Error Domain=AppleMobileFileIntegrityError Code=-424 "The file is adhoc signed but contains restricted entitlements" UserInfo={NSURL=file:///Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc, NSLocalizedDescription=The file is adhoc signed but contains restricted entitlements}
+2026-09-29 02:47:30.566 Df kernel[0:2e3a9] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:30.566 Df kernel[0:2e3a9] (AppleMobileFileIntegrity) AMFI: [non-fatal] unable to accelerate context: es_probe_adhoc-555549447010033cb8033ab5bb2348a8e3d8c78f | 65285
+2026-09-29 02:47:30.571 Df kernel[0:70] (EndpointSecurity) Client disconnected (pid 83267, es_probe_adhoc)
+2026-09-29 02:47:30.617 Df log[83273:2e3b8] [com.apple.log:] log run noninteractively, parent: 83270 (sudo), args: 'log' 'show' '--last' '2m' '--predicate' 'sender == "AppleMobileFileIntegrity" OR process == "amfid" OR eventMessage CONTAINS "es_probe"' '--style' 'compact'

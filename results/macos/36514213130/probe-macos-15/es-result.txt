@@ -1,0 +1,35 @@
+== unsigned, as user
+es_new_client: 5 ERR_NOT_PRIVILEGED
+exit 3
+== unsigned, as root
+es_new_client: 3 ERR_NOT_ENTITLED
+exit 3
+probe/es_probe_adhoc: replacing existing signature
+Executable=/Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc
+[Dict]
+	[Key] com.apple.developer.endpoint-security.client
+	[Value]
+		[Bool] true
+== ad-hoc signed with the ES entitlement, as root
+es_new_client: 0 SUCCESS
+exit 0
+2026-09-29 02:47:27.385 Df kernel[0:15bc5] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:32.092 Df kernel[0:15e63] (AppleMobileFileIntegrity) AMFI: '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14' is adhoc signed.
+2026-09-29 02:47:32.094 Df amfid[97:4b00] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14 not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:32.094 Df kernel[0:15e63] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:32.096 Df kernel[0:15e64] (AppleMobileFileIntegrity) AMFI: '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python' is adhoc signed.
+2026-09-29 02:47:32.098 Df amfid[97:4b00] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:32.098 Df kernel[0:15e64] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:32.136 Df kernel[0:15e64] (AppleMobileFileIntegrity) AMFI: '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python' is adhoc signed.
+2026-09-29 02:47:32.138 Df amfid[97:4b00] /opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python not valid: Error Domain=AppleMobileFileIntegrityError Code=-423 "The file is adhoc signed or signed by an unknown certificate chain" UserInfo={NSURL=file:///opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python, NSLocalizedDescription=The file is adhoc signed or signed by an unknown certificate chain}
+2026-09-29 02:47:32.138 Df kernel[0:15e64] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:33.443 Df kernel[0:15e97] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe' has no CMS blob?
+2026-09-29 02:47:33.443 Df kernel[0:15e97] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe': Unrecoverable CT signature issue, bailing out.
+2026-09-29 02:47:33.443 Df kernel[0:15e97] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:33.644 Df kernel[0:15ec2] (AppleMobileFileIntegrity) AMFI: '/Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc' is adhoc signed.
+2026-09-29 02:47:33.645 E  amfid[97:4b00] [com.apple.MobileFileIntegrity.framework:default] Restricted entitlements not validated, bailing out. Error: Error Domain=AppleMobileFileIntegrityError Code=-420 "The signature on the file is invalid" UserInfo={NSURL=<private>, NSLocalizedDescription=The signature on the file is invalid}
+2026-09-29 02:47:33.646 Df amfid[97:4b00] /Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc not valid: Error Domain=AppleMobileFileIntegrityError Code=-420 "The signature on the file is invalid" UserInfo={NSURL=file:///Users/runner/work/whyfs/whyfs/probe/es_probe_adhoc, NSLocalizedDescription=The signature on the file is invalid}
+2026-09-29 02:47:33.646 Df kernel[0:15ec2] (AppleMobileFileIntegrity) AMFI: code signature validation failed.
+2026-09-29 02:47:33.646 Df kernel[0:15ec2] (AppleMobileFileIntegrity) AMFI: [non-fatal] unable to accelerate context: es_probe_adhoc-55554944e116ede2c0fd3131bc097b1bb92bade0 | 245
+2026-09-29 02:47:33.653 Df kernel[0:6f] (EndpointSecurity) Client disconnected (pid 34694, es_probe_adhoc)
+2026-09-29 02:47:33.710 Df log[34700:15ed0] [com.apple.log:] log run noninteractively, parent: 34697 (sudo), args: 'log' 'show' '--last' '2m' '--predicate' 'sender == "AppleMobileFileIntegrity" OR process == "amfid" OR eventMessage CONTAINS "es_probe"' '--style' 'compact'

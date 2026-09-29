@@ -1,0 +1,175 @@
+{
+ "platform": "macOS-26.6.2-arm64-arm-64bit",
+ "machine": "arm64",
+ "checks": {
+  "service_starts_with_the_os": true,
+  "service_restarts_after_a_crash": true,
+  "A_complete_before_the_outage": true,
+  "observer_was_down_when_B_appeared": true,
+  "observer_recovered_automatically": true,
+  "A_labelled_with_complete_origin": true,
+  "A_lists_the_outage_as_a_later_gap": true,
+  "B_has_no_fabricated_creator": false,
+  "B_explicitly_incomplete": false,
+  "B_appeared_during_the_recorded_gap": false,
+  "C_labelled_complete_after_recovery": true,
+  "service_reports_the_gap": true,
+  "human_label_explains_B": false
+ },
+ "failed": [
+  "B_has_no_fabricated_creator",
+  "B_explicitly_incomplete",
+  "B_appeared_during_the_recorded_gap",
+  "human_label_explains_B"
+ ],
+ "detail": {
+  "service_starts_with_the_os": {
+   "auto_start": true,
+   "restart_on_failure": true,
+   "RunAtLoad": true,
+   "KeepAlive": true,
+   "loaded": true,
+   "plist": "/Library/LaunchDaemons/org.tenzorpipe.whyfs.plist"
+  },
+  "service_restarts_after_a_crash": {
+   "auto_start": true,
+   "restart_on_failure": true,
+   "RunAtLoad": true,
+   "KeepAlive": true,
+   "loaded": true,
+   "plist": "/Library/LaunchDaemons/org.tenzorpipe.whyfs.plist"
+  },
+  "A_complete_before_the_outage": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:46:43+00:00"
+  },
+  "observer_was_down_when_B_appeared": {
+   "down_after_kill": true,
+   "down_after_B": true
+  },
+  "observer_recovered_automatically": {
+   "after_s": 0.1,
+   "pids_after": [
+    21617
+   ],
+   "pids_before": [
+    19508
+   ]
+  },
+  "A_labelled_with_complete_origin": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [
+    "whyfs was not recording from 2026-09-29T03:47:24+00:00 to 2026-09-29T03:47:32+00:00 (the observer stopped unexpectedly)"
+   ],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:46:43+00:00"
+  },
+  "A_lists_the_outage_as_a_later_gap": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [
+    "whyfs was not recording from 2026-09-29T03:47:24+00:00 to 2026-09-29T03:47:32+00:00 (the observer stopped unexpectedly)"
+   ],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:46:43+00:00"
+  },
+  "B_has_no_fabricated_creator": {
+   "status": "labelled",
+   "created_by": {
+    "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+    "pid": 21587,
+    "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python -c 'import sys; open(sys.argv[2],'\"'\"'w'\"'\"').write(open(sys.argv[1]).read().upper())' /Users/runner/whyfs-outage-6697cfb2/input.txt /Users/runner/whyfs-outage-6697cfb2/B.txt",
+    "cwd": "/Users/runner/work/whyfs/whyfs",
+    "process_key": 8707396691,
+    "run_id": "machine-35dd3c6f040940128f9f73c0deed00ff"
+   },
+   "note": null
+  },
+  "B_explicitly_incomplete": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [
+    "whyfs was not recording from 2026-09-29T03:47:24+00:00 to 2026-09-29T03:47:32+00:00 (the observer stopped unexpectedly)"
+   ],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:46:43+00:00"
+  },
+  "B_appeared_during_the_recorded_gap": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [
+    "whyfs was not recording from 2026-09-29T03:47:24+00:00 to 2026-09-29T03:47:32+00:00 (the observer stopped unexpectedly)"
+   ],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:46:43+00:00"
+  },
+  "C_labelled_complete_after_recovery": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:46:43+00:00"
+  },
+  "service_reports_the_gap": [
+   {
+    "from": "2026-09-29T03:47:24+00:00",
+    "to": "2026-09-29T03:47:32+00:00",
+    "seconds": 8.1,
+    "after_crash": true
+   }
+  ],
+  "human_label_explains_B": " activity it observed. This file is generated: Python wrote it from 1 observed input; rerunning that process may recreate it (whyfs does not verify this). Evidence is incomplete: whyfs was not recording from 2026-09-29T03:47:24+00:00 to 2026-09-29T03:47:32+00:00 (the observer stopped unexpectedly).\nProvenance: complete: whyfs was recording, without loss, when this file was created\nSince then: whyfs was not recording from 2026-09-29T03:47:24+00:00 to 2026-09-29T03:47:32+00:00 (the observer stopped unexpectedly) (later history and dependents may be missing)\nEvidence: OS-observed; identity match\n"
+ },
+ "timeline": {
+  "A_ns": 1790653631703936000,
+  "suspended": {
+   "pids": [
+    "19508",
+    "19509"
+   ],
+   "at_ns": 1790653635994110000
+  },
+  "B_ns": 1790653644635544000,
+  "kill": {
+   "pids_before": [
+    19508
+   ],
+   "killed": [
+    "19508",
+    "19509"
+   ],
+   "rc": 0,
+   "at_ns": 1790653652728029000,
+   "how": "kill -9 of every process of the launchd job (launchd program, supervisor, collector, writer)"
+  },
+  "recovered_after_s": 0.1,
+  "C_ns": 1790653654918803000
+ },
+ "service_config": {
+  "auto_start": true,
+  "restart_on_failure": true,
+  "RunAtLoad": true,
+  "KeepAlive": true,
+  "loaded": true,
+  "plist": "/Library/LaunchDaemons/org.tenzorpipe.whyfs.plist"
+ },
+ "recording_gaps": [
+  {
+   "from": "2026-09-29T03:47:24+00:00",
+   "to": "2026-09-29T03:47:32+00:00",
+   "seconds": 8.1,
+   "after_crash": true
+  }
+ ],
+ "finished": "2026-09-29T03:47:39+0000"
+}

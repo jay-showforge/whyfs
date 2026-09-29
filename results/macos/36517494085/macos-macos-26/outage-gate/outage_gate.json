@@ -1,0 +1,149 @@
+{
+ "platform": "macOS-26.6.2-arm64-arm-64bit",
+ "machine": "arm64",
+ "checks": {
+  "service_starts_with_the_os": true,
+  "service_restarts_after_a_crash": true,
+  "A_complete_before_the_outage": true,
+  "observer_was_down_when_B_appeared": false,
+  "observer_recovered_automatically": true,
+  "A_labelled_with_complete_origin": true,
+  "A_lists_the_outage_as_a_later_gap": false,
+  "B_has_no_fabricated_creator": false,
+  "B_explicitly_incomplete": false,
+  "B_appeared_during_the_recorded_gap": false,
+  "C_labelled_complete_after_recovery": true,
+  "service_reports_the_gap": false,
+  "human_label_explains_B": false
+ },
+ "failed": [
+  "observer_was_down_when_B_appeared",
+  "A_lists_the_outage_as_a_later_gap",
+  "B_has_no_fabricated_creator",
+  "B_explicitly_incomplete",
+  "B_appeared_during_the_recorded_gap",
+  "service_reports_the_gap",
+  "human_label_explains_B"
+ ],
+ "detail": {
+  "service_starts_with_the_os": {
+   "auto_start": true,
+   "restart_on_failure": true,
+   "RunAtLoad": true,
+   "KeepAlive": true,
+   "loaded": true,
+   "plist": "/Library/LaunchDaemons/org.tenzorpipe.whyfs.plist"
+  },
+  "service_restarts_after_a_crash": {
+   "auto_start": true,
+   "restart_on_failure": true,
+   "RunAtLoad": true,
+   "KeepAlive": true,
+   "loaded": true,
+   "plist": "/Library/LaunchDaemons/org.tenzorpipe.whyfs.plist"
+  },
+  "A_complete_before_the_outage": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:36:35+00:00"
+  },
+  "observer_was_down_when_B_appeared": {
+   "down_after_kill": false,
+   "down_after_B": false
+  },
+  "observer_recovered_automatically": {
+   "after_s": 0.1,
+   "pids_after": [
+    11570
+   ],
+   "pids_before": [
+    9393
+   ]
+  },
+  "A_labelled_with_complete_origin": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:36:35+00:00"
+  },
+  "A_lists_the_outage_as_a_later_gap": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:36:35+00:00"
+  },
+  "B_has_no_fabricated_creator": {
+   "status": "labelled",
+   "created_by": {
+    "exe": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+    "pid": 11703,
+    "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python -c 'import sys; open(sys.argv[2],'\"'\"'w'\"'\"').write(open(sys.argv[1]).read().upper())' /Users/runner/whyfs-outage-2f7db75a/input.txt /Users/runner/whyfs-outage-2f7db75a/B.txt",
+    "cwd": "/Users/runner/work/whyfs/whyfs",
+    "process_key": 545271223,
+    "run_id": "machine-163ae42c504a447b80d0bd93a2bd6381"
+   },
+   "note": null
+  },
+  "B_explicitly_incomplete": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:36:35+00:00"
+  },
+  "B_appeared_during_the_recorded_gap": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:36:35+00:00"
+  },
+  "C_labelled_complete_after_recovery": {
+   "complete": true,
+   "gaps": [],
+   "later_gaps": [],
+   "file_time_in_gap": null,
+   "notes": [],
+   "observing_since": "2026-09-29T03:36:35+00:00"
+  },
+  "service_reports_the_gap": [],
+  "human_label_explains_B": "oes not infer intent)\nWhy:      B.txt exists because Python wrote it after reading input.txt.\nInputs:\n  /Users/runner/whyfs-outage-2f7db75a/input.txt\nHistory:\n  2026-09-29T03:37:37+00:00  written    by Python\nIf removed or changed: No dependents were observed.  This does not mean it is safe to remove: whyfs only knows the activity it observed. This file is generated: Python wrote it from 1 observed input; rerunning that process may recreate it (whyfs does not verify this).\nProvenance: complete: whyfs was recording, without loss, when this file was created\nEvidence: OS-observed; identity match\n"
+ },
+ "timeline": {
+  "A_ns": 1790653051973864000,
+  "kill": {
+   "pids_before": [
+    9393
+   ],
+   "killed": [
+    "9393",
+    "9394"
+   ],
+   "rc": 0,
+   "at_ns": 1790653056239537000,
+   "how": "kill -9 of every process of the launchd job (launchd program, supervisor, collector, writer)"
+  },
+  "B_ns": 1790653057026067000,
+  "recovered_after_s": 0.1,
+  "C_ns": 1790653059383299000
+ },
+ "service_config": {
+  "auto_start": true,
+  "restart_on_failure": true,
+  "RunAtLoad": true,
+  "KeepAlive": true,
+  "loaded": true,
+  "plist": "/Library/LaunchDaemons/org.tenzorpipe.whyfs.plist"
+ },
+ "recording_gaps": [],
+ "finished": "2026-09-29T03:37:44+0000"
+}

@@ -264,7 +264,8 @@ def main() -> int:
     ready = wait(lambda: (t.api("status").get("result") or {}).get("collector_ready"), 90) if es_ok else False
     t.check("collector_ready", bool(ready), t.api("status"))
     cols = collector_processes()
-    t.check("service_runs_the_packaged_collector", len(cols) == 1 and cols[0].startswith(str(COLLECTOR) + " "), cols)
+    # the collector and its store writer (a fork of it): both the packaged binary, nothing else
+    t.check("service_runs_the_packaged_collector", bool(cols) and all(c.startswith(str(COLLECTOR) + " ") for c in cols), cols)
 
     # ------------------------------------------------ the command and a live label
     work = t.home / f"whyfs-pkgtest-{os.getpid()}"
