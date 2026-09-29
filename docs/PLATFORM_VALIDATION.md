@@ -3,7 +3,8 @@
 WhyFS 1.0 supports exactly: **Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.**
 macOS is not part of 1.0.0. It is in development on the `macos-support` branch:
 - it is functionally validated on SIP-disabled hosted runners;
-- its performance FAILED ([details below](#macos-development-branch-macos-support)).
+- its performance and long-history provenance gates remain unresolved
+  ([details below](#macos-development-branch-macos-support)).
 
 A platform counts as supported only with **native runtime evidence**: the package installs
 from a clean state, the collector runs on that CPU and kernel, the shared corpus and the
@@ -20,7 +21,7 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 | Linux x86-64 | **Supported** | GitHub `ubuntu-24.04`: kernel 6.17.0-1022-azure.  Also WSL2 (kernel 6.6.87.2) |
 | Linux ARM64 | **Supported** | GitHub `ubuntu-24.04-arm`: kernel 6.17.0-1022-azure, aarch64 |
 | WSL2 | **Supported** | covered by the Linux x86-64 package and gates, with systemd running `whyfs.service` |
-| macOS | **Not in 1.0.0.  In development** (branch `macos-support`): functionally validated on GitHub-hosted Intel and Apple Silicon Macs, which run with SIP disabled.  **Performance FAILED:** Intel `make` +6.78 %, Apple Silicon spawn ×300 +6.29 %, and the long-history label gate on both.  A standard Mac needs Apple's Endpoint Security entitlement (BLOCKED_EXTERNAL, not tested).  [docs/MACOS.md](MACOS.md) and [the macOS section](#macos-development-branch-macos-support) | GitHub `macos-15-intel` (x86_64), `macos-15`, `macos-14`, `macos-26` (arm64) |
+| macOS | **Not in 1.0.0.  In development** (branch `macos-support`): functionally validated on GitHub-hosted Intel and Apple Silicon Macs, which run with SIP disabled.  **Experimental: performance and long-history gates unresolved:** Intel `make` +6.78 %, Apple Silicon spawn ×300 +6.29 %, the long-history label gate on both.  Not a released supported platform.  A standard Mac needs Apple's Endpoint Security entitlement (BLOCKED_EXTERNAL, not tested).  [docs/MACOS.md](MACOS.md) and [the macOS section](#macos-development-branch-macos-support) | GitHub `macos-15-intel` (x86_64), `macos-15`, `macos-14`, `macos-26` (arm64) |
 
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
@@ -436,7 +437,12 @@ above.
 
 ## macOS development branch (macos-support)
 
-**Status: MACOS FUNCTIONALLY VALIDATED — PERFORMANCE FAILED.**
+**Status: MACOS FUNCTIONALLY VALIDATED — PERFORMANCE AND LONG-HISTORY GATES UNRESOLVED.**
+- **Earlier wording:** commit c624a6f recorded "PERFORMANCE FAILED". That was narrowed here,
+  because the long-history gates also fail, and their causes are not demonstrated.
+- **Evidence:** the evidence and the numbers are unchanged.
+- **Status of the platform:** macOS support is in development / experimental. It is not
+  production ready, and it is not a supported platform.
 - macOS is **not part of 1.0.0**; tag `v1.0.0` is unchanged.
 - Every run below is GitHub-hosted, on the `macos-support` branch.
 - The hosted Macs run with **SIP disabled**, so an ad hoc signed collector can hold the Endpoint
@@ -509,7 +515,7 @@ JSON files.
 - Apple Silicon: `whyfs-1.0.0.41-macos-arm64-dev-42e060f-36538771037-UNSIGNED.pkg`,
   SHA-256 `08e4d67214b1dfd24591db2b7192c02064cca88c9aa0da710ba5e262ba3712cd`.
 
-### Long-history label gate (1 to 5,000 generations) — FAIL on both
+### Long-history label gate (1 to 5,000 generations) — UNRESOLVED / FAILING GATE on both
 
 **Intel: FAIL, reproduced.**
 - `label` median by generations:

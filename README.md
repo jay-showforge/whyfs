@@ -112,9 +112,9 @@ Download the packages from the [v1.0.0 release](https://github.com/jay-showforge
   `.github/workflows/native-validation.yml` for the exact commands).
 
 The packages are not code-signed.  Windows 10 has not been validated separately.  **macOS is not part of 1.0.0.** It is in
-development on the `macos-support` branch ([docs/MACOS.md](docs/MACOS.md)):
-- it is functionally validated on SIP-disabled CI runners;
-- its performance and long-history label gates currently FAIL;
+development / experimental on the `macos-support` branch ([docs/MACOS.md](docs/MACOS.md)):
+- functional validation passes on GitHub-hosted Intel and Apple Silicon environments;
+- its performance and long-history provenance gates remain unresolved;
 - standard Macs need Apple's Endpoint Security entitlement.
 
 Validation evidence for every platform is in [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).

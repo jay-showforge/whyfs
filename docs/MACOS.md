@@ -1,8 +1,12 @@
 # WhyFS on macOS (development: branch `macos-support`)
 
-**Status: in development, not released.**  WhyFS 1.0.0 (`v1.0.0`) does not include macOS.
-The macOS work builds, installs and passes every executed product gate on GitHub-hosted Intel and
-Apple Silicon Macs.  Those Macs run with System Integrity Protection **disabled**.  On a standard
+**Status: in development / experimental, not released.**
+
+macOS support is in development / experimental.  Functional validation passes on GitHub-hosted Intel and Apple Silicon environments, but performance and long-history provenance gates remain unresolved.  macOS is not part of WhyFS 1.0.0.
+
+- **Where it was tested:** the functional, product, corpus, secret and outage gates pass on
+  GitHub-hosted Intel and Apple Silicon Macs.
+- **The caveat:** those Macs run with System Integrity Protection **disabled**.  On a standard
 Mac (SIP enabled), the Endpoint Security client only starts if Apple's restricted entitlement is
 present: see [External requirement](#external-requirement-apple-endpoint-security-entitlement).
 The exact evidence is in [Validation status](#validation-status).
@@ -199,9 +203,13 @@ exec, fork, exit, rename and unlink of everything else are never muted.
 
 ## Validation status
 
-**MACOS FUNCTIONALLY VALIDATED — PERFORMANCE FAILED.**
-- It is functionally validated on SIP-disabled GitHub-hosted runners.
-- Performance and the long-history label gate fail: final run 36538771037, commit 42e060f.
+**MACOS FUNCTIONALLY VALIDATED — PERFORMANCE AND LONG-HISTORY GATES UNRESOLVED.**
+- **Functionally validated** on SIP-disabled GitHub-hosted runners (run 36538771040).
+- **Unresolved** (run 36538771037, both on commit 42e060f):
+  - the performance thresholds (Intel `make`, Apple Silicon spawn ×300);
+  - the long-history gates (Intel latency and missing history; Apple Silicon incomplete-observation
+    labels).
+- **Frozen:** these findings are recorded for possible future work.
 - A standard Mac is externally blocked, and was not tested.
 - macOS is not part of 1.0.0.
 
