@@ -1,0 +1,95 @@
+# macOS environment probe (diagnostic, macos-support branch): which standard macOS runners exist,
+# their real architecture and toolchain, and what Endpoint Security allows there.  No product
+# code runs here; results only inform the macOS design and are recorded as evidence.
+name: macos-probe
+# Runs on pushes to macos-support that change this file (manual dispatch needs the workflow on
+# the default branch, which stays untouched during macOS development).
+on:
+  push:
+    branches: [macos-support]
+    paths: [.github/workflows/macos-probe.yml]
+permissions: { contents: read }
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15-intel, macos-15, macos-14, macos-26]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Platform identity
+        run: |
+          mkdir -p probe
+          {
+            echo "runner label: ${{ matrix.runner }}"
+            echo "uname -m: $(uname -m)"
+            echo "uname -a: $(uname -a)"
+            sw_vers
+            echo "sysctl hw.optional.arm64: $(sysctl -n hw.optional.arm64 2>/dev/null || echo n/a)"
+            echo "sysctl sysctl.proc_translated: $(sysctl -n sysctl.proc_translated 2>/dev/null || echo n/a)"
+            echo "cpu: $(sysctl -n machdep.cpu.brand_string)"
+            echo "ncpu: $(sysctl -n hw.ncpu)  mem: $(sysctl -n hw.memsize)"
+            xcodebuild -version
+            echo "sdk: $(xcrun --show-sdk-path)"
+            clang --version
+            echo "python3: $(python3 -c 'import sys,platform; print(sys.version.replace(chr(10)," "), platform.machine())')"
+            echo "csrutil: $(csrutil status 2>&1)"
+            echo "whoami: $(whoami)  sudo -n: $(sudo -n true 2>&1 && echo ok)"
+            df -h / ; diskutil info / | grep -E 'Type \(Bundle\)|File System Personality|Case' || true
+          } 2>&1 | tee probe/platform.txt
+      - name: Endpoint Security client (unsigned, then ad-hoc signed with the entitlement)
+        run: |
+          cat > probe/es_probe.c <<'EOF'
+          #include <EndpointSecurity/EndpointSecurity.h>
+          #include <stdio.h>
+          static const char *R[] = {"SUCCESS","ERR_INVALID_ARGUMENT","ERR_INTERNAL","ERR_NOT_ENTITLED","ERR_NOT_PERMITTED","ERR_NOT_PRIVILEGED","ERR_TOO_MANY_CLIENTS"};
+          int main(void) {
+            es_client_t *c = NULL;
+            es_new_client_result_t r = es_new_client(&c, ^(es_client_t *cl, const es_message_t *m) { (void)cl; (void)m; });
+            printf("es_new_client: %d %s\n", (int)r, (unsigned)r < 7 ? R[r] : "?");
+            if (c) es_delete_client(c);
+            return r == ES_NEW_CLIENT_RESULT_SUCCESS ? 0 : 3;
+          }
+          EOF
+          clang -Wall -Wextra -o probe/es_probe probe/es_probe.c -lEndpointSecurity 2>&1 | tee probe/es-build.txt
+          file probe/es_probe | tee -a probe/es-build.txt
+          echo "== unsigned, as user" | tee probe/es-result.txt
+          ./probe/es_probe 2>&1 | tee -a probe/es-result.txt; echo "exit ${PIPESTATUS[0]}" | tee -a probe/es-result.txt
+          echo "== unsigned, as root" | tee -a probe/es-result.txt
+          sudo ./probe/es_probe 2>&1 | tee -a probe/es-result.txt; echo "exit ${PIPESTATUS[0]}" | tee -a probe/es-result.txt
+          cat > probe/ent.plist <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict><key>com.apple.developer.endpoint-security.client</key><true/></dict></plist>
+          EOF
+          cp probe/es_probe probe/es_probe_adhoc
+          codesign -s - --entitlements probe/ent.plist -f probe/es_probe_adhoc 2>&1 | tee -a probe/es-result.txt
+          codesign -d --entitlements - probe/es_probe_adhoc 2>&1 | tee -a probe/es-result.txt
+          echo "== ad-hoc signed with the ES entitlement, as root" | tee -a probe/es-result.txt
+          sudo ./probe/es_probe_adhoc 2>&1 | tee -a probe/es-result.txt; echo "exit ${PIPESTATUS[0]}" | tee -a probe/es-result.txt
+          sudo log show --last 2m --predicate 'sender == "AppleMobileFileIntegrity" OR process == "amfid" OR eventMessage CONTAINS "es_probe"' --style compact 2>/dev/null | tail -20 | tee -a probe/es-result.txt || true
+      - name: Apple eslogger (Apple-entitled Endpoint Security client)
+        run: |
+          {
+            echo "eslogger: $(command -v eslogger || echo absent)"
+            sudo eslogger --list-events 2>&1 | head -200 | tr '\n' ' '; echo
+          } 2>&1 | tee probe/eslogger.txt
+          ( sudo eslogger exec fork exit open close write create rename unlink truncate mmap clone chdir link \
+              --format json > probe/eslogger.json 2> probe/eslogger.err & echo $! > probe/eslogger.pid )
+          sleep 4
+          d=$(mktemp -d); echo hello > "$d/a.txt"; cat "$d/a.txt" > "$d/b.txt"; mv "$d/b.txt" "$d/c.txt"; cp "$d/c.txt" "$d/d.txt"; rm "$d/a.txt"
+          echo "probe dir: $d" | tee -a probe/eslogger.txt
+          sleep 3
+          sudo pkill -INT eslogger || true
+          sleep 2
+          echo "stderr:" | tee -a probe/eslogger.txt; cat probe/eslogger.err | tee -a probe/eslogger.txt
+          echo "events: $(wc -l < probe/eslogger.json)" | tee -a probe/eslogger.txt
+          grep -c "$d" probe/eslogger.json | sed 's/^/events naming the probe dir: /' | tee -a probe/eslogger.txt || true
+          grep "$d" probe/eslogger.json > probe/eslogger-probe-dir.json || true
+          ls -la /Library/Application\ Support/com.apple.TCC/ 2>&1 | tee -a probe/eslogger.txt || true
+          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "SELECT service, client, auth_value FROM access WHERE service LIKE '%AllFiles%' OR service LIKE '%EndpointSecurity%'" 2>&1 | tee -a probe/eslogger.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "probe-${{ matrix.runner }}", path: probe/ }
