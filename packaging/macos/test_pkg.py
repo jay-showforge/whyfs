@@ -130,6 +130,30 @@ def grant_full_disk_access() -> dict:
     return {"granted_to": rows, "columns": cols}
 
 
+def quick_action_probe(t: T, target: Path) -> dict:
+    """A diagnostic Quick Action built exactly like the shipped ones (build_pkg.workflow), whose
+    script records its arguments and environment: what a WhyFS Quick Action receives."""
+    import tempfile
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from build_pkg import workflow
+    dump = t.home / f".whyfs-qa-probe-{os.getpid()}.txt"
+    info, doc = workflow("probe", f'{{ echo "ARGS:$*"; env; }} > "{dump}"\n', folders=False)
+    d = Path(tempfile.mkdtemp()) / "probe.workflow" / "Contents"
+    d.mkdir(parents=True)
+    with open(d / "Info.plist", "wb") as f:
+        plistlib.dump(info, f)
+    with open(d / "document.wflow", "wb") as f:
+        plistlib.dump(doc, f)
+    os.chmod(d.parents[1], 0o755)
+    r = t.as_user(["/usr/bin/automator", "-i", target, d.parent], env={"WHYFS_UI_BROWSER": "none", "WHYFS_PROBE": "1"},
+                  timeout=120)
+    text = dump.read_text() if dump.exists() else ""
+    dump.unlink(missing_ok=True)
+    return {"rc": r.returncode, "ran": bool(text), "args": next((x[5:] for x in text.splitlines() if x.startswith("ARGS:")), None),
+            "caller_env_passed": "WHYFS_PROBE=1" in text, "env_keys": sorted({x.split("=", 1)[0] for x in text.splitlines()
+                                                                               if "=" in x and not x.startswith("ARGS:")})}
+
+
 def ui_roundtrip(t: T, target: Path) -> dict:
     """The WhyFS window: `whyfs ui --file F` (headless) hands over a one-time launch link; the
     page and its API then answer as a browser would see them."""
@@ -249,12 +273,19 @@ def main() -> int:
     t.check("whyfs_window_answers", ui.get("launch_status") == 303 and ui.get("page_status") == 200 and ui.get("page_is_whyfs")
             and ui.get("api_status") == "labelled", ui)
     url_file = t.home / ".cache" / "whyfs" / "last-launch.url"
+    # Automator runs a Run Shell Script action in a helper launched in the user's launchd session,
+    # not with the caller's environment: the headless switch goes into that session (as Finder's
+    # own launches would see it), and a diagnostic workflow records what the action receives.
+    t.detail["quick_action_environment"] = quick_action_probe(t, work / "out.txt")
+    sh(["launchctl", "asuser", str(t.uid), "sudo", "-u", t.user, "launchctl", "setenv", "WHYFS_UI_BROWSER", "none"])
     qa = {}
     for wf in sorted(Path("/Library/Services").glob("WhyFS - *.workflow")):
         url_file.unlink(missing_ok=True)
         r = t.as_user(["/usr/bin/automator", "-i", work / "out.txt", wf], env={"WHYFS_UI_BROWSER": "none"}, timeout=120)
+        wait(url_file.exists, 20, 0.2)
         url = url_file.read_text() if url_file.exists() else ""
         qa[wf.name] = {"rc": r.returncode, "stderr": r.stderr[-300:], "url_params": url.split("?", 1)[-1].split("&", 1)[-1]}
+    sh(["launchctl", "asuser", str(t.uid), "sudo", "-u", t.user, "launchctl", "unsetenv", "WHYFS_UI_BROWSER"])
     want = {"WhyFS - Why does this file exist.workflow": "file=", "WhyFS - What created this file.workflow": "view=created",
             "WhyFS - What depends on this file.workflow": "view=impact", "WhyFS - Show WhyFS history.workflow": "view=history",
             "WhyFS - Search WhyFS.workflow": "path="}

@@ -2,6 +2,8 @@
 """Live secret-redaction gate: secrets passed on real command lines never reach whyfs output.
 
 Linux:   sudo python3 scripts/secret_gate.py --user USER --out DIR   (eBPF daemon; workload as USER)
+macOS:   sudo python3 scripts/secret_gate.py --installed --user USER --out DIR   (the launchd machine service:
+         macOS has no per-workspace daemon; the store and logs scanned are the service's)
 Windows: python scripts\\secret_gate.py --out DIR                    (whyfs service)
 Add --installed to exercise the installed package instead of this source tree.
 
@@ -36,19 +38,22 @@ REPO = Path(__file__).resolve().parents[1]
 INSTALLED = "--installed" in sys.argv  # the store is read with sqlite3: no whyfs import needed
 
 LINUX = sys.platform.startswith("linux")
+MAC = sys.platform == "darwin"
+POSIX = LINUX or MAC
+MAC_STORE = Path("/Library/Application Support/WhyFS/machine")
 ENV = dict(os.environ) if INSTALLED else dict(os.environ, PYTHONPATH=str(REPO / "src"))
-_INSTALLED_EXE = shutil.which("whyfs") or (os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe")
+_INSTALLED_EXE = "/usr/local/bin/whyfs" if MAC else shutil.which("whyfs") or (os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe")
                                            if os.name == "nt" else "whyfs")  # PATH of an older shell may predate the install
 WHYFS = [_INSTALLED_EXE] if INSTALLED else [sys.executable, "-m", "whyfs"]
 MARK = b"SECRETVAL"
-PY = "python3" if LINUX else sys.executable
+PY = "python3" if POSIX else sys.executable
 WRITE = "import sys; open(sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith('-') else 'o.txt','w').write(open('in.txt').read())"
 
 
 def cases():
     """(name, output file, how to run it, non-secret text the stored command must still show)."""
     code = WRITE
-    if LINUX:
+    if POSIX:
         return [
             ("sh -c wrapper", "o1.txt", ["sh", "-c", f"{PY} -c \"{code}\" o1.txt --token SECRETVAL_1 API_KEY=SECRETVAL_2"],
              ["--token", "API_KEY="]),
@@ -102,29 +107,40 @@ def main() -> int:
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    if LINUX and os.geteuid() != 0:
-        raise SystemExit("run as root on Linux (the eBPF daemon needs it); the workload runs as --user")
-    ws = Path(tempfile.mkdtemp(prefix="whyfs-secret-", dir=f"/home/{a.user}" if LINUX and a.user else None)).resolve()
+    if POSIX and os.geteuid() != 0:
+        raise SystemExit("run as root (the collector and its store are root's); the workload runs as --user")
+    home = f"/Users/{a.user}" if MAC and a.user else f"/home/{a.user}" if LINUX and a.user else None
+    ws = Path(tempfile.mkdtemp(prefix="whyfs-secret-", dir=home)).resolve()
     (ws / "in.txt").write_text("payload\n")
-    if LINUX:
+    if POSIX:
         os.chmod(ws, 0o755)
         if a.user:
-            subprocess.run(["chown", "-R", f"{a.user}:", str(ws)], check=True)
-    whyfs("init", ".", cwd=ws)
-    whyfs("daemon", "start", "--workspace", str(ws), cwd=ws)
-    time.sleep(1.0)
+            subprocess.run(["chown", "-R", a.user if MAC else f"{a.user}:", str(ws)], check=True)
+    if MAC:  # the machine service records everything in scope; nothing is initialized
+        deadline = time.time() + 120
+        while not (json.loads(whyfs("status", "--json", cwd=ws, check=False).stdout or "{}").get("collector_ready")):
+            if time.time() > deadline:
+                raise SystemExit("the machine collector is not ready after 120 s")
+            time.sleep(1.0)
+    else:
+        whyfs("init", ".", cwd=ws)
+        whyfs("daemon", "start", "--workspace", str(ws), cwd=ws)
+        time.sleep(1.0)
     runs = []
     for name, output, cmd, _visible in cases():
-        if LINUX:
-            argv = ["runuser", "-u", a.user, "--", *cmd] if a.user else cmd
+        if POSIX:
+            argv = (["sudo", "-u", a.user, "--"] if MAC else ["runuser", "-u", a.user, "--"]) + cmd if a.user else cmd
             p = subprocess.run(argv, cwd=ws, capture_output=True, text=True)
         elif isinstance(cmd, str):
             p = subprocess.run(cmd, cwd=ws, shell=True, capture_output=True, text=True)
         else:
             p = subprocess.run(cmd, cwd=ws, capture_output=True, text=True)
         runs.append({"case": name, "rc": p.returncode, "stderr": mask(p.stderr)[-400:]})
-    time.sleep(0.5)
-    whyfs("daemon", "stop", "--workspace", str(ws), cwd=ws)
+    if MAC:
+        time.sleep(3.0)  # the collector's writer commits within a batch interval
+    else:
+        time.sleep(0.5)
+        whyfs("daemon", "stop", "--workspace", str(ws), cwd=ws)
 
     checks = {}
     shown = {}
@@ -142,14 +158,17 @@ def main() -> int:
         checks[f"{name}: no secret in why/history/impact output"] = not any("SECRETVAL" in t for t in texts)
         checks[f"{name}: command stored and redacted"] = "<redacted>" in cmd
         checks[f"{name}: non-secret parts still shown"] = all(v in cmd for v in visible)
-    state_files = [p for p in (ws / ".whyfs").rglob("*") if p.is_file()]
+    state_dir = MAC_STORE / ".whyfs" if MAC else ws / ".whyfs"
+    state_files = [p for p in state_dir.rglob("*") if p.is_file()]
     logs = []
-    if not LINUX:
+    if MAC:
+        logs = [p for p in Path("/Library/Logs/WhyFS").glob("*") if p.is_file()]
+    elif not LINUX:
         logs = [p for p in (Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "whyfs" / "logs").glob("*") if p.is_file()]
     checks["state dir (db, wal, shm, daemon files, logs) free of secrets"] = bool(state_files) and not any(leaks_in(p) for p in state_files)
     checks["collector logs free of secrets"] = not any(leaks_in(p) for p in logs)
     import sqlite3
-    con = sqlite3.connect(f"file:{ws / '.whyfs' / 'whyfs.db'}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{state_dir / 'whyfs.db'}?mode=ro", uri=True)
     stats = {k: v for k, v in con.execute("SELECT key, SUM(value) FROM collector_stats GROUP BY key")}
     rows = con.execute("SELECT COUNT(*) FROM processes WHERE command LIKE '%<redacted>%'").fetchone()[0]
     all_cmds = sorted({mask(r[0]) for r in con.execute("SELECT command FROM processes WHERE command IS NOT NULL")})
@@ -157,7 +176,7 @@ def main() -> int:
     # this gate, are not the gate's business)
     wrappers = sorted({mask(p) for p in parents if p and any(w in p.lower() for w in ("cmd.exe", "powershell", "sh -c", "bash -c", "bash -lc"))})
     checks["wrapper (parent) command lines stored and redacted"] = bool(wrappers) and all("<redacted>" in c for c in wrappers)
-    frags = (["export ACCESS_TOKEN=<redacted>;", "PRIVATE_KEY=<redacted> python3", "--token <redacted> API_KEY=<redacted>"] if LINUX
+    frags = (["export ACCESS_TOKEN=<redacted>;", "PRIVATE_KEY=<redacted> python3", "--token <redacted> API_KEY=<redacted>"] if POSIX
              else ['set "ACCESS_TOKEN=<redacted>" &&', "$env:API_KEY='<redacted>';", "--password <redacted> API_KEY=<redacted> /token:<redacted>"])
     checks["wrapper env assignments shown with values redacted"] = all(any(f in c for c in all_cmds) for f in frags)
     con.close()

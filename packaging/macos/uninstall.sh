@@ -5,6 +5,9 @@ set -u
 if [ "$(id -u)" != 0 ]; then echo "run as root: sudo $0 ${1:-}"; exit 1; fi
 LABEL=org.tenzorpipe.whyfs
 launchctl bootout system/$LABEL 2>/dev/null   # stops the service; the collector drains first
+i=0  # bootout returns while the job is still stopping: wait until launchd no longer has it
+while launchctl print system/$LABEL >/dev/null 2>&1 && [ $i -lt 150 ]; do sleep 1; i=$((i + 1)); done
+if launchctl print system/$LABEL >/dev/null 2>&1; then echo "the WhyFS service did not stop; nothing was removed"; exit 1; fi
 rm -f /Library/LaunchDaemons/$LABEL.plist
 rm -rf /Library/WhyFS /Applications/WhyFS.app /var/run/whyfs
 rm -rf "/Library/Services/WhyFS - "*.workflow

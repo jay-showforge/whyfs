@@ -1,14 +1,16 @@
 """Observation-integrity gate: the forced-outage scenario on the installed service.
 
   Linux:   sudo python3 scripts/outage_gate.py --user USER --out DIR
+  macOS:   sudo python3 scripts/outage_gate.py --user USER --out DIR
   Windows: python scripts\\outage_gate.py --out DIR            (elevated)
 
 1. whyfs running; create File A; A's label is complete.
 2. Kill the whole observer unexpectedly (Linux: SIGKILL to every process of whyfs.service;
-   Windows: terminate the whyfs service process tree).  Nothing is restarted by this script.
+   macOS: SIGKILL to every WhyFS process of the launchd job; Windows: terminate the whyfs service
+   process tree).  Nothing is restarted by this script.
 3. Create File B while nothing is observing.
 4. Wait for the OS service manager to recover the observer by itself (systemd Restart=,
-   Windows service recovery actions) and for the collector to be ready again.
+   launchd KeepAlive, Windows service recovery actions) and for the collector to be ready again.
 5. Create File C.
 6. A: labelled, origin complete (the outage is listed as a later gap);
    B: no creator; explicitly incomplete, appeared while whyfs was not recording (after a crash);
@@ -30,10 +32,15 @@ import uuid
 from pathlib import Path
 
 NT = os.name == "nt"
+MAC = sys.platform == "darwin"
 SETTLE = 12.0 if NT else 4.0
+MAC_LABEL = "org.tenzorpipe.whyfs"
+MAC_COLLECTOR = "/Library/WhyFS/WhyFSCollector.app/Contents/MacOS/whyfs-collect"
 
 
 def whyfs() -> list[str]:
+    if MAC:
+        return ["/usr/local/bin/whyfs"]
     exe = shutil.which("whyfs") or (os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe") if NT else "whyfs")
     return [exe]
 
@@ -46,6 +53,8 @@ class Gate:
         self.home = Path(os.path.expanduser(f"~{user}") if (user and not NT) else os.path.expanduser("~"))
 
     def as_user(self, argv):
+        if MAC and self.user and os.geteuid() == 0:
+            return ["sudo", "-H", "-u", self.user, "--", *argv]
         if not NT and self.user and os.geteuid() == 0:
             return ["runuser", "-u", self.user, "--", *argv]
         return argv
@@ -76,7 +85,15 @@ class Gate:
         subprocess.run(self.as_user([sys.executable if NT else "python3", "-c", code, str(src), str(dst)]), check=True)
 
 
+def _mac_job_pid() -> int:
+    out = subprocess.run(["launchctl", "print", f"system/{MAC_LABEL}"], capture_output=True, text=True).stdout
+    return next((int(x.split("=", 1)[1]) for x in (ln.strip() for ln in out.splitlines()) if x.startswith("pid = ")), 0)
+
+
 def observer_pids() -> list[int]:
+    if MAC:
+        pid = _mac_job_pid()
+        return [pid] if pid else []
     if NT:
         out = subprocess.run(["sc", "queryex", "whyfs"], capture_output=True, text=True).stdout
         pid = next((int(line.split(":")[1]) for line in out.splitlines() if "PID" in line), 0)
@@ -88,6 +105,13 @@ def observer_pids() -> list[int]:
 def kill_observer() -> dict:
     """Terminate the observer abruptly: no clean stop, no drain, no end-of-run record."""
     before = observer_pids()
+    if MAC:
+        # the launchd program (--launchd), the supervisor (whyfs machine run), the Endpoint Security
+        # collector and its writer: every process of the job, at once, with no chance to clean up
+        tree = subprocess.run(["pgrep", "-f", f"{MAC_COLLECTOR}|whyfs machine run"], capture_output=True, text=True).stdout.split()
+        r = subprocess.run(["kill", "-9", *tree], capture_output=True, text=True) if tree else None
+        return {"pids_before": before, "killed": tree, "rc": r.returncode if r else None, "at_ns": time.time_ns(),
+                "how": "kill -9 of every process of the launchd job (launchd program, supervisor, collector, writer)"}
     if NT:
         r = subprocess.run(["taskkill", "/F", "/T", "/PID", str(before[0])], capture_output=True, text=True) if before else None
         how = f"taskkill /F /T /PID {before[0]} (service process, its Python host and the collector)" if before else "no pid"
@@ -99,6 +123,13 @@ def kill_observer() -> dict:
 
 
 def service_config() -> dict:
+    if MAC:
+        import plistlib
+        pl = plistlib.loads(Path(f"/Library/LaunchDaemons/{MAC_LABEL}.plist").read_bytes())
+        loaded = subprocess.run(["launchctl", "print", f"system/{MAC_LABEL}"], capture_output=True).returncode == 0
+        return {"auto_start": pl.get("RunAtLoad") is True and loaded, "restart_on_failure": pl.get("KeepAlive") is True,
+                "RunAtLoad": pl.get("RunAtLoad"), "KeepAlive": pl.get("KeepAlive"), "loaded": loaded,
+                "plist": f"/Library/LaunchDaemons/{MAC_LABEL}.plist"}
     if NT:
         q = subprocess.run(["sc", "qc", "whyfs"], capture_output=True, text=True).stdout
         f = subprocess.run(["sc", "qfailure", "whyfs"], capture_output=True, text=True).stdout
@@ -113,6 +144,11 @@ def service_config() -> dict:
 
 def collector_pid(g: Gate) -> int | None:
     st = g.api("status").get("result") or {}
+    if MAC:
+        try:
+            return json.loads(Path("/Library/Application Support/WhyFS/machine/.whyfs/machine-ready.json").read_text())["collector_pid"]
+        except (OSError, ValueError, KeyError):
+            return None
     try:
         return json.loads(Path(os.environ["ProgramData"], "whyfs", "machine", ".whyfs", "machine-ready.json")
                           .read_text())["collector_pid"]
@@ -176,7 +212,7 @@ def main() -> int:
     base = g.home / ("whyfs-outage-" + uuid.uuid4().hex[:8])
     base.mkdir()
     if not NT and a.user:
-        subprocess.run(["chown", f"{a.user}:", str(base)], check=True)
+        subprocess.run(["chown", a.user if MAC else f"{a.user}:", str(base)], check=True)
     src = base / "input.txt"
     subprocess.run(g.as_user([sys.executable if NT else "python3", "-c",
                               f"open({str(src)!r},'w').write('observation integrity\\n')"]), check=True)

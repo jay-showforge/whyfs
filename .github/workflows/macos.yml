@@ -87,6 +87,17 @@ jobs:
           set -o pipefail
           sudo -E env PATH="$PATH" python packaging/macos/test_pkg.py --pkg dist/*.pkg --pkg-upgrade dist-upgrade/*.pkg \
             --user "$USER" --out ci-results/pkg-test 2>&1 | tail -80
+      - name: Installed-product gates (product, corpus, secrets, outage)
+        if: always()
+        run: |
+          set -o pipefail
+          sudo installer -pkg dist-upgrade/*.pkg -target / > ci-results/gates-install.log 2>&1
+          rc=0
+          sudo -E env PATH="$PATH" python scripts/product_gate.py --installed --user "$USER" --out ci-results/product-gate 2>&1 | tail -70 || rc=1
+          sudo -E env PATH="$PATH" python scripts/run_corpus.py --installed --machine --user "$USER" --out ci-results/corpus-machine 2>&1 | tail -30 || rc=1
+          sudo -E env PATH="$PATH" python scripts/secret_gate.py --installed --user "$USER" --out ci-results/secret-gate 2>&1 | tail -40 || rc=1
+          sudo -E env PATH="$PATH" python scripts/outage_gate.py --user "$USER" --out ci-results/outage-gate 2>&1 | tail -40 || rc=1
+          exit $rc
       - name: Service log
         if: always()
         run: |

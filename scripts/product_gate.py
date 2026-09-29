@@ -2,6 +2,7 @@
 """Product-behaviour gate: install once, never initialize, and every meaningful file has a label.
 
 Linux:   sudo python3 scripts/product_gate.py --user USER --out DIR   (workloads and queries run as USER)
+macOS:   sudo python3 scripts/product_gate.py --user USER --out DIR   (the same; launchd org.tenzorpipe.whyfs)
 Windows: python scripts\\product_gate.py --out DIR                    (as the installed user)
 Requires the whyfs machine service to be running (Linux: whyfs.service / `whyfs machine run`;
 Windows: the whyfs service).  No `whyfs init` is ever run; no directory is registered.
@@ -34,12 +35,17 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 NT = os.name == "nt"
+MAC = sys.platform == "darwin"
 SETTLE = 9.0 if NT else 3.0  # Windows ETW reorder window + writer batch; Linux ring drain + batch
 PY = sys.executable if NT else "python3"
 INSTALLED = "--installed" in sys.argv
+# an arbitrary directory outside every home (macOS: the root volume is sealed, /srv cannot exist)
+CUSTOM = Path("/Users/Shared/whyfs-gate-custom") if MAC else Path("/srv/whyfs-gate-custom")
 
 
 def whyfs_cmd() -> list[str]:
+    if INSTALLED and MAC:
+        return ["/usr/local/bin/whyfs"]
     if INSTALLED:
         exe = shutil.which("whyfs") or (os.path.join(os.environ.get("ProgramFiles", ""), "whyfs", "whyfs.exe") if NT else "whyfs")
         return [exe]
@@ -64,6 +70,9 @@ class Gate:
 
     # ---- running things as the user
     def as_user(self, argv: list[str]) -> list[str]:
+        if MAC and self.user and os.geteuid() == 0:
+            return ["sudo", "-H", "-u", self.user, "--", "env", *(f"{k}={v}" for k, v in env().items()
+                                                                 if k in ("PYTHONPATH", "PATH", "LANG")), *argv]
         if not NT and self.user and os.geteuid() == 0:
             return ["runuser", "-u", self.user, "--", "env", *(f"{k}={v}" for k, v in env().items()
                                                                if k in ("PYTHONPATH", "PATH", "LANG")), *argv]
@@ -91,7 +100,7 @@ class Gate:
     def mkdir(self, p: Path) -> Path:
         p.mkdir(parents=True, exist_ok=True)
         if not NT and self.user and os.geteuid() == 0:
-            subprocess.run(["chown", f"{self.user}:", str(p)], check=True)
+            subprocess.run(["chown", self.user if MAC else f"{self.user}:", str(p)], check=True)
         self.made.append(p)
         return p
 
@@ -170,12 +179,12 @@ def main() -> int:
     src = base / "notes" / "source.txt"
     src.write_text("alpha beta\n")
     if not NT and a.user and os.geteuid() == 0:
-        subprocess.run(["chown", f"{a.user}:", str(src)], check=True)
+        subprocess.run(["chown", a.user if MAC else f"{a.user}:", str(src)], check=True)
     g.write_file(a_file, src)
     # ---------------- B: different directories
     b_dirs = {"desktop": g.home / "Desktop" / g.tag, "documents": g.home / "Documents" / g.tag,
               "source": g.home / "src" / g.tag / "app",
-              "custom": (Path(r"C:\whyfs-gate-custom") if NT else Path("/srv/whyfs-gate-custom")) / g.tag}
+              "custom": (Path(r"C:\whyfs-gate-custom") if NT else CUSTOM) / g.tag}
     b_files = {}
     for k, d in b_dirs.items():
         g.mkdir(d)
@@ -246,7 +255,7 @@ def main() -> int:
     # ---------------- P: another user's file (Linux: written by root)
     p_file = None
     if not NT and a.user:
-        p_dir = Path("/srv/whyfs-gate-custom") / (g.tag + "-root")
+        p_dir = CUSTOM / (g.tag + "-root")
         p_dir.mkdir(parents=True, exist_ok=True)
         p_file = p_dir / "root-made.txt"
         subprocess.run([PY, "-c", f"open('{p_file}','w').write('r')"], check=True)
@@ -372,6 +381,16 @@ def _menu_entries() -> tuple[bool, object]:
         ok = (found.get("submenu") == "WhyFS.FileMenu" and (inst / "whyfsw.exe").exists() and lnk.exists()
               and all(f'"{inst}\\whyfsw.exe" ui --file "%1"' in found[v] for v in ("1why", "2created", "3impact", "4history")))
         return ok, found
+    if MAC:  # Finder Quick Actions and the WhyFS app, each running the installed WhyFS window command
+        import plistlib
+        found = {}
+        for wf in sorted(Path("/Library/Services").glob("WhyFS - *.workflow")):
+            doc = plistlib.loads((wf / "Contents" / "document.wflow").read_bytes())
+            found[wf.name] = doc["actions"][0]["action"]["ActionParameters"]["COMMAND_STRING"]
+        app = Path("/Applications/WhyFS.app/Contents/MacOS/WhyFS")
+        ok = (len(found) == 5 and all("/Library/WhyFS/bin/whyfs ui" in c for c in found.values()) and app.exists()
+              and "whyfs ui" in app.read_text())
+        return ok, found
     files = ["/usr/share/applications/whyfs.desktop", "/usr/share/kio/servicemenus/whyfs.desktop",
              "/usr/share/nemo/actions/whyfs-why.nemo_action", "/usr/share/nautilus-python/extensions/whyfs_nautilus.py"]
     missing = [f for f in files if not os.path.exists(f)]
@@ -388,6 +407,8 @@ def usability(g: "Gate", out_file: Path, src: Path, leaf: Path, sid: str) -> Non
         g.check("U.file_manager_entries_installed", ok, detail)
         if NT and ok:
             _explorer_verb(g, out_file, detail)
+        if MAC and ok:
+            _finder_quick_action(g, out_file)
     # the menu command, with --print-url instead of opening the user's browser
     p = g.run([*whyfs_cmd(), "ui", "--print-url", "--file", str(out_file)], check=False)
     url = (p.stdout or "").strip().splitlines()[-1] if p.stdout.strip() else ""
@@ -494,6 +515,44 @@ def _explorer_verb(g: "Gate", f: Path, verbs: dict) -> None:
             {"command": cmd, "rc": p.returncode, "location": loc[:200]})
 
 
+def _finder_quick_action(g: "Gate", f: Path) -> None:
+    """Run the Finder Quick Action "What depends on this file?" exactly as Finder runs it (Automator
+    runs the workflow with the selected file), headless: it must open that file's impact view."""
+    import urllib.request
+    wf = Path("/Library/Services/WhyFS - What depends on this file.workflow")
+    url_file = g.home / ".cache" / "whyfs" / "last-launch.url"
+    try:
+        url_file.unlink()
+    except OSError:
+        pass
+    # Automator runs the action in a helper of the user's launchd session: the headless switch goes there
+    uid = subprocess.run(["id", "-u", g.user], capture_output=True, text=True).stdout.strip()
+    subprocess.run(["launchctl", "asuser", uid, "sudo", "-u", g.user, "launchctl", "setenv", "WHYFS_UI_BROWSER", "none"])
+    p = subprocess.run(["sudo", "-H", "-u", g.user, "--", "env", "WHYFS_UI_BROWSER=none", "/usr/bin/automator", "-i",
+                        str(f), str(wf)], capture_output=True, text=True, timeout=120)
+    deadline = time.time() + 30
+    while time.time() < deadline and not url_file.exists():
+        time.sleep(0.2)
+    subprocess.run(["launchctl", "asuser", uid, "sudo", "-u", g.user, "launchctl", "unsetenv", "WHYFS_UI_BROWSER"])
+    deadline = time.time() + 1
+    while time.time() < deadline and not url_file.exists():
+        time.sleep(0.2)
+    url = url_file.read_text().strip() if url_file.exists() else ""
+    loc = ""
+    if url:
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *args, **kw):
+                return None
+        try:
+            urllib.request.build_opener(NoRedirect).open(url, timeout=15)
+        except urllib.error.HTTPError as exc:
+            loc = exc.headers.get("Location", "") if exc.code == 303 else f"HTTP {exc.code}"
+    from urllib.parse import quote
+    want = "file=" + quote(str(f), safe="")
+    g.check("U.finder_quick_action_opens_the_file_in_the_window", p.returncode == 0 and want in loc and "view=impact" in loc,
+            {"workflow": wf.name, "rc": p.returncode, "stderr": p.stderr[-300:], "location": loc[:200]})
+
+
 def _ui_states(g: "Gate") -> list[str]:
     if NT:
         return [os.path.join(os.environ.get("LOCALAPPDATA", ""), "whyfs", "ui.json")]
@@ -503,7 +562,7 @@ def _ui_states(g: "Gate") -> list[str]:
 
 def _store_bytes() -> bytes | None:
     from_dir = (Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "whyfs" / "machine" / ".whyfs") if NT \
-        else Path("/var/lib/whyfs/machine/.whyfs")
+        else Path("/Library/Application Support/WhyFS/machine/.whyfs") if MAC else Path("/var/lib/whyfs/machine/.whyfs")
     try:
         return b"".join(p.read_bytes() for p in from_dir.iterdir() if p.is_file())
     except OSError:

@@ -2,6 +2,7 @@
 """Run the shared cross-platform behavioural corpus (tests/corpus) on this platform.
 
 Linux:   sudo python3 scripts/run_corpus.py --user USER --out DIR   (eBPF daemon; workload as USER)
+macOS:   sudo python3 scripts/run_corpus.py --installed --machine --user USER --out DIR   (the launchd service)
 Windows: python scripts\\run_corpus.py --out DIR                    (whyfs service; workload as you)
 
 Same scenarios, same expected answers everywhere; only collector start/stop differs.
@@ -31,8 +32,9 @@ from whyfs.query import history, impact, why  # noqa: E402
 from whyfs.store import connect  # noqa: E402
 
 LINUX = sys.platform.startswith("linux")
+MAC = sys.platform == "darwin"
 ENV = dict(os.environ) if INSTALLED else dict(os.environ, PYTHONPATH=str(REPO / "src"))
-WHYFS = [shutil.which("whyfs") or "whyfs"] if INSTALLED else [sys.executable, "-m", "whyfs"]
+WHYFS = [("/usr/local/bin/whyfs" if MAC else shutil.which("whyfs") or "whyfs")] if INSTALLED else [sys.executable, "-m", "whyfs"]
 
 
 def whyfs(*args, cwd, check=True):
@@ -45,7 +47,9 @@ def whyfs(*args, cwd, check=True):
 
 def run_step(step, cwd, user):
     argv = [scenarios.env_python(), scenarios.tool_path(), *step]
-    if LINUX and user:
+    if MAC and user:
+        argv = ["sudo", "-u", user, "--", *argv]
+    elif LINUX and user:
         argv = ["runuser", "-u", user, "--", *argv]
     p = subprocess.run(argv, cwd=cwd, capture_output=True, text=True)
     if p.returncode != 0:
@@ -62,15 +66,15 @@ def main() -> int:
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    home = f"/home/{a.user}" if LINUX and a.user else (os.path.expanduser("~") if a.machine else None)  # in scope, not a temp root
+    home = f"/Users/{a.user}" if MAC and a.user else f"/home/{a.user}" if LINUX and a.user else (os.path.expanduser("~") if a.machine else None)  # in scope, not a temp root
     base = Path(tempfile.mkdtemp(prefix="whyfs-corpus-", dir=home)).resolve()
-    if LINUX:
+    if LINUX or MAC:
         if os.geteuid() != 0:
-            raise SystemExit("run as root on Linux (the eBPF daemon needs it); the workload runs as --user")
+            raise SystemExit("run as root (the machine store is root's); the workload runs as --user")
         os.chmod(base, 0o755)
     scenarios.prepare(base)
-    if LINUX and a.user:
-        subprocess.run(["chown", "-R", f"{a.user}:", str(base)], check=True)
+    if (LINUX or MAC) and a.user:
+        subprocess.run(["chown", "-R", a.user if MAC else f"{a.user}:", str(base)], check=True)
     if a.machine:  # the service may still be (re)starting its collector, e.g. right after another gate
         deadline = time.time() + 120
         while True:
@@ -94,7 +98,7 @@ def main() -> int:
             run_step(step, base / sc["dir"], a.user)
     workload_s = time.time() - t0
     if a.machine:
-        time.sleep(10.0 if not LINUX else 3.0)  # ETW reorder window / ring drain, then the writer's batch
+        time.sleep(3.0 if LINUX or MAC else 10.0)  # ETW reorder window / ring drain, then the writer's batch
         from whyfs.machine import paths
         con = connect(paths()["root"])
     else:
