@@ -42,8 +42,8 @@ or who caused them to exist.
 - **Interfaces.**  People use the WhyFS window with the Explorer / file-manager menu, agents use
   the local API, and power users use the CLI.  All three read the same records.
 
-Support matrix (frozen): Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.  macOS is
-not supported.
+Support matrix (frozen for 1.0): Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.  macOS
+is not in 1.0.0; it is in development on the `macos-support` branch ([docs/MACOS.md](docs/MACOS.md)).
 
 | Platform | Native evidence (run 36374200705, commit f2b9ca6; Windows x64 spawn after the reduction, run 36391350371: +4.17 %) |
 |---|---|

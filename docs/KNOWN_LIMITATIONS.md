@@ -39,7 +39,7 @@ release.  Past defects and their fixes are recorded in [KNOWN_ISSUES.md](KNOWN_I
 - **Validated OS builds:** Windows 11 (x64 desktop, ARM64 runner), Windows Server 2022 (x64),
   Ubuntu 24.04 (x86-64, ARM64, WSL2).  Windows 10 and other Linux distributions have not been
   validated separately.
-- **Not supported:** macOS, a future/community target.  Other architectures are not supported.
+- **Not in 1.0.0:** macOS, in development ([MACOS.md](MACOS.md)).  Other architectures are not supported.
 - **Linux requirements.**
   - A kernel with BTF and BPF trampolines (fentry), 5.x or later as shipped by current
     Ubuntu/Debian.  `whyfs doctor` checks.

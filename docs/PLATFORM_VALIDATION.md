@@ -18,7 +18,7 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 | Linux x86-64 | **Supported** | GitHub `ubuntu-24.04`: kernel 6.17.0-1022-azure.  Also WSL2 (kernel 6.6.87.2) |
 | Linux ARM64 | **Supported** | GitHub `ubuntu-24.04-arm`: kernel 6.17.0-1022-azure, aarch64 |
 | WSL2 | **Supported** | covered by the Linux x86-64 package and gates, with systemd running `whyfs.service` |
-| macOS | **Not supported** | — |
+| macOS | **Not in 1.0.0.  In development** (branch `macos-support`): every executed gate passes on GitHub-hosted Intel and Apple Silicon Macs, which run with SIP disabled; a standard Mac needs Apple's Endpoint Security entitlement (BLOCKED_EXTERNAL).  [docs/MACOS.md](MACOS.md) and [the macOS section](#macos-development-branch-macos-support) | GitHub `macos-15-intel` (x86_64), `macos-15`, `macos-14`, `macos-26` (arm64) |
 
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).

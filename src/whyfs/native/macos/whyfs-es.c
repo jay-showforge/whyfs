@@ -611,6 +611,41 @@ static void mac_consume(const es_message_t *e) {
     afree(&a);
 }
 
+// Scope in the kernel: file events (open, close, mmap) under a prefix the scope rules exclude
+// entirely are muted, so Endpoint Security never delivers them.  Only literal exclude prefixes
+// that no include or temp rule can reopen are muted; exec, fork, exit, rename and unlink are never
+// muted (ancestry and moves out of excluded places stay observed).  What is recorded does not
+// change: those events were discarded by the same rules after delivery.
+static int sc_rules_overlap(const sc_rule_t *a, const sc_rule_t *b) {  // could one path match both?
+    int n = a->n < b->n ? a->n : b->n;
+    for (int i = 0; i < n; i++) {
+        if (strchr(a->c[i], '*') || strchr(b->c[i], '*')) continue;
+        if (strcmp(a->c[i], b->c[i])) return 0;
+    }
+    return 1;
+}
+static int mac_mute_excluded(es_client_t *client) {
+    if (!machine_mode) return 0;
+    es_event_type_t fe[] = {ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE, ES_EVENT_TYPE_NOTIFY_MMAP};
+    int muted = 0;
+    for (int i = 0; i < sc_n; i++) {
+        const sc_rule_t *r = &sc_rules[i];
+        if (r->kind != SCR_EXCLUDE || r->n == 0) continue;
+        int wild = 0, reopened = 0;
+        for (int k = 0; k < r->n; k++) if (strchr(r->c[k], '*')) wild = 1;
+        for (int j = 0; j < sc_n && !wild && !reopened; j++)
+            if ((sc_rules[j].kind == SCR_INCLUDE || sc_rules[j].kind == SCR_TEMP) && sc_rules_overlap(r, &sc_rules[j])) reopened = 1;
+        if (wild || reopened) continue;
+        buf_t p = {0};
+        for (int k = 0; k < r->n; k++) { b_ch(&p, '/'); b_str(&p, r->c[k]); }
+        b_ch(&p, '/');
+        char *prefix = b_take(&p);
+        if (es_mute_path_events(client, prefix, ES_MUTE_PATH_TYPE_TARGET_PREFIX, fe, 3) == ES_RETURN_SUCCESS) muted++;
+        free(prefix);
+    }
+    return muted;
+}
+
 static void mac_run_live(void) {
     mq_cap = mac_queue_limit ? mac_queue_limit : 65536;
     mq = xmalloc(mq_cap * sizeof *mq);
@@ -635,6 +670,7 @@ static void mac_run_live(void) {
         char real[PATH_MAX];
         es_mute_path(client, realpath(self, real) ? real : self, ES_MUTE_PATH_TYPE_LITERAL);  // this collector and its writer
     }
+    int muted_prefixes = mac_mute_excluded(client);
     es_event_type_t ev[] = {ES_EVENT_TYPE_NOTIFY_EXEC, ES_EVENT_TYPE_NOTIFY_FORK, ES_EVENT_TYPE_NOTIFY_EXIT,
                             ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE, ES_EVENT_TYPE_NOTIFY_MMAP,
                             ES_EVENT_TYPE_NOTIFY_RENAME, ES_EVENT_TYPE_NOTIFY_UNLINK, ES_EVENT_TYPE_NOTIFY_CHDIR,
@@ -653,7 +689,8 @@ static void mac_run_live(void) {
     su.sa_handler = on_usr1;
     sigaction(SIGUSR1, &su, NULL);
     pid_t parent = getppid();
-    printf("{\"ready\":true,\"pid\":%d,\"writer_pid\":%d,\"source\":\"endpoint-security\"}\n", getpid(), (int)writer_pid);
+    printf("{\"ready\":true,\"pid\":%d,\"writer_pid\":%d,\"source\":\"endpoint-security\",\"muted_prefixes\":%d}\n", getpid(),
+           (int)writer_pid, muted_prefixes);
     fflush(stdout);
     const es_message_t *batch[256];
     for (;;) {

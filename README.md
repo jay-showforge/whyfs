@@ -111,8 +111,8 @@ Download the packages from the [v1.0.0 release](https://github.com/jay-showforge
 - **Windows:** `native\windows\build.ps1`, then `native\windows\make_msi.py` (see
   `.github/workflows/native-validation.yml` for the exact commands).
 
-The packages are not code-signed.  Windows 10 has not been validated separately.  **macOS is not supported**; it is a possible
-future or community target.  Validation evidence
+The packages are not code-signed.  Windows 10 has not been validated separately.  **macOS is not part of 1.0.0**: it is in
+development on the `macos-support` branch ([docs/MACOS.md](docs/MACOS.md)).  Validation evidence
 for every platform is in [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 
 ## Privacy and storage
