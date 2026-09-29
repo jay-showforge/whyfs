@@ -1,0 +1,260 @@
+{
+  "case": "case06",
+  "case_name": "pre-observation-vendor-cache",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 54.130438575,
+  "final_response": "- **Original creator:** Unknown. WhyFS reports `status: unknown`, `attributable: false`, and `reason: no_observed_write`. The filesystem owner and Git commit author do not establish who created the file. It is excluded from Git by [.gitignore](/home/ftmon/whyfs-provenance-decision-second-replacement-20260929T134824/cases/case06-whyfs/.gitignore:3), so Git contains no creation history for it.\n- **Observed use:** At `2026-09-29 13:48:28 -07:00`, `python3 tools/audit-cache.py` read the file and produced `analysis/cache.sha256`. The script hashes its bytes with SHA-256, as shown in [audit-cache.py](/home/ftmon/whyfs-provenance-decision-second-replacement-20260929T134824/cases/case06-whyfs/tools/audit-cache.py:3). The recorded and independently calculated digest is `44a961eb1c936e4ece8b9464a8a7b7a931f6e5641827c17e84f282026f9f3c12`.\n- **Completeness:** Origin evidence is explicitly incomplete (`complete: false`). WhyFS observed the downstream hashing operation, but not the write that created `vendor-snapshot.bin`. Its dependent result is \u201cobserved only,\u201d so it does not prove hashing was the file\u2019s sole historical use.\n- **Still unknown:** The creating person, process or agent; the source from which the content came; the exact creation workflow and intent; and any uses or writes outside recorded scope. WhyFS says the missing write could predate observation, fall outside recording scope, or come from a process it could not see.\n\nNo files were modified; the worktree remains clean.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --all --decorate --stat --format=fuller && git ls-files --stage && sed -n '1,240p' README.md && sed -n '1,260p' tools/audit-cache.py && sha256sum cache/vendor-snapshot.bin && cat analysis/cache.sha256 && stat cache/vendor-snapshot.bin && file cache/vendor-snapshot.bin && git check-ignore -v cache/vendor-snapshot.bin || true\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"ls -laR . | sed -n '1,260p'\ngetfattr -d -m - cache/vendor-snapshot.bin analysis/cache.sha256 2>&1 || true\nfind .. -maxdepth 3 -type f -not -path '*/.git/objects/*' -printf '%p\\\\n' | sort\nmount | rg -i 'why|fuse|proven|audit|case06' || true\nfindmnt -T cache/vendor-snapshot.bin -o TARGET,SOURCE,FSTYPE,OPTIONS\nfor f in cache/vendor-snapshot.bin analysis/cache.sha256 .gitignore; do echo \\\"\"'$f\"; od -An -tx1c \"$f\"; done'",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc \"command -v whyfs whyfs-mcp\nwhyfs --help 2>&1 | sed -n '1,260p'\nwhyfs-mcp --help 2>&1 | sed -n '1,220p'\nfind /home/ftmon -maxdepth 4 \\\\( -iname '*whyfs*' -o -iname '*provenance*' -o -iname '*.db' -o -iname '*.sqlite*' \\\\) -print 2>/dev/null | sed -n '1,260p'\nfind /tmp /var/tmp -maxdepth 3 \\\\( -iname '*whyfs*' -o -iname '*provenance*' -o -iname '*.db' -o -iname '*.sqlite*' \\\\) -print 2>/dev/null | sed -n '1,260p'\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"nl -ba .gitignore\nnl -ba README.md\nnl -ba tools/audit-cache.py\ngit status --short\ngit log -1 --format='%H%n%an <%ae>%n%aI%n%s' -- .gitignore README.md tools/audit-cache.py\ngit log --all --format='%H' -- cache/vendor-snapshot.bin analysis/cache.sha256\"",
+        "completed_index": 11
+      }
+    ],
+    "context_bytes": 16375,
+    "context_bytes_by_tool": {
+      "filesystem": 3737,
+      "git": 2057,
+      "other": 0,
+      "search": 9239,
+      "whyfs": 1342
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/1a/7a8fc98758be975063984625e592d582b1d63a",
+      ".git/objects/89/1202018406b553ffeb3658de078c0fb204dbb2",
+      ".git/objects/9c/647c986fdb1d2efd30bdb1810577bfa5a12d25",
+      ".git/objects/9d/223a95a03f5379a1ae28fdd7f2ebe8123e40cd",
+      ".git/objects/9e/6db0e1fb04cbc6f13959882f5c373a4d5a2b0f",
+      ".git/objects/e9/b5f775506a3cc0528ac3dd05f55144162c8dc1",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "analysis/cache.sha256",
+      "cache/vendor-snapshot.bin",
+      "tools/audit-cache.py"
+    ],
+    "distinct_files_inspected": 34,
+    "file_change_calls": 0,
+    "filesystem_reads": 3,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 5,
+    "natural_use": {
+      "calls": 4,
+      "calls_detail": [
+        {
+          "answer": {
+            "attributable": false,
+            "edit": null,
+            "path": "cache/vendor-snapshot.bin",
+            "possible": [
+              "created before whyfs recorded it",
+              "outside the recording scope",
+              "written by a process you cannot see"
+            ],
+            "q": "sources",
+            "reason": "no_observed_write",
+            "recording_since": "2026-09-27T17:14:14-07:00",
+            "status": "unknown"
+          },
+          "arguments": {
+            "path": "cache/vendor-snapshot.bin"
+          },
+          "completed_index": 7,
+          "error": null,
+          "output_bytes": 293,
+          "tool": "source_chain"
+        },
+        {
+          "answer": {
+            "attributable": false,
+            "complete": false,
+            "path": "cache/vendor-snapshot.bin",
+            "possible": [
+              "created before whyfs recorded it",
+              "outside the recording scope",
+              "written by a process you cannot see"
+            ],
+            "q": "origin",
+            "reason": "no_observed_write",
+            "recording_since": "2026-09-27T17:14:14-07:00",
+            "status": "unknown"
+          },
+          "arguments": {
+            "path": "cache/vendor-snapshot.bin"
+          },
+          "completed_index": 8,
+          "error": null,
+          "output_bytes": 297,
+          "tool": "file_origin"
+        },
+        {
+          "answer": {
+            "groups": [
+              {
+                "agent": null,
+                "at": "2026-09-29T13:48:28-07:00",
+                "by": "python3 tools/audit-cache.py",
+                "written": [
+                  "analysis/cache.sha256"
+                ]
+              }
+            ],
+            "q": "changes",
+            "recording_gaps": [
+              {
+                "after_crash": true,
+                "from": "2026-09-28T13:55:13-07:00",
+                "to": "2026-09-28T14:33:01-07:00"
+              },
+              {
+                "after_crash": true,
+                "from": "2026-09-28T14:33:24-07:00",
+                "to": "2026-09-28T15:19:58-07:00"
+              },
+              {
+                "after_crash": true,
+                "from": "2026-09-28T15:20:11-07:00",
+                "to": "2026-09-28T15:20:25-07:00"
+              }
+            ],
+            "since": "2026-09-28T13:55:13-07:00",
+            "under": ".",
+            "vcs_metadata": 2
+          },
+          "arguments": {
+            "directory": ".",
+            "since": "24h"
+          },
+          "completed_index": 9,
+          "error": null,
+          "output_bytes": 497,
+          "tool": "recent_changes"
+        },
+        {
+          "answer": {
+            "count": 1,
+            "gaps_since_written": [
+              "this file's origin was not observed"
+            ],
+            "not_proof_of_safety": true,
+            "observed": [
+              {
+                "file": "analysis/cache.sha256",
+                "via": "python3 tools/audit-cache.py"
+              }
+            ],
+            "observed_only": true,
+            "path": "cache/vendor-snapshot.bin",
+            "q": "dependents"
+          },
+          "arguments": {
+            "path": "cache/vendor-snapshot.bin"
+          },
+          "completed_index": 10,
+          "error": null,
+          "output_bytes": 255,
+          "tool": "observed_dependents"
+        }
+      ],
+      "first_tool": "source_chain",
+      "ignored": false,
+      "legacy_cli_attempts": [
+        "/bin/bash -lc \"command -v whyfs whyfs-mcp\nwhyfs --help 2>&1 | sed -n '1,260p'\nwhyfs-mcp --help 2>&1 | sed -n '1,220p'\nfind /home/ftmon -maxdepth 4 \\\\( -iname '*whyfs*' -o -iname '*provenance*' -o -iname '*.db' -o -iname '*.sqlite*' \\\\) -print 2>/dev/null | sed -n '1,260p'\nfind /tmp /var/tmp -maxdepth 3 \\\\( -iname '*whyfs*' -o -iname '*provenance*' -o -iname '*.db' -o -iname '*.sqlite*' \\\\) -print 2>/dev/null | sed -n '1,260p'\""
+      ],
+      "ordinary_reconstruction_after_first_call": 1,
+      "ordinary_reconstruction_before_first_call": 4,
+      "output_bytes": 1342,
+      "used": true
+    },
+    "ordinary_context_bytes": 15033,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --all --decorate --stat --format=fuller && git ls-files --stage && sed -n '1,240p' README.md && sed -n '1,260p' tools/audit-cache.py && sha256sum cache/vendor-snapshot.bin && cat analysis/cache.sha256 && stat cache/vendor-snapshot.bin && file cache/vendor-snapshot.bin && git check-ignore -v cache/vendor-snapshot.bin || true\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -laR . | sed -n '1,260p'\ngetfattr -d -m - cache/vendor-snapshot.bin analysis/cache.sha256 2>&1 || true\nfind .. -maxdepth 3 -type f -not -path '*/.git/objects/*' -printf '%p\\\\n' | sort\nmount | rg -i 'why|fuse|proven|audit|case06' || true\nfindmnt -T cache/vendor-snapshot.bin -o TARGET,SOURCE,FSTYPE,OPTIONS\nfor f in cache/vendor-snapshot.bin analysis/cache.sha256 .gitignore; do echo \\\"\"'$f\"; od -An -tx1c \"$f\"; done'",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"command -v whyfs whyfs-mcp\nwhyfs --help 2>&1 | sed -n '1,260p'\nwhyfs-mcp --help 2>&1 | sed -n '1,220p'\nfind /home/ftmon -maxdepth 4 \\\\( -iname '*whyfs*' -o -iname '*provenance*' -o -iname '*.db' -o -iname '*.sqlite*' \\\\) -print 2>/dev/null | sed -n '1,260p'\nfind /tmp /var/tmp -maxdepth 3 \\\\( -iname '*whyfs*' -o -iname '*provenance*' -o -iname '*.db' -o -iname '*.sqlite*' \\\\) -print 2>/dev/null | sed -n '1,260p'\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": false,
+        "command": "/bin/bash -lc \"nl -ba .gitignore\nnl -ba README.md\nnl -ba tools/audit-cache.py\ngit status --short\ngit log -1 --format='%H%n%an <%ae>%n%aI%n%s' -- .gitignore README.md tools/audit-cache.py\ngit log --all --format='%H' -- cache/vendor-snapshot.bin analysis/cache.sha256\"",
+        "completed_index": 11
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 5,
+    "thread_id": "01a0eef2-c878-7bc3-915c-0d095172d184",
+    "tool_calls": 9,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 159232,
+      "input_tokens": 180162,
+      "output_tokens": 2171,
+      "reasoning_tokens": 636,
+      "total_tokens": 182333
+    },
+    "whyfs_calls": 4,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": [
+      "source_chain",
+      "file_origin",
+      "recent_changes",
+      "observed_dependents"
+    ]
+  },
+  "prompt_sha256": "6117ae26de80dbda724ecadb9ec5d2c43a941141f0dc439b5a02d3905ecb989f",
+  "returncode": 0,
+  "run_id": "S02-case06-whyfs"
+}

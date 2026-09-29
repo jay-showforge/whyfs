@@ -1,0 +1,189 @@
+{
+  "case": "case10",
+  "case_name": "competing-node-exporters",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 103.64889291100008,
+  "final_response": "The available evidence cannot determine whether `export-red.js` or `export-blue.js` generated this particular artifact.\n\n- Both exporters are byte-for-byte identical. Each reads [configs/channel.json](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case10-baseline/configs/channel.json:1) and writes [public/channel.json](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case10-baseline/public/channel.json:1).\n- The current input and output are identical: `{\"channel\":\"stable\",\"revision\":7}` with the same SHA-256.\n- However, the output is ignored by Git, and the repository contains no execution log, command record, or read/write provenance connecting either exporter to it.\n\nTherefore:\n\n- Actual exporter: **unknown**.\n- Runtime-observed input: **not provable**. `configs/channel.json` is the input both programs are coded to read, and its present contents match the artifact, but that only supports an inference\u2014not an observed read event.\n- Other exporter: its ability to produce the file **does not prove it ran**.\n- Evidence completeness: **incomplete for execution attribution and input observation**, but sufficient to establish that both exporters are plausible and that capability alone is not execution evidence.\n\nNo files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --oneline --decorate --stat --all && sed -n '1,240p' README.md && for f in configs/channel.json public/channel.json tools/export-red.js tools/export-blue.js .gitignore; do echo \\\"### \"'$f\"; sed -n '\"'1,240p' \\\"\"'$f\"; done && git log --all --format=fuller --name-status'",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"ls -la public configs tools && stat -c '%n inode=%i size=%s mtime=%y ctime=%z birth=%w' public/channel.json configs/channel.json tools/export-red.js tools/export-blue.js && (getfattr -d -m- public/channel.json configs/channel.json tools/export-red.js tools/export-blue.js 2>&1 || true) && (command -v whyfs || true) && (command -v why || true) && (command -v fsatrace || true) && mount | sed -n '1,120p' && env | sort | sed -n '1,200p'\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help'",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs /usr/bin/whyfs-mcp && sed -n '1,240p' /usr/bin/whyfs && find /usr/lib/python3/dist-packages/whyfs -maxdepth 3 -type f -print | sort && find /run/whyfs /var/lib/whyfs -maxdepth 3 -type f -print -exec ls -l {} \\\\; 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"ls -la /run/whyfs /var/lib/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs 2>&1; find /run/whyfs /var/lib/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs -maxdepth 4 -printf '%M %u %g %s %p\\\\n' 2>&1 | sed -n '1,300p'; systemctl status whyfs-prov-19-case10-baseline.service --no-pager 2>&1 | sed -n '1,200p'\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"sudo -n ls -la /run/whyfs /var/lib/whyfs /usr/lib/whyfs /usr/lib/python3/dist-packages/whyfs 2>&1; sudo -n find /run/whyfs /var/lib/whyfs /usr/lib/whyfs /usr/lib/python3/dist-packages/whyfs -maxdepth 4 -type f -printf '%M %u %g %s %p\\\\n' 2>&1 | sed -n '1,300p'; sudo -n journalctl --no-pager --since '2026-09-29 12:55:00' | rg -i 'whyfs|channel|export-(red|blue)' | sed -n '1,300p'\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc \"find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -not -path '*/agent-homes/*' -printf '%p\\\\n' 2>/dev/null | sed -n '1,400p'; find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type d -printf '%M %u %g %p\\\\n' 2>/dev/null | sed -n '1,240p'; find /tmp /run/user/\"'$(id -u) -maxdepth 3 -iname '\"'*whyfs*' -o -iname '*provenance*' 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 12
+      },
+      {
+        "command": "/bin/bash -lc \"journalctl --no-pager --since '2026-09-29 12:57:25' --until '2026-09-29 12:57:50' 2>&1 | sed -n '1,320p'; (lastcomm 2>&1 || true) | rg -i 'node|export|blue|red' | sed -n '1,120p'; git check-ignore -v public/channel.json; cmp -s configs/channel.json public/channel.json; printf 'cmp_exit=%s\\\\n' \\\"\"'$?\"; sha256sum configs/channel.json public/channel.json tools/export-red.js tools/export-blue.js; git diff --no-index -- tools/export-red.js tools/export-blue.js || true; git ls-files --stage public/channel.json configs/channel.json tools/export-red.js tools/export-blue.js'",
+        "completed_index": 13
+      },
+      {
+        "command": "/bin/bash -lc \"journalctl --no-pager --since '2026-09-29 12:57:30' --until '2026-09-29 12:58:10' 2>/dev/null | rg -i 'export|channel|case10|node|fixture|bash|python|whyfs' | sed -n '1,300p'; systemctl list-units --all --no-pager 2>/dev/null | rg -i 'whyfs|prov|fixture|case10' | sed -n '1,200p'; systemctl list-unit-files --no-pager 2>/dev/null | rg -i 'whyfs|prov' | sed -n '1,200p'; ls -la /var/log 2>/dev/null | sed -n '1,200p'\"",
+        "completed_index": 14
+      },
+      {
+        "command": "/bin/bash -lc \"journalctl --no-pager --since '2026-09-29 12:57:38' --until '2026-09-29 12:57:47' -o short-precise 2>/dev/null | sed -n '1,400p'; ps -ef | rg -i 'whyfs|provenance|fixture' | sed -n '1,240p'; systemctl cat whyfs.service --no-pager 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 15
+      }
+    ],
+    "context_bytes": 66822,
+    "context_bytes_by_tool": {
+      "filesystem": 6257,
+      "git": 30873,
+      "other": 53,
+      "search": 29639,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/39/075fd9ae321b853f9c426c96163f90cd52d9ff",
+      ".git/objects/43/5a57a66544d4a40dc63aa896b9b140d1422a84",
+      ".git/objects/4e/765ee8268911587cb4b6619d967e0f402e0f7a",
+      ".git/objects/60/76d41753f42b4ffd24018f577abd6a37da4595",
+      ".git/objects/98/2cad3f9cccd3e30b3e7e63f13f410bc0f46b4f",
+      ".git/objects/a4/9d8906056d063618bd0ee8f77ed199f8b5c7cd",
+      ".git/objects/a5/57ddc03fdaf91854c53e2dbb1b86eaa737e477",
+      ".git/objects/d5/0247ddf60813bac5aa41deb4d278ed90a670da",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "configs/channel.json",
+      "public/channel.json",
+      "tools/export-blue.js",
+      "tools/export-red.js"
+    ],
+    "distinct_files_inspected": 37,
+    "file_change_calls": 0,
+    "filesystem_reads": 8,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 10,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 10,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 66822,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --oneline --decorate --stat --all && sed -n '1,240p' README.md && for f in configs/channel.json public/channel.json tools/export-red.js tools/export-blue.js .gitignore; do echo \\\"### \"'$f\"; sed -n '\"'1,240p' \\\"\"'$f\"; done && git log --all --format=fuller --name-status'",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -la public configs tools && stat -c '%n inode=%i size=%s mtime=%y ctime=%z birth=%w' public/channel.json configs/channel.json tools/export-red.js tools/export-blue.js && (getfattr -d -m- public/channel.json configs/channel.json tools/export-red.js tools/export-blue.js 2>&1 || true) && (command -v whyfs || true) && (command -v why || true) && (command -v fsatrace || true) && mount | sed -n '1,120p' && env | sort | sed -n '1,200p'\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs /usr/bin/whyfs-mcp && sed -n '1,240p' /usr/bin/whyfs && find /usr/lib/python3/dist-packages/whyfs -maxdepth 3 -type f -print | sort && find /run/whyfs /var/lib/whyfs -maxdepth 3 -type f -print -exec ls -l {} \\\\; 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 7
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -la /run/whyfs /var/lib/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs 2>&1; find /run/whyfs /var/lib/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs -maxdepth 4 -printf '%M %u %g %s %p\\\\n' 2>&1 | sed -n '1,300p'; systemctl status whyfs-prov-19-case10-baseline.service --no-pager 2>&1 | sed -n '1,200p'\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sudo -n ls -la /run/whyfs /var/lib/whyfs /usr/lib/whyfs /usr/lib/python3/dist-packages/whyfs 2>&1; sudo -n find /run/whyfs /var/lib/whyfs /usr/lib/whyfs /usr/lib/python3/dist-packages/whyfs -maxdepth 4 -type f -printf '%M %u %g %s %p\\\\n' 2>&1 | sed -n '1,300p'; sudo -n journalctl --no-pager --since '2026-09-29 12:55:00' | rg -i 'whyfs|channel|export-(red|blue)' | sed -n '1,300p'\"",
+        "completed_index": 9
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -not -path '*/agent-homes/*' -printf '%p\\\\n' 2>/dev/null | sed -n '1,400p'; find /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type d -printf '%M %u %g %p\\\\n' 2>/dev/null | sed -n '1,240p'; find /tmp /run/user/\"'$(id -u) -maxdepth 3 -iname '\"'*whyfs*' -o -iname '*provenance*' 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 12
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"journalctl --no-pager --since '2026-09-29 12:57:25' --until '2026-09-29 12:57:50' 2>&1 | sed -n '1,320p'; (lastcomm 2>&1 || true) | rg -i 'node|export|blue|red' | sed -n '1,120p'; git check-ignore -v public/channel.json; cmp -s configs/channel.json public/channel.json; printf 'cmp_exit=%s\\\\n' \\\"\"'$?\"; sha256sum configs/channel.json public/channel.json tools/export-red.js tools/export-blue.js; git diff --no-index -- tools/export-red.js tools/export-blue.js || true; git ls-files --stage public/channel.json configs/channel.json tools/export-red.js tools/export-blue.js'",
+        "completed_index": 13
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"journalctl --no-pager --since '2026-09-29 12:57:30' --until '2026-09-29 12:58:10' 2>/dev/null | rg -i 'export|channel|case10|node|fixture|bash|python|whyfs' | sed -n '1,300p'; systemctl list-units --all --no-pager 2>/dev/null | rg -i 'whyfs|prov|fixture|case10' | sed -n '1,200p'; systemctl list-unit-files --no-pager 2>/dev/null | rg -i 'whyfs|prov' | sed -n '1,200p'; ls -la /var/log 2>/dev/null | sed -n '1,200p'\"",
+        "completed_index": 14
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"journalctl --no-pager --since '2026-09-29 12:57:38' --until '2026-09-29 12:57:47' -o short-precise 2>/dev/null | sed -n '1,400p'; ps -ef | rg -i 'whyfs|provenance|fixture' | sed -n '1,240p'; systemctl cat whyfs.service --no-pager 2>&1 | sed -n '1,240p'\"",
+        "completed_index": 15
+      }
+    ],
+    "search_calls": 7,
+    "shell_commands": 11,
+    "thread_id": "01a0eed2-dda8-7030-84a0-ee81491fb412",
+    "tool_calls": 13,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 340096,
+      "input_tokens": 388633,
+      "output_tokens": 4240,
+      "reasoning_tokens": 1717,
+      "total_tokens": 392873
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "6e94ca2a174118bd88f66d3760b162843fb1fe8f234f99909898890e61725a62",
+  "returncode": 0,
+  "run_id": "19-case10-baseline"
+}

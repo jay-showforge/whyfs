@@ -1,0 +1,183 @@
+{
+  "case": "case01",
+  "case_name": "generated-inventory-summary",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 119.17835802299999,
+  "final_response": "Observed facts:\n\n- [inventory-summary.txt](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case01-baseline/reports/inventory-summary.txt) contains `north: 14`.\n- [make_inventory.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case01-baseline/tools/make_inventory.py:4) reads `data/stock.csv` and overwrites the summary.\n- [stock.csv](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case01-baseline/data/stock.csv:2) contains `north,14`.\n- The README instructs running `python3 tools/make_inventory.py`.\n- `reports/` is ignored by Git, and this particular summary is untracked.\n- No accessible provenance record directly identifies the writer process or records a read/contribution edge. Therefore the available provenance evidence is incomplete for attributing this specific file.\n\nInference:\n\n- `python3 tools/make_inventory.py` very likely created this summary, and `data/stock.csv` was very likely its contributing input: the paths, transformation, contents, and timestamps are consistent. That is strong inference from the repository, not an observed execution fact.\n- A direct edit to the summary would not be durable because rerunning the generator overwrites it. To correct the north inventory count durably, correct `north` in `data/stock.csv`\u2014after verifying the intended count from the authoritative business source\u2014and regenerate the summary.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"stat reports/inventory-summary.txt data/stock.csv tools/make_inventory.py README.md\ngit status --short\ngit log --all --decorate --stat --oneline\ngit log --all --format=fuller -- reports/inventory-summary.txt data/stock.csv tools/make_inventory.py\nsed -n '1,240p' README.md\nsed -n '1,240p' tools/make_inventory.py\nsed -n '1,240p' data/stock.csv\nsed -n '1,240p' reports/inventory-summary.txt\n(command -v getfattr >/dev/null && getfattr -d -m - reports/inventory-summary.txt data/stock.csv tools/make_inventory.py 2>&1) || true\nfind . -maxdepth 3 -type f -printf '%p\\\\n' | sort\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"findmnt -T reports/inventory-summary.txt -o TARGET,SOURCE,FSTYPE,OPTIONS\ncommand -v whyfs || true\ncommand -v why || true\ncommand -v provenance || true\ncommand -v getfattr || true\ncommand -v attr || true\ncommand -v debugfs || true\ncompgen -c | rg -i 'why|proven|trace|audit' | sort -u | sed -n '1,200p'\nls -la reports data tools\nlsattr reports/inventory-summary.txt data/stock.csv tools/make_inventory.py 2>&1 || true\nrg -uuu -n -i 'provenance|inventory-summary|make_inventory|stock.csv|north' . /tmp 2>/dev/null | sed -n '1,300p'\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help'",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs\nfile /usr/bin/whyfs\nstat /usr/bin/whyfs\nsed -n '1,240p' /usr/bin/whyfs 2>&1 || true\nfind /usr -maxdepth 4 -iname '*whyfs*' -o -iname '*provenance*' 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"find /usr/share/doc/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs /usr/local/lib/whyfs-prof -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort\nsed -n '1,240p' /usr/bin/whyfs-mcp 2>/dev/null || true\nfind /usr/share/doc/whyfs -type f -maxdepth 2 -exec sh -c 'for p do case \\\"\"'$p\" in *.gz) zcat \"$p\";; *) sed -n \"1,240p\" \"$p\";; esac; done'\"' sh {} + 2>/dev/null\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"ls -la /run/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs /usr/bin/whyfs-mcp 2>&1 || true\nfile /usr/bin/whyfs-mcp /usr/lib/whyfs/* /usr/local/lib/whyfs-prof/whyfs-collect 2>&1 || true\nsystemctl status whyfs --no-pager 2>&1 | sed -n '1,160p' || true\nss -xl | rg whyfs || true\nsed -n '1,200p' /usr/lib/systemd/system/whyfs.service\nsed -n '1,200p' /usr/lib/systemd/system/whyfs@.service\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc 'sudo -n /usr/bin/whyfs ask origin reports/inventory-summary.txt\nsudo -n /usr/bin/whyfs ask sources reports/inventory-summary.txt\nsudo -n /usr/bin/whyfs label reports/inventory-summary.txt --json\nsudo -n /usr/bin/whyfs status'",
+        "completed_index": 10
+      },
+      {
+        "command": "/bin/bash -lc 'id\nnamei -l /run/whyfs/api.sock /usr/bin/whyfs /var/lib/whyfs/machine 2>&1 || true\ngetfacl -p /run/whyfs /run/whyfs/api.sock /usr/bin/whyfs /var/lib/whyfs/machine 2>&1 || true\nls -la /run/user/$(id -u) 2>&1 | sed -n '\"'1,200p'\nss -lntp 2>&1 | sed -n '1,120p'\nsed -n '1,160p' /usr/share/applications/whyfs.desktop\nsed -n '1,160p' /usr/share/applications/whyfs-label.desktop\nsed -n '1,160p' /usr/share/kio/servicemenus/whyfs.desktop\nsed -n '1,160p' /usr/share/nemo/actions/whyfs-history.nemo_action\"",
+        "completed_index": 11
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,120p' .gitignore\ngit ls-files --stage\njournalctl --since '2026-09-29 12:57:25' --until '2026-09-29 12:57:50' --no-pager 2>&1 | sed -n '1,240p'\nfind .. -maxdepth 3 -type f -not -path '*/.git/*' -printf '%p\\\\n' 2>/dev/null | sort | sed -n '1,240p'\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort | sed -n '1,300p'\"",
+        "completed_index": 12
+      },
+      {
+        "command": "/bin/bash -lc \"journalctl --since '2026-09-29 12:57:30' --until '2026-09-29 12:57:45' --no-pager -o short-precise 2>&1 | rg -i 'whyfs|python|inventory|case01|ftmon|sudo|session|systemd\\\\[[0-9]+\\\\]: Started|collector|gap|lost|drop' | sed -n '1,300p'\nps -eo pid,ppid,lstart,user,args --forest | sed -n '1,240p'\nls -la /home/ftmon/whyfs-provenance-decision-20260929T125733 /home/ftmon/whyfs-provenance-decision-20260929T125733/cases /home/ftmon/whyfs-provenance-decision-20260929T125733/agent-homes/01-case01-baseline | sed -n '1,240p'\"",
+        "completed_index": 13
+      }
+    ],
+    "context_bytes": 102621,
+    "context_bytes_by_tool": {
+      "filesystem": 3374,
+      "git": 27884,
+      "other": 15052,
+      "search": 56195,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/04/8f9a7cb4b94d9bb514e05f0cf0e7ca678a38d3",
+      ".git/objects/29/4a41f9fb2222a803faa5fb6aef57de78f3efe6",
+      ".git/objects/35/75ccbac95c320b85a24eab8a56e06a9740ec3c",
+      ".git/objects/4f/26fade9c9c69821680a59663edd107205821e7",
+      ".git/objects/6d/0b9de099d0b0b8c142f487accb147da05f8e84",
+      ".git/objects/9d/6a6e535ee3eab9f7fcd02e69d4691ef1c5341c",
+      ".git/objects/b2/d8e6d9c9a27ad41f6287c88f5af31deea43230",
+      ".git/objects/d9/c21ba574091dacbce0f3d674d0103e02f8b96f",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "data/stock.csv",
+      "reports/inventory-summary.txt",
+      "tools/make_inventory.py"
+    ],
+    "distinct_files_inspected": 36,
+    "file_change_calls": 0,
+    "filesystem_reads": 6,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 9,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 9,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 102621,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"stat reports/inventory-summary.txt data/stock.csv tools/make_inventory.py README.md\ngit status --short\ngit log --all --decorate --stat --oneline\ngit log --all --format=fuller -- reports/inventory-summary.txt data/stock.csv tools/make_inventory.py\nsed -n '1,240p' README.md\nsed -n '1,240p' tools/make_inventory.py\nsed -n '1,240p' data/stock.csv\nsed -n '1,240p' reports/inventory-summary.txt\n(command -v getfattr >/dev/null && getfattr -d -m - reports/inventory-summary.txt data/stock.csv tools/make_inventory.py 2>&1) || true\nfind . -maxdepth 3 -type f -printf '%p\\\\n' | sort\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"findmnt -T reports/inventory-summary.txt -o TARGET,SOURCE,FSTYPE,OPTIONS\ncommand -v whyfs || true\ncommand -v why || true\ncommand -v provenance || true\ncommand -v getfattr || true\ncommand -v attr || true\ncommand -v debugfs || true\ncompgen -c | rg -i 'why|proven|trace|audit' | sort -u | sed -n '1,200p'\nls -la reports data tools\nlsattr reports/inventory-summary.txt data/stock.csv tools/make_inventory.py 2>&1 || true\nrg -uuu -n -i 'provenance|inventory-summary|make_inventory|stock.csv|north' . /tmp 2>/dev/null | sed -n '1,300p'\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs\nfile /usr/bin/whyfs\nstat /usr/bin/whyfs\nsed -n '1,240p' /usr/bin/whyfs 2>&1 || true\nfind /usr -maxdepth 4 -iname '*whyfs*' -o -iname '*provenance*' 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 7
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find /usr/share/doc/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs /usr/local/lib/whyfs-prof -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort\nsed -n '1,240p' /usr/bin/whyfs-mcp 2>/dev/null || true\nfind /usr/share/doc/whyfs -type f -maxdepth 2 -exec sh -c 'for p do case \\\"\"'$p\" in *.gz) zcat \"$p\";; *) sed -n \"1,240p\" \"$p\";; esac; done'\"' sh {} + 2>/dev/null\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -la /run/whyfs /usr/lib/python3/dist-packages/whyfs /usr/lib/whyfs /usr/bin/whyfs-mcp 2>&1 || true\nfile /usr/bin/whyfs-mcp /usr/lib/whyfs/* /usr/local/lib/whyfs-prof/whyfs-collect 2>&1 || true\nsystemctl status whyfs --no-pager 2>&1 | sed -n '1,160p' || true\nss -xl | rg whyfs || true\nsed -n '1,200p' /usr/lib/systemd/system/whyfs.service\nsed -n '1,200p' /usr/lib/systemd/system/whyfs@.service\"",
+        "completed_index": 9
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'id\nnamei -l /run/whyfs/api.sock /usr/bin/whyfs /var/lib/whyfs/machine 2>&1 || true\ngetfacl -p /run/whyfs /run/whyfs/api.sock /usr/bin/whyfs /var/lib/whyfs/machine 2>&1 || true\nls -la /run/user/$(id -u) 2>&1 | sed -n '\"'1,200p'\nss -lntp 2>&1 | sed -n '1,120p'\nsed -n '1,160p' /usr/share/applications/whyfs.desktop\nsed -n '1,160p' /usr/share/applications/whyfs-label.desktop\nsed -n '1,160p' /usr/share/kio/servicemenus/whyfs.desktop\nsed -n '1,160p' /usr/share/nemo/actions/whyfs-history.nemo_action\"",
+        "completed_index": 11
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,120p' .gitignore\ngit ls-files --stage\njournalctl --since '2026-09-29 12:57:25' --until '2026-09-29 12:57:50' --no-pager 2>&1 | sed -n '1,240p'\nfind .. -maxdepth 3 -type f -not -path '*/.git/*' -printf '%p\\\\n' 2>/dev/null | sort | sed -n '1,240p'\nfind /home/ftmon/whyfs-provenance-decision-20260929T125733 -maxdepth 3 -type f -printf '%p\\\\n' 2>/dev/null | sort | sed -n '1,300p'\"",
+        "completed_index": 12
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"journalctl --since '2026-09-29 12:57:30' --until '2026-09-29 12:57:45' --no-pager -o short-precise 2>&1 | rg -i 'whyfs|python|inventory|case01|ftmon|sudo|session|systemd\\\\[[0-9]+\\\\]: Started|collector|gap|lost|drop' | sed -n '1,300p'\nps -eo pid,ppid,lstart,user,args --forest | sed -n '1,240p'\nls -la /home/ftmon/whyfs-provenance-decision-20260929T125733 /home/ftmon/whyfs-provenance-decision-20260929T125733/cases /home/ftmon/whyfs-provenance-decision-20260929T125733/agent-homes/01-case01-baseline | sed -n '1,240p'\"",
+        "completed_index": 13
+      }
+    ],
+    "search_calls": 4,
+    "shell_commands": 11,
+    "thread_id": "01a0eebe-c31b-7063-a6a0-1a061b72cede",
+    "tool_calls": 11,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 267776,
+      "input_tokens": 308926,
+      "output_tokens": 4868,
+      "reasoning_tokens": 2210,
+      "total_tokens": 313794
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "4531dbf860d162b77fc24c43131fada0716b65045c21b276a084f3011f26f71f",
+  "returncode": 0,
+  "run_id": "01-case01-baseline"
+}

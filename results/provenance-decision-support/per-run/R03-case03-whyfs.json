@@ -1,0 +1,189 @@
+{
+  "case": "case03",
+  "case_name": "badge-one-to-many",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 49.16252790799999,
+  "final_response": "Observed downstream relationships from `theme/badge.toml`, all produced via `node tools/build-badges.js`:\n\n- \u2192 [web/assets/badge.svg](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case03-whyfs/web/assets/badge.svg)\n- \u2192 [mobile/assets/badge.json](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case03-whyfs/mobile/assets/badge.json)\n- \u2192 [docs/badge.txt](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case03-whyfs/docs/badge.txt)\n\nA color change may therefore affect these three files.\n\nCompleteness limitation: this is observed-only provenance, not a complete global dependency graph. Unobserved downstream effects may exist, and WhyFS reports a recording gap because `theme/badge.toml`\u2019s own origin was not observed. No files were intentionally modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' . | sed -n '1,80p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"find . -maxdepth 4 -type f -print | sort | sed -n '1,240p'\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --oneline --decorate --all --stat && sed -n '1,240p' README.md && sed -n '1,240p' tools/build-badges.js && sed -n '1,120p' theme/badge.toml && sed -n '1,120p' docs/badge.txt && sed -n '1,120p' mobile/assets/badge.json && sed -n '1,120p' web/assets/badge.svg\"",
+        "completed_index": 4
+      },
+      {
+        "command": "/bin/bash -lc \"ls -laR . | sed -n '1,260p' && sed -n '1,120p' .gitignore && git status --ignored --short && (command -v whyfs || true) && (command -v why || true) && find .. -maxdepth 3 -type f -print | sort | sed -n '1,240p'\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help'",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs && file /usr/bin/whyfs && getfacl -p /usr/bin/whyfs 2>/dev/null || true && getfattr -d -m- theme/badge.toml docs/badge.txt mobile/assets/badge.json web/assets/badge.svg 2>/dev/null || true && mount | rg 'whyfs|case03| /usr ' || true\"",
+        "completed_index": 8
+      }
+    ],
+    "context_bytes": 11507,
+    "context_bytes_by_tool": {
+      "filesystem": 1207,
+      "git": 9323,
+      "other": 53,
+      "search": 499,
+      "whyfs": 425
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/objects/29/381c2e7c90258d9bdebd410c9a0631d1f07674",
+      ".git/objects/51/dcb03c282f6a25febe7843e9797265b140ff48",
+      ".git/objects/61/75d14bca160606b49d390ede0d75ca0fd075aa",
+      ".git/objects/6a/b3f1abcf6ccd082eba765705231f2ff48fa5cf",
+      ".git/objects/85/e5acaee8c1b56a055884a1ad32f59c6bac8161",
+      ".git/objects/d1/afe8e54fcd64cb103f47f45e4a5c3e5500587e",
+      ".git/objects/ef/0f8e36001dba07ac2cace676cd02f2af5cb523",
+      ".git/objects/fe/92ee360cfc2ba87d89603461eaa87f63a51a57",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "docs/badge.txt",
+      "mobile/assets/badge.json",
+      "theme/badge.toml",
+      "tools/build-badges.js",
+      "web/assets/badge.svg"
+    ],
+    "distinct_files_inspected": 37,
+    "file_change_calls": 0,
+    "filesystem_reads": 3,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 5,
+    "natural_use": {
+      "calls": 1,
+      "calls_detail": [
+        {
+          "answer": {
+            "count": 3,
+            "gaps_since_written": [
+              "this file's origin was not observed"
+            ],
+            "not_proof_of_safety": true,
+            "observed": [
+              {
+                "file": "web/assets/badge.svg",
+                "one_of": 3,
+                "via": "node tools/build-badges.js"
+              },
+              {
+                "file": "mobile/assets/badge.json",
+                "one_of": 3,
+                "via": "node tools/build-badges.js"
+              },
+              {
+                "file": "docs/badge.txt",
+                "one_of": 3,
+                "via": "node tools/build-badges.js"
+              }
+            ],
+            "observed_only": true,
+            "path": "theme/badge.toml",
+            "q": "dependents",
+            "vcs_metadata": 2
+          },
+          "arguments": {
+            "path": "theme/badge.toml"
+          },
+          "completed_index": 9,
+          "error": null,
+          "output_bytes": 425,
+          "tool": "observed_dependents"
+        }
+      ],
+      "first_tool": "observed_dependents",
+      "ignored": false,
+      "legacy_cli_attempts": [
+        "/bin/bash -lc \"ls -laR . | sed -n '1,260p' && sed -n '1,120p' .gitignore && git status --ignored --short && (command -v whyfs || true) && (command -v why || true) && find .. -maxdepth 3 -type f -print | sort | sed -n '1,240p'\"",
+        "/bin/bash -lc 'whyfs --help'",
+        "/bin/bash -lc \"ls -l /usr/bin/whyfs && file /usr/bin/whyfs && getfacl -p /usr/bin/whyfs 2>/dev/null || true && getfattr -d -m- theme/badge.toml docs/badge.txt mobile/assets/badge.json web/assets/badge.svg 2>/dev/null || true && mount | rg 'whyfs|case03| /usr ' || true\""
+      ],
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 5,
+      "output_bytes": 425,
+      "used": true
+    },
+    "ordinary_context_bytes": 11082,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' . | sed -n '1,80p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find . -maxdepth 4 -type f -print | sort | sed -n '1,240p'\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --oneline --decorate --all --stat && sed -n '1,240p' README.md && sed -n '1,240p' tools/build-badges.js && sed -n '1,120p' theme/badge.toml && sed -n '1,120p' docs/badge.txt && sed -n '1,120p' mobile/assets/badge.json && sed -n '1,120p' web/assets/badge.svg\"",
+        "completed_index": 4
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -laR . | sed -n '1,260p' && sed -n '1,120p' .gitignore && git status --ignored --short && (command -v whyfs || true) && (command -v why || true) && find .. -maxdepth 3 -type f -print | sort | sed -n '1,240p'\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs && file /usr/bin/whyfs && getfacl -p /usr/bin/whyfs 2>/dev/null || true && getfattr -d -m- theme/badge.toml docs/badge.txt mobile/assets/badge.json web/assets/badge.svg 2>/dev/null || true && mount | rg 'whyfs|case03| /usr ' || true\"",
+        "completed_index": 8
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 6,
+    "thread_id": "01a0eede-402b-7bb0-a426-be32a43d19ca",
+    "tool_calls": 7,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 131840,
+      "input_tokens": 158790,
+      "output_tokens": 1644,
+      "reasoning_tokens": 428,
+      "total_tokens": 160434
+    },
+    "whyfs_calls": 1,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": [
+      "observed_dependents"
+    ]
+  },
+  "prompt_sha256": "a8afd74b6e16306d2786f459c833f25e123fc3e2b6c25b445cf0b78b7a9e725c",
+  "returncode": 0,
+  "run_id": "R03-case03-whyfs"
+}

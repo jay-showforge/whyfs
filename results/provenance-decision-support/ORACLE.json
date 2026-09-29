@@ -1,0 +1,376 @@
+{
+  "case01": {
+    "decision": "Edit data/stock.csv and regenerate; do not treat a direct output edit as durable.",
+    "execution": [
+      "python3 tools/make_inventory.py"
+    ],
+    "facts": [
+      [
+        "latest_writer",
+        "python3 tools/make_inventory.py"
+      ],
+      [
+        "observed_input",
+        "data/stock.csv"
+      ],
+      [
+        "complete",
+        true
+      ],
+      [
+        "generated_relationship",
+        true
+      ]
+    ],
+    "name": "generated-inventory-summary",
+    "prompt": "Examine reports/inventory-summary.txt. Determine what actually created this specific file, which input file was observed contributing to it, whether the provenance evidence is complete, and whether directly editing the summary is the right way to make a durable correction to the north inventory count. Do not modify any files. Clearly distinguish observed facts from inference.",
+    "reads": [
+      "data/stock.csv"
+    ],
+    "target": "reports/inventory-summary.txt",
+    "writes": [
+      "reports/inventory-summary.txt"
+    ]
+  },
+  "case02": {
+    "decision": "Change specs/device.yaml and rerun both stages; normalized.json is generated intermediate.",
+    "execution": [
+      "python3 tools/normalize.py",
+      "node tools/render-card.js"
+    ],
+    "facts": [
+      [
+        "latest_writer",
+        "node tools/render-card.js"
+      ],
+      [
+        "direct_input",
+        "work/normalized.json"
+      ],
+      [
+        "upstream_source",
+        "specs/device.yaml"
+      ],
+      [
+        "intermediate",
+        "work/normalized.json"
+      ],
+      [
+        "complete",
+        true
+      ]
+    ],
+    "name": "python-node-multistage-lineage",
+    "prompt": "Examine site/device-card.html. Establish the actual writer of this file and its observed upstream chain, including the intermediate and originating source. Explain which file is the source versus an intermediate if the device label must change. State whether the evidence is complete. Do not modify files, and distinguish observation from inference.",
+    "reads": [
+      "specs/device.yaml",
+      "work/normalized.json"
+    ],
+    "target": "site/device-card.html",
+    "writes": [
+      "work/normalized.json",
+      "site/device-card.html"
+    ]
+  },
+  "case03": {
+    "decision": "All three observed outputs may be affected; the observed set is not a global completeness proof.",
+    "execution": [
+      "node tools/build-badges.js"
+    ],
+    "facts": [
+      [
+        "dependent",
+        "web/assets/badge.svg"
+      ],
+      [
+        "dependent",
+        "mobile/assets/badge.json"
+      ],
+      [
+        "dependent",
+        "docs/badge.txt"
+      ],
+      [
+        "observed_only",
+        true
+      ]
+    ],
+    "name": "badge-one-to-many",
+    "prompt": "Determine which downstream files were actually observed being produced from theme/badge.toml and what may therefore be affected if its color changes. Report only observed dependency relationships, state the completeness limitation, and do not modify files.",
+    "reads": [
+      "theme/badge.toml"
+    ],
+    "target": "theme/badge.toml",
+    "writes": [
+      "web/assets/badge.svg",
+      "mobile/assets/badge.json",
+      "docs/badge.txt"
+    ]
+  },
+  "case04": {
+    "decision": "Treat the current path as the moved file with continuous observed lineage, not unrelated.",
+    "execution": [
+      "python3 tools/prepare-runtime.py",
+      "mv scratch/runtime-draft.ini config/runtime-current.ini",
+      "python3 tools/consume-runtime.py"
+    ],
+    "facts": [
+      [
+        "created_by",
+        "python3 tools/prepare-runtime.py"
+      ],
+      [
+        "moved_from",
+        "scratch/runtime-draft.ini"
+      ],
+      [
+        "same_identity_lineage",
+        true
+      ],
+      [
+        "dependent",
+        "reports/runtime-use.txt"
+      ],
+      [
+        "complete",
+        true
+      ]
+    ],
+    "name": "runtime-config-move-lineage",
+    "prompt": "Determine whether config/runtime-current.ini has observed rename or move lineage, where the current file came from, and whether treating the current path as an unrelated new file would be correct. Also identify its observed later use. Do not modify files; separate observed facts from inference.",
+    "reads": [
+      "seed/runtime-template.ini",
+      "config/runtime-current.ini"
+    ],
+    "renames": [
+      [
+        "scratch/runtime-draft.ini",
+        "config/runtime-current.ini"
+      ]
+    ],
+    "target": "config/runtime-current.ini",
+    "writes": [
+      "scratch/runtime-draft.ini",
+      "config/runtime-current.ini",
+      "reports/runtime-use.txt"
+    ]
+  },
+  "case05": {
+    "decision": "The current version came from rebuild-index.py; changing bootstrap-index.py does not address that latest write.",
+    "execution": [
+      "python3 tools/bootstrap-index.py",
+      "python3 tools/rebuild-index.py"
+    ],
+    "facts": [
+      [
+        "latest_writer",
+        "python3 tools/rebuild-index.py"
+      ],
+      [
+        "latest_input",
+        "records/current.json"
+      ],
+      [
+        "earlier_writer",
+        "python3 tools/bootstrap-index.py"
+      ],
+      [
+        "multiple_writers",
+        true
+      ],
+      [
+        "complete",
+        true
+      ]
+    ],
+    "name": "sequential-index-overwrite",
+    "prompt": "Determine which process wrote the current/latest observed version of state/live-index.json, whether the path had an earlier observed writer, and what the available evidence can and cannot establish. A teammate proposes changing the bootstrap tool to alter the current file; assess that decision. Do not modify files and do not substitute filename-based inference for observed execution.",
+    "reads": [
+      "seed/initial.json",
+      "records/current.json"
+    ],
+    "target": "state/live-index.json",
+    "writes": [
+      "state/live-index.json",
+      "state/live-index.json"
+    ]
+  },
+  "case06": {
+    "decision": "Preserve unknown original creation while reporting the later observed read/use.",
+    "execution": [
+      "python3 tools/audit-cache.py"
+    ],
+    "execution_before_observation": [
+      "harness writes cache/vendor-snapshot.bin"
+    ],
+    "facts": [
+      [
+        "origin_unknown",
+        true
+      ],
+      [
+        "reason",
+        "before_recording"
+      ],
+      [
+        "dependent",
+        "analysis/cache.sha256"
+      ],
+      [
+        "complete",
+        false
+      ]
+    ],
+    "name": "pre-observation-vendor-cache",
+    "prompt": "Determine who originally created cache/vendor-snapshot.bin, what use of it was actually observed, whether its origin evidence is complete, and what remains unknown. Do not modify files and do not invent a creator when an observation gap prevents attribution.",
+    "reads": [
+      "cache/vendor-snapshot.bin"
+    ],
+    "target": "cache/vendor-snapshot.bin",
+    "writes": [
+      "analysis/cache.sha256"
+    ]
+  },
+  "case07": {
+    "decision": "Attribute only review.md and findings.json to the registered session; supplied task is recorded context, not inferred intent.",
+    "execution": [
+      "whyfs agent start ...",
+      "python3 tools/run-review.py",
+      "whyfs agent end ...",
+      "python3 tools/ambient-write.py"
+    ],
+    "facts": [
+      [
+        "session_file",
+        "artifacts/review.md"
+      ],
+      [
+        "session_file",
+        "artifacts/findings.json"
+      ],
+      [
+        "agent",
+        "AuditBot"
+      ],
+      [
+        "supplied_task",
+        "Review dependency licenses for release"
+      ],
+      [
+        "not_session_file",
+        "artifacts/ambient.log"
+      ]
+    ],
+    "name": "registered-review-session",
+    "prompt": "Identify which files were actually observed for the supplied task \u2018Review dependency licenses for release\u2019 and its agent session. State the established agent/session attribution, distinguish the supplied task text from inferred intent, and identify any nearby file not attributed to that session. Do not modify files.",
+    "session": {
+      "agent": "AuditBot",
+      "task": "Review dependency licenses for release"
+    },
+    "target": "artifacts/",
+    "writes": [
+      "artifacts/review.md",
+      "artifacts/findings.json",
+      "artifacts/ambient.log"
+    ]
+  },
+  "case08": {
+    "decision": "Change the authored input and repeat the install/copy operation; directory convention is not execution evidence.",
+    "execution": [
+      "/usr/bin/install -D -m 644 authored/manual-release.txt dist/release-note.txt"
+    ],
+    "facts": [
+      [
+        "latest_writer",
+        "/usr/bin/install"
+      ],
+      [
+        "observed_input",
+        "authored/manual-release.txt"
+      ],
+      [
+        "packaging_script_not_observed",
+        true
+      ],
+      [
+        "complete",
+        true
+      ]
+    ],
+    "name": "manual-artifact-in-dist",
+    "prompt": "dist/release-note.txt looks generated by convention. Determine what actually created this specific file, which observed input contributed to it, and whether its location alone proves that the repository packaging script ran. Explain what should be changed for a durable wording correction. Do not modify files.",
+    "reads": [
+      "authored/manual-release.txt"
+    ],
+    "target": "dist/release-note.txt",
+    "writes": [
+      "dist/release-note.txt"
+    ]
+  },
+  "case09": {
+    "decision": "Do not call it globally safe to delete merely because no dependents were observed.",
+    "execution": [
+      "python3 tools/materialize-seed.py"
+    ],
+    "facts": [
+      [
+        "latest_writer",
+        "python3 tools/materialize-seed.py"
+      ],
+      [
+        "observed_dependents",
+        []
+      ],
+      [
+        "observed_only",
+        true
+      ],
+      [
+        "not_proof_of_safety",
+        true
+      ]
+    ],
+    "name": "empty-observed-dependents-safety",
+    "prompt": "Establish what created scratch/unused-seed.dat and what downstream files, if any, were observed depending on it. Is that evidence sufficient to call the file globally safe to delete? Do not delete or modify anything. Preserve the distinction between observed dependency evidence and proof of safety.",
+    "reads": [
+      "inputs/seed.txt"
+    ],
+    "target": "scratch/unused-seed.dat",
+    "writes": [
+      "scratch/unused-seed.dat"
+    ]
+  },
+  "case10": {
+    "decision": "The blue exporter actually ran; the red exporter\u2019s capability is not evidence of execution.",
+    "execution": [
+      "node tools/export-blue.js"
+    ],
+    "facts": [
+      [
+        "latest_writer",
+        "node tools/export-blue.js"
+      ],
+      [
+        "observed_input",
+        "configs/channel.json"
+      ],
+      [
+        "other_generator_executed",
+        false
+      ],
+      [
+        "complete",
+        true
+      ]
+    ],
+    "name": "competing-node-exporters",
+    "prompt": "Two repository exporters can plausibly produce public/channel.json. Determine which one actually generated this particular artifact, which input was observed, and whether the other exporter merely being capable of producing it proves that it ran. State evidence completeness and do not modify files.",
+    "reads": [
+      "configs/channel.json"
+    ],
+    "target": "public/channel.json",
+    "writes": [
+      "public/channel.json"
+    ]
+  }
+}

@@ -1,10 +1,102 @@
 # Benchmarks
 
-This file has two parts:
+This file has three parts:
+- **the provenance decision-support benchmark**, including its claim boundary and public evidence;
 - **the WhyFS 1.0 performance contract**, and the evidence behind it;
 - **the historical v0.1 / v0.2 benchmarks**, kept as they were written (below).
 
 Per-platform results are in [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+
+## Provenance decision-support benchmark
+
+**Verdict: STRONG SUPPORT**
+
+This benchmark asks a provenance-specific question: when an agent actually needs provenance to
+make a file decision, does access to WhyFS help it establish the correct observed facts more
+completely and with less manual reconstruction than ordinary repository and filesystem
+investigation?
+
+In controlled provenance-decision tasks, WhyFS increased required-fact recovery from **63.64% to
+95.45%** and reduced manual provenance reconstruction by **41.18%**, without adding factual,
+uncertainty, or safety errors.
+
+### What was tested
+
+Ten fresh provenance-decision cases covered generated outputs, multi-stage lineage, one-to-many
+dependents, rename identity, multiple writers, an observation gap, agent/session attribution, a
+generated-looking but manually installed file, downstream safety, and competing plausible
+generators.  Each case had a BASELINE run using ordinary coding tools and a WHYFS run with the
+same prompt plus read-only typed provenance tools.
+
+The hidden oracle was constructed before collection from the deliberately executed processes,
+commands, inputs, outputs, moves, overwrites, session metadata, and observation boundary.  It was
+independent of WhyFS; WhyFS was one contestant's evidence source, not the source of truth used for
+scoring.  Correctly refusing to invent an unknowable fact was treated as calibrated uncertainty,
+not as a factual error.
+
+The treatment used frozen experimental candidate
+`c0be4efcdc7811e5fc0dd4c72ba80a514cc3dc42`, package SHA-256
+`465ac0988641114f54d8481fb7e2a6320194a9e752b310bdd3e54593953b15ac`, with the read-only tools
+`file_origin`, `source_chain`, `observed_dependents`, `session_files`, and `recent_changes`.
+Those native typed tools are **not** part of the released WhyFS 1.0.0 product, and publishing this
+evidence does not make the experimental implementation a supported feature.
+
+### Primary results
+
+| Metric | BASELINE | WHYFS | Change |
+|---|---:|---:|---:|
+| Required-fact recovery | 28/44 (63.64%) | 42/44 (95.45%) | +31.82 percentage points |
+| Factual precision | 28/28 (100%) | 42/42 (100%) | unchanged |
+| Correct uncertainty calibration | 10/10 | 10/10 | unchanged |
+| Decision quality | 9 PASS / 1 PARTIAL | 10 PASS | improved |
+| Manual provenance reconstruction | 85 | 50 | -41.18% |
+| Filesystem reads | 57 | 31 | -45.61% |
+| Searches | 37 | 23 | -37.84% |
+| Context/tool-output bytes | 619,493 | 159,331 | -74.28% |
+| Unsafe or unsupported claims | 0 | 0 | unchanged |
+| File modifications | 0 | 0 | unchanged |
+
+Manual reconstruction was lower in all ten pairs.  Raw tool calls did not fall: they rose from 96
+to 100 because 43 typed WhyFS calls replaced only part of the ordinary work.  The result is about
+fact recovery, calibrated uncertainty, decision quality, and provenance reconstruction burden—not
+a synthetic efficiency score.
+
+### Secondary measurements
+
+For these provenance-explicit tasks, total model tokens fell **28.01%** (2,581,967 to 1,858,832)
+and wall time fell **31.02%** (865.30s to 596.87s).
+
+These token and time results apply only to the provenance-explicit benchmark and must not be
+interpreted as evidence that WhyFS generally reduces coding-agent cost or latency.
+
+### Natural tool selection
+
+Codex naturally selected the typed WhyFS provenance tools in 9 of 10 treatment runs.  It made 43
+typed calls; one treatment run ignored WhyFS, and 13 calls were classified as redundant.  Every
+tool-using run performed some ordinary reconstruction before its first WhyFS call.  After an agent
+received sufficient typed provenance, however, none continued manually reconstructing that same
+provenance.
+
+### Claim boundary
+
+The earlier general coding-agent investigation asked whether simply giving a coding agent WhyFS
+makes arbitrary coding work generally cheaper or faster.  Its conclusion remains visible and
+unchanged:
+
+**AGENT-EFFICIENCY LINE CLOSED — CURRENT EVIDENCE DOES NOT SUPPORT THE GENERAL SAVINGS CLAIM**
+
+The new result asks a narrower question and does not reopen that line.  It supports WhyFS as
+decision support when provenance is explicitly required; it does not show that WhyFS improves
+every coding task, generally saves tokens or time, proves a complete dependency graph, or makes a
+file safe to delete.
+
+- [Full benchmark report](results/provenance-decision-support/FINAL_REPORT.md)
+- [Evidence guide and complete public bundle](results/provenance-decision-support/README.md)
+- [Methodology](results/provenance-decision-support/METHODOLOGY.md)
+- [Independent oracle](results/provenance-decision-support/ORACLE.json)
+- [Paired summary](results/provenance-decision-support/PAIRED_SUMMARY.json)
+- [Results CSV](results/provenance-decision-support/RESULTS.csv)
+- [Evidence hashes](results/provenance-decision-support/EVIDENCE_MANIFEST.sha256)
 
 ## WhyFS 1.0 performance contract
 

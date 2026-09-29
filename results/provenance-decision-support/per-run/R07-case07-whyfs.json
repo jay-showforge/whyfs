@@ -1,0 +1,473 @@
+{
+  "case": "case07",
+  "case_name": "registered-review-session",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 71.80597275099996,
+  "final_response": "WhyFS establishes the following for the current workspace:\n\n- Agent: `AuditBot`\n- Session: `license-review-whyfs-1790713799798534600`\n- Attribution source: registered\n- Supplied task text: `Review dependency licenses for release`\n\nFiles directly recorded for that session:\n\n- [artifacts/review.md](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-whyfs/artifacts/review.md) \u2014 written by `python3 tools/run-review.py`\n- [artifacts/findings.json](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-whyfs/artifacts/findings.json) \u2014 written by the same command\n\nBoth origins are complete, attributable, and observed at `2026-09-29 13:29:59 -07:00`. Their observed generation chain also identifies [tools/run-review.py](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-whyfs/tools/run-review.py) and [licenses/dependencies.txt](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-whyfs/licenses/dependencies.txt) as inputs; these are source-chain inputs, not files returned as written by the session.\n\nThe quoted task is supplied session context only. An intent such as \u201cperform compliance analysis\u201d or \u201capprove release readiness\u201d would be an inference and is not established by WhyFS.\n\nNearby but not attributed to that agent/session:\n\n- [artifacts/ambient.log](/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-whyfs/artifacts/ambient.log) \u2014 written by `python3 tools/ambient-write.py` at `13:30:00`, with `agent: null`.\n\nNo files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,200p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --oneline --decorate --stat -5 && find . -maxdepth 3 -type f -not -path './.git/*' -printf '%p\\\\n' | sort && for f in README.md licenses/dependencies.txt tools/run-review.py tools/ambient-write.py artifacts/review.md artifacts/findings.json artifacts/ambient.log; do echo \\\"FILE \"'$f\"; stat -c '\"'size=%s mtime=%y birth=%w' \\\"\"'$f\"; getfattr -d -m - \"$f\" 2>/dev/null || true; done'",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,200p' README.md; sed -n '1,240p' tools/run-review.py; sed -n '1,200p' tools/ambient-write.py; sed -n '1,120p' licenses/dependencies.txt; sed -n '1,120p' artifacts/review.md; sed -n '1,120p' artifacts/findings.json; sed -n '1,120p' artifacts/ambient.log; sed -n '1,120p' .gitignore; find .. -maxdepth 3 -type f -printf '%p\\\\n' | sort | sed -n '1,300p'; mount | rg -i 'why|fuse|case07' || true; env | sort | rg -i 'why|session|agent|task|provenance|trace' || true; command -v whyfs || true; compgen -c | sort -u | rg -i 'whyfs|provenance' || true\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc \"whyfs --help; whyfs status 2>&1 || true; whyfs-mcp --help 2>&1 | sed -n '1,200p'\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc 'ls -la /usr/bin/whyfs; type -a whyfs whyfs-mcp; command -V whyfs-mcp; ls -la \"$(command -v whyfs-mcp)\" 2>&1 || true; find /home/ftmon/whyfs-provenance-decision-20260929T132947 -maxdepth 3 -type f -readable -printf '\"'%p\\\\n' 2>/dev/null | sort | sed -n '1,300p'\"",
+        "completed_index": 7
+      }
+    ],
+    "context_bytes": 12875,
+    "context_bytes_by_tool": {
+      "filesystem": 106,
+      "git": 1244,
+      "other": 0,
+      "search": 6882,
+      "whyfs": 4643
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/00/3e9c3b6420e9acd8a7f60ee8bc5385b6b9a51c",
+      ".git/objects/21/64daf1f7d56cd8829ce8e423e8473ec3c31699",
+      ".git/objects/41/66d650752db8edb45276266893cb4ec45d17f7",
+      ".git/objects/6f/822b5ae08e8c58f5622539edc298c60e288da8",
+      ".git/objects/80/f0979162ce9a172186fea84fe2cd234bc3b098",
+      ".git/objects/a4/772ce0253664bcd27414cf64bf37f18bb1ca36",
+      ".git/objects/b8/9dd9537b439f73cdf1b0156e8b2f7429922378",
+      ".git/objects/cd/becb3d494c27911696ce68ad271ce09b9f8c86",
+      ".git/objects/f1/e1c6a33a1d5b73c277d00127e163cbdf2a052a",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "artifacts/ambient.log",
+      "artifacts/findings.json",
+      "artifacts/review.md",
+      "licenses/dependencies.txt",
+      "tools/ambient-write.py",
+      "tools/run-review.py"
+    ],
+    "distinct_files_inspected": 40,
+    "file_change_calls": 0,
+    "filesystem_reads": 4,
+    "git_inspection_calls": 1,
+    "manual_reconstruction_operations": 5,
+    "natural_use": {
+      "calls": 8,
+      "calls_detail": [
+        {
+          "answer": {
+            "files": [
+              {
+                "action": "written",
+                "path": "artifacts/findings.json",
+                "session": 0
+              },
+              {
+                "action": "written",
+                "path": "artifacts/review.md",
+                "session": 0
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-baseline/artifacts/findings.json",
+                "session": 1
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T132947/cases/case07-baseline/artifacts/review.md",
+                "session": 1
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T132752/cases/case07-whyfs/artifacts/findings.json",
+                "session": 2
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T132752/cases/case07-whyfs/artifacts/review.md",
+                "session": 2
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T132752/cases/case07-baseline/artifacts/findings.json",
+                "session": 3
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T132752/cases/case07-baseline/artifacts/review.md",
+                "session": 3
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-whyfs/artifacts/findings.json",
+                "session": 4
+              },
+              {
+                "action": "written",
+                "path": "/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case07-whyfs/artifacts/review.md",
+                "session": 4
+              }
+            ],
+            "matched": [
+              {
+                "agent": "AuditBot",
+                "session": "license-review-whyfs-1790713799798534600",
+                "source": "registered",
+                "started": "2026-09-29T13:29:59-07:00",
+                "task": "Review dependency licenses for release"
+              },
+              {
+                "agent": "AuditBot",
+                "session": "license-review-baseline-1790713799440813839",
+                "source": "registered",
+                "started": "2026-09-29T13:29:59-07:00",
+                "task": "Review dependency licenses for release"
+              },
+              {
+                "agent": "AuditBot",
+                "session": "license-review-whyfs-1790713685704100250",
+                "source": "registered",
+                "started": "2026-09-29T13:28:05-07:00",
+                "task": "Review dependency licenses for release"
+              },
+              {
+                "agent": "AuditBot",
+                "session": "license-review-baseline-1790713685351193239",
+                "source": "registered",
+                "started": "2026-09-29T13:28:05-07:00",
+                "task": "Review dependency licenses for release"
+              },
+              {
+                "agent": "AuditBot",
+                "session": "license-review-whyfs-1790711862552856674",
+                "source": "registered",
+                "started": "2026-09-29T12:57:42-07:00",
+                "task": "Review dependency licenses for release"
+              }
+            ],
+            "matched_more": 5,
+            "q": "session"
+          },
+          "arguments": {
+            "supplied_task": "Review dependency licenses for release"
+          },
+          "completed_index": 10,
+          "error": null,
+          "output_bytes": 2206,
+          "tool": "session_files"
+        },
+        {
+          "answer": {
+            "files": [
+              {
+                "action": "written",
+                "path": "artifacts/findings.json"
+              },
+              {
+                "action": "written",
+                "path": "artifacts/review.md"
+              }
+            ],
+            "matched": [
+              {
+                "agent": "AuditBot",
+                "session": "license-review-whyfs-1790713799798534600",
+                "source": "registered",
+                "started": "2026-09-29T13:29:59-07:00",
+                "task": "Review dependency licenses for release"
+              }
+            ],
+            "q": "session"
+          },
+          "arguments": {
+            "session_id": "license-review-whyfs-1790713799798534600"
+          },
+          "completed_index": 11,
+          "error": null,
+          "output_bytes": 323,
+          "tool": "session_files"
+        },
+        {
+          "answer": {
+            "groups": [
+              {
+                "agent": null,
+                "at": "2026-09-29T13:30:00-07:00",
+                "by": "python3 tools/ambient-write.py",
+                "written": [
+                  "artifacts/ambient.log"
+                ]
+              },
+              {
+                "agent": {
+                  "name": "AuditBot",
+                  "source": "registered",
+                  "task": "Review dependency licenses for release"
+                },
+                "at": "2026-09-29T13:29:59-07:00",
+                "by": "python3 tools/run-review.py",
+                "written": [
+                  "artifacts/findings.json",
+                  "artifacts/review.md"
+                ]
+              }
+            ],
+            "q": "changes",
+            "since": "2026-09-29T13:29:55-07:00",
+            "under": ".",
+            "vcs_metadata": 2
+          },
+          "arguments": {
+            "directory": ".",
+            "since": "2026-09-29T13:29:55-07:00"
+          },
+          "completed_index": 12,
+          "error": null,
+          "output_bytes": 441,
+          "tool": "recent_changes"
+        },
+        {
+          "answer": {
+            "agent": {
+              "name": "AuditBot",
+              "session": "license-review-whyfs-1790713799798534600",
+              "source": "registered",
+              "task": "Review dependency licenses for release"
+            },
+            "attributable": true,
+            "complete": true,
+            "path": "artifacts/findings.json",
+            "q": "origin",
+            "status": "observed",
+            "user": "ftmon",
+            "written_by": {
+              "at": "2026-09-29T13:29:59-07:00",
+              "cmd": "python3 tools/run-review.py",
+              "program": "python3.12"
+            }
+          },
+          "arguments": {
+            "path": "artifacts/findings.json"
+          },
+          "completed_index": 13,
+          "error": null,
+          "output_bytes": 376,
+          "tool": "file_origin"
+        },
+        {
+          "answer": {
+            "agent": {
+              "name": "AuditBot",
+              "session": "license-review-whyfs-1790713799798534600",
+              "source": "registered",
+              "task": "Review dependency licenses for release"
+            },
+            "attributable": true,
+            "complete": true,
+            "path": "artifacts/review.md",
+            "q": "origin",
+            "status": "observed",
+            "user": "ftmon",
+            "written_by": {
+              "at": "2026-09-29T13:29:59-07:00",
+              "cmd": "python3 tools/run-review.py",
+              "program": "python3.12"
+            }
+          },
+          "arguments": {
+            "path": "artifacts/review.md"
+          },
+          "completed_index": 14,
+          "error": null,
+          "output_bytes": 372,
+          "tool": "file_origin"
+        },
+        {
+          "answer": {
+            "agent": null,
+            "attributable": true,
+            "complete": true,
+            "path": "artifacts/ambient.log",
+            "q": "origin",
+            "status": "observed",
+            "user": "ftmon",
+            "written_by": {
+              "at": "2026-09-29T13:30:00-07:00",
+              "cmd": "python3 tools/ambient-write.py",
+              "program": "python3.12"
+            }
+          },
+          "arguments": {
+            "path": "artifacts/ambient.log"
+          },
+          "completed_index": 15,
+          "error": null,
+          "output_bytes": 239,
+          "tool": "file_origin"
+        },
+        {
+          "answer": {
+            "attributable": true,
+            "chain": [
+              {
+                "by": "python3 tools/run-review.py",
+                "file": "artifacts/review.md",
+                "inputs": [
+                  "tools/run-review.py",
+                  "licenses/dependencies.txt"
+                ],
+                "shared_with_outputs": 1
+              }
+            ],
+            "edit": [
+              "tools/run-review.py",
+              "licenses/dependencies.txt"
+            ],
+            "generated": true,
+            "hidden_inputs": 4,
+            "path": "artifacts/review.md",
+            "q": "sources",
+            "status": "observed"
+          },
+          "arguments": {
+            "path": "artifacts/review.md"
+          },
+          "completed_index": 17,
+          "error": null,
+          "output_bytes": 339,
+          "tool": "source_chain"
+        },
+        {
+          "answer": {
+            "attributable": true,
+            "chain": [
+              {
+                "by": "python3 tools/run-review.py",
+                "file": "artifacts/findings.json",
+                "inputs": [
+                  "tools/run-review.py",
+                  "licenses/dependencies.txt"
+                ],
+                "shared_with_outputs": 1
+              }
+            ],
+            "edit": [
+              "tools/run-review.py",
+              "licenses/dependencies.txt"
+            ],
+            "generated": true,
+            "hidden_inputs": 4,
+            "path": "artifacts/findings.json",
+            "q": "sources",
+            "status": "observed"
+          },
+          "arguments": {
+            "path": "artifacts/findings.json"
+          },
+          "completed_index": 18,
+          "error": null,
+          "output_bytes": 347,
+          "tool": "source_chain"
+        }
+      ],
+      "first_tool": "session_files",
+      "ignored": false,
+      "legacy_cli_attempts": [
+        "/bin/bash -lc \"sed -n '1,200p' README.md; sed -n '1,240p' tools/run-review.py; sed -n '1,200p' tools/ambient-write.py; sed -n '1,120p' licenses/dependencies.txt; sed -n '1,120p' artifacts/review.md; sed -n '1,120p' artifacts/findings.json; sed -n '1,120p' artifacts/ambient.log; sed -n '1,120p' .gitignore; find .. -maxdepth 3 -type f -printf '%p\\\\n' | sort | sed -n '1,300p'; mount | rg -i 'why|fuse|case07' || true; env | sort | rg -i 'why|session|agent|task|provenance|trace' || true; command -v whyfs || true; compgen -c | sort -u | rg -i 'whyfs|provenance' || true\"",
+        "/bin/bash -lc \"whyfs --help; whyfs status 2>&1 || true; whyfs-mcp --help 2>&1 | sed -n '1,200p'\"",
+        "/bin/bash -lc 'ls -la /usr/bin/whyfs; type -a whyfs whyfs-mcp; command -V whyfs-mcp; ls -la \"$(command -v whyfs-mcp)\" 2>&1 || true; find /home/ftmon/whyfs-provenance-decision-20260929T132947 -maxdepth 3 -type f -readable -printf '\"'%p\\\\n' 2>/dev/null | sort | sed -n '1,300p'\""
+      ],
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 5,
+      "output_bytes": 4643,
+      "used": true
+    },
+    "ordinary_context_bytes": 8232,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,200p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --oneline --decorate --stat -5 && find . -maxdepth 3 -type f -not -path './.git/*' -printf '%p\\\\n' | sort && for f in README.md licenses/dependencies.txt tools/run-review.py tools/ambient-write.py artifacts/review.md artifacts/findings.json artifacts/ambient.log; do echo \\\"FILE \"'$f\"; stat -c '\"'size=%s mtime=%y birth=%w' \\\"\"'$f\"; getfattr -d -m - \"$f\" 2>/dev/null || true; done'",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,200p' README.md; sed -n '1,240p' tools/run-review.py; sed -n '1,200p' tools/ambient-write.py; sed -n '1,120p' licenses/dependencies.txt; sed -n '1,120p' artifacts/review.md; sed -n '1,120p' artifacts/findings.json; sed -n '1,120p' artifacts/ambient.log; sed -n '1,120p' .gitignore; find .. -maxdepth 3 -type f -printf '%p\\\\n' | sort | sed -n '1,300p'; mount | rg -i 'why|fuse|case07' || true; env | sort | rg -i 'why|session|agent|task|provenance|trace' || true; command -v whyfs || true; compgen -c | sort -u | rg -i 'whyfs|provenance' || true\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"whyfs --help; whyfs status 2>&1 || true; whyfs-mcp --help 2>&1 | sed -n '1,200p'\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'ls -la /usr/bin/whyfs; type -a whyfs whyfs-mcp; command -V whyfs-mcp; ls -la \"$(command -v whyfs-mcp)\" 2>&1 || true; find /home/ftmon/whyfs-provenance-decision-20260929T132947 -maxdepth 3 -type f -readable -printf '\"'%p\\\\n' 2>/dev/null | sort | sed -n '1,300p'\"",
+        "completed_index": 7
+      }
+    ],
+    "search_calls": 3,
+    "shell_commands": 5,
+    "thread_id": "01a0eee2-4784-73e3-a0de-e957c4c6de08",
+    "tool_calls": 15,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 301568,
+      "input_tokens": 348909,
+      "output_tokens": 2658,
+      "reasoning_tokens": 724,
+      "total_tokens": 351567
+    },
+    "whyfs_calls": 8,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": [
+      "session_files",
+      "session_files",
+      "recent_changes",
+      "file_origin",
+      "file_origin",
+      "file_origin",
+      "source_chain",
+      "source_chain"
+    ]
+  },
+  "prompt_sha256": "c9fd81449a44a596523f5af7a3e479aac983e495f7b5a652fe48298ee5d66c2d",
+  "returncode": 0,
+  "run_id": "R07-case07-whyfs"
+}

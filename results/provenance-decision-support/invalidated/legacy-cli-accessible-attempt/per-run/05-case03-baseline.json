@@ -1,0 +1,153 @@
+{
+  "case": "case03",
+  "case_name": "badge-one-to-many",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 57.05963842599999,
+  "final_response": "No observed dependency relationships can be established for `theme/badge.toml`. Therefore, no downstream files can be identified as affected by a color change based solely on observed provenance.\n\nCompleteness limitation: this baseline contains no usable execution/provenance record. File contents, timestamps, and build-script declarations cannot prove causality or provide a complete downstream dependency set. No files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' | sed -n '1,80p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"find . -maxdepth 3 -type f -print | sort | sed -n '1,240p'\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --all --date=iso-strict --pretty='format:%H %ad %s' --name-status && printf '\\\\n--- README ---\\\\n' && sed -n '1,240p' README.md && printf '\\\\n--- builder ---\\\\n' && sed -n '1,280p' tools/build-badges.js && printf '\\\\n--- source ---\\\\n' && sed -n '1,160p' theme/badge.toml && printf '\\\\n--- outputs ---\\\\n' && for f in docs/badge.txt mobile/assets/badge.json web/assets/badge.svg; do echo \\\"[\"'$f]\"; sed -n '\"'1,160p' \\\"\"'$f\"; done'",
+        "completed_index": 4
+      },
+      {
+        "command": "/bin/bash -lc \"printf '%s\\\\n' '--- ignore rules ---'; sed -n '1,160p' .gitignore; printf '%s\\\\n' '--- status including ignored ---'; git status --short --ignored; printf '%s\\\\n' '--- file metadata ---'; stat -c '%n | inode=%i | size=%s | mtime=%y | ctime=%z' theme/badge.toml tools/build-badges.js web/assets/badge.svg mobile/assets/badge.json docs/badge.txt; printf '%s\\\\n' '--- xattrs ---'; for f in theme/badge.toml tools/build-badges.js web/assets/badge.svg mobile/assets/badge.json docs/badge.txt; do echo \\\"[\"'$f]\"; getfattr -d -m- \"$f\" 2>&1 || true; done; printf '\"'%s\\\\n' '--- root entries ---'; find . -maxdepth 4 -printf '%y %p\\\\n' | sort | sed -n '1,260p'\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"printf '%s\\\\n' '--- mounts ---'; findmnt -T . -o TARGET,SOURCE,FSTYPE,OPTIONS; printf '%s\\\\n' '--- relevant commands ---'; command -v whyfs || true; command -v why || true; command -v provenance || true; compgen -c | rg -i 'whyfs|proven|trace|depend' | sort -u | sed -n '1,120p'; printf '%s\\\\n' '--- relevant environment names ---'; env | cut -d= -f1 | rg -i 'why|prov|trace|case|workspace' | sort; printf '%s\\\\n' '--- nearby case metadata ---'; find .. -maxdepth 2 -type f -not -path '*/.git/*' -print | sort | sed -n '1,200p'\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help'",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs; file /usr/bin/whyfs; sed -n '1,240p' /usr/bin/whyfs 2>&1\"",
+        "completed_index": 9
+      },
+      {
+        "command": "/bin/bash -lc 'git status --short && git diff --stat && git diff -- theme/badge.toml tools/build-badges.js README.md .gitignore'",
+        "completed_index": 10
+      }
+    ],
+    "context_bytes": 6130,
+    "context_bytes_by_tool": {
+      "filesystem": 851,
+      "git": 3880,
+      "other": 53,
+      "search": 1346,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".gitignore",
+      "README.md",
+      "docs/badge.txt",
+      "mobile/assets/badge.json",
+      "theme/badge.toml",
+      "tools/build-badges.js",
+      "web/assets/badge.svg"
+    ],
+    "distinct_files_inspected": 28,
+    "file_change_calls": 0,
+    "filesystem_reads": 4,
+    "git_inspection_calls": 3,
+    "manual_reconstruction_operations": 7,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 7,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 6130,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' | sed -n '1,80p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find . -maxdepth 3 -type f -print | sort | sed -n '1,240p'\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --all --date=iso-strict --pretty='format:%H %ad %s' --name-status && printf '\\\\n--- README ---\\\\n' && sed -n '1,240p' README.md && printf '\\\\n--- builder ---\\\\n' && sed -n '1,280p' tools/build-badges.js && printf '\\\\n--- source ---\\\\n' && sed -n '1,160p' theme/badge.toml && printf '\\\\n--- outputs ---\\\\n' && for f in docs/badge.txt mobile/assets/badge.json web/assets/badge.svg; do echo \\\"[\"'$f]\"; sed -n '\"'1,160p' \\\"\"'$f\"; done'",
+        "completed_index": 4
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"printf '%s\\\\n' '--- ignore rules ---'; sed -n '1,160p' .gitignore; printf '%s\\\\n' '--- status including ignored ---'; git status --short --ignored; printf '%s\\\\n' '--- file metadata ---'; stat -c '%n | inode=%i | size=%s | mtime=%y | ctime=%z' theme/badge.toml tools/build-badges.js web/assets/badge.svg mobile/assets/badge.json docs/badge.txt; printf '%s\\\\n' '--- xattrs ---'; for f in theme/badge.toml tools/build-badges.js web/assets/badge.svg mobile/assets/badge.json docs/badge.txt; do echo \\\"[\"'$f]\"; getfattr -d -m- \"$f\" 2>&1 || true; done; printf '\"'%s\\\\n' '--- root entries ---'; find . -maxdepth 4 -printf '%y %p\\\\n' | sort | sed -n '1,260p'\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"printf '%s\\\\n' '--- mounts ---'; findmnt -T . -o TARGET,SOURCE,FSTYPE,OPTIONS; printf '%s\\\\n' '--- relevant commands ---'; command -v whyfs || true; command -v why || true; command -v provenance || true; compgen -c | rg -i 'whyfs|proven|trace|depend' | sort -u | sed -n '1,120p'; printf '%s\\\\n' '--- relevant environment names ---'; env | cut -d= -f1 | rg -i 'why|prov|trace|case|workspace' | sort; printf '%s\\\\n' '--- nearby case metadata ---'; find .. -maxdepth 2 -type f -not -path '*/.git/*' -print | sort | sed -n '1,200p'\"",
+        "completed_index": 7
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs; file /usr/bin/whyfs; sed -n '1,240p' /usr/bin/whyfs 2>&1\"",
+        "completed_index": 9
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc 'git status --short && git diff --stat && git diff -- theme/badge.toml tools/build-badges.js README.md .gitignore'",
+        "completed_index": 10
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 8,
+    "thread_id": "01a0eec4-2206-7e41-8d3b-1c8dadba15e7",
+    "tool_calls": 8,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 130176,
+      "input_tokens": 141515,
+      "output_tokens": 2099,
+      "reasoning_tokens": 671,
+      "total_tokens": 143614
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "a8afd74b6e16306d2786f459c833f25e123fc3e2b6c25b445cf0b78b7a9e725c",
+  "returncode": 0,
+  "run_id": "05-case03-baseline"
+}

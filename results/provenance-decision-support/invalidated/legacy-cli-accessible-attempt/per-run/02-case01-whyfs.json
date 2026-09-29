@@ -1,0 +1,133 @@
+{
+  "case": "case01",
+  "case_name": "generated-inventory-summary",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 55.027788567000016,
+  "final_response": "### Observed facts\n\n- This exact file\u2014verified by a matching recorded/current inode identity\u2014was written at `2026-09-29 12:57:39 -07:00` by `/usr/bin/python3.12`, PID 657, running:\n  `python3 tools/make_inventory.py`\n- OS-level eBPF provenance observed the process reading [data/stock.csv](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case01-whyfs/data/stock.csv:2) before writing [inventory-summary.txt](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case01-whyfs/reports/inventory-summary.txt:1). It also observed the generator script itself as an input.\n- The provenance record marks this creation observation `complete: true`, with no gaps overlapping the file\u2019s creation and zero lost events. Four routine system/Python inputs are hidden from the concise view but present in the raw evidence.\n- The generator reads the CSV and overwrites the report from its rows ([make_inventory.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case01-whyfs/tools/make_inventory.py:4)).\n- `reports/` is Git-ignored, while the CSV and generator are tracked.\n\n### Inference\n\nDirectly editing the summary is not a durable correction. A later generator run would recreate it from `data/stock.csv` and erase that edit. The durable workflow is to correct the north count in the CSV, then rerun the documented generator command. This conclusion is strongly supported by the observed provenance, generator code, `.gitignore`, and [README](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case01-whyfs/README.md:1), but WhyFS itself records execution\u2014it does not prove project policy or future behavior.\n\nNo files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,240p' reports/inventory-summary.txt; sed -n '1,260p' data/stock.csv; sed -n '1,300p' tools/make_inventory.py; sed -n '1,240p' README.md; stat reports/inventory-summary.txt data/stock.csv tools/make_inventory.py; git status --short; git log --all --decorate --stat --oneline; git log --all --format=fuller -- reports/inventory-summary.txt; git ls-files -s reports/inventory-summary.txt data/stock.csv tools/make_inventory.py; (getfattr -d -m- reports/inventory-summary.txt 2>&1 || true); (lsattr reports/inventory-summary.txt 2>&1 || true)\"",
+        "completed_index": 4
+      },
+      {
+        "command": "/bin/bash -lc \"sed -n '1,120p' .gitignore; findmnt -T reports/inventory-summary.txt -o TARGET,SOURCE,FSTYPE,OPTIONS; mount | sed -n '1,160p'; command -v whyfs || true; command -v why || true; command -v provenance || true; command -v attr || true; compgen -c | rg -i 'why|proven|trace|fs' | sort -u | sed -n '1,240p'; find .. -maxdepth 4 -type f -not -path '*/.git/*' -printf '%p\\\\n' | sort\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help; whyfs help 2>&1 || true; whyfs reports/inventory-summary.txt 2>&1 || true'",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs ask --help; whyfs why --help; whyfs label --help; whyfs history --help; whyfs status --help'",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs why --json --raw reports/inventory-summary.txt; whyfs label --json reports/inventory-summary.txt; whyfs history --json reports/inventory-summary.txt; whyfs ask origin reports/inventory-summary.txt; whyfs ask sources reports/inventory-summary.txt; whyfs status --json; whyfs status --scope'",
+        "completed_index": 9
+      }
+    ],
+    "context_bytes": 19322,
+    "context_bytes_by_tool": {
+      "filesystem": 0,
+      "git": 2015,
+      "other": 3369,
+      "search": 6306,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/04/8f9a7cb4b94d9bb514e05f0cf0e7ca678a38d3",
+      ".git/objects/29/4a41f9fb2222a803faa5fb6aef57de78f3efe6",
+      ".git/objects/35/75ccbac95c320b85a24eab8a56e06a9740ec3c",
+      ".git/objects/4f/26fade9c9c69821680a59663edd107205821e7",
+      ".git/objects/6d/0b9de099d0b0b8c142f487accb147da05f8e84",
+      ".git/objects/9d/6a6e535ee3eab9f7fcd02e69d4691ef1c5341c",
+      ".git/objects/b2/d8e6d9c9a27ad41f6287c88f5af31deea43230",
+      ".git/objects/d9/c21ba574091dacbce0f3d674d0103e02f8b96f",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "data/stock.csv",
+      "reports/inventory-summary.txt",
+      "tools/make_inventory.py"
+    ],
+    "distinct_files_inspected": 36,
+    "file_change_calls": 0,
+    "filesystem_reads": 2,
+    "git_inspection_calls": 1,
+    "manual_reconstruction_operations": 3,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 3,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 19322,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,240p' reports/inventory-summary.txt; sed -n '1,260p' data/stock.csv; sed -n '1,300p' tools/make_inventory.py; sed -n '1,240p' README.md; stat reports/inventory-summary.txt data/stock.csv tools/make_inventory.py; git status --short; git log --all --decorate --stat --oneline; git log --all --format=fuller -- reports/inventory-summary.txt; git ls-files -s reports/inventory-summary.txt data/stock.csv tools/make_inventory.py; (getfattr -d -m- reports/inventory-summary.txt 2>&1 || true); (lsattr reports/inventory-summary.txt 2>&1 || true)\"",
+        "completed_index": 4
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"sed -n '1,120p' .gitignore; findmnt -T reports/inventory-summary.txt -o TARGET,SOURCE,FSTYPE,OPTIONS; mount | sed -n '1,160p'; command -v whyfs || true; command -v why || true; command -v provenance || true; command -v attr || true; compgen -c | rg -i 'why|proven|trace|fs' | sort -u | sed -n '1,240p'; find .. -maxdepth 4 -type f -not -path '*/.git/*' -printf '%p\\\\n' | sort\"",
+        "completed_index": 5
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 6,
+    "thread_id": "01a0eec0-9316-75c0-926c-a63d3c34fc03",
+    "tool_calls": 6,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 106496,
+      "input_tokens": 122917,
+      "output_tokens": 2222,
+      "reasoning_tokens": 769,
+      "total_tokens": 125139
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 1,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "4531dbf860d162b77fc24c43131fada0716b65045c21b276a084f3011f26f71f",
+  "returncode": 0,
+  "run_id": "02-case01-whyfs"
+}

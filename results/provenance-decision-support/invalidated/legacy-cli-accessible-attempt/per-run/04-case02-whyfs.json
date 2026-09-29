@@ -1,0 +1,149 @@
+{
+  "case": "case02",
+  "case_name": "python-node-multistage-lineage",
+  "changed_files": [],
+  "condition": "whyfs",
+  "duration_seconds": 81.30317344600002,
+  "final_response": "The actual writer of [`site/device-card.html`](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case02-whyfs/site/device-card.html:1) was:\n\n- `/usr/bin/node`\n- Command: `node tools/render-card.js`\n- User: `ftmon`\n- Observed at: `2026-09-29 12:57:40 PDT`\n\nObserved upstream chain:\n\n```text\nspecs/device.yaml\n  \u2514\u2500 python3 tools/normalize.py\n       \u2192 work/normalized.json\n          \u2514\u2500 node tools/render-card.js\n               \u2192 site/device-card.html\n```\n\nSpecifically:\n\n- `node tools/render-card.js` read [`tools/render-card.js`](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case02-whyfs/tools/render-card.js:1) and [`work/normalized.json`](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case02-whyfs/work/normalized.json:1), then wrote the HTML.\n- `python3 tools/normalize.py` read [`tools/normalize.py`](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case02-whyfs/tools/normalize.py:4) and [`specs/device.yaml`](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case02-whyfs/specs/device.yaml:1), then wrote `normalized.json`.\n\nFor changing the device label:\n\n- **Source:** [`specs/device.yaml`](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case02-whyfs/specs/device.yaml:2)\n- **Generated intermediate:** `work/normalized.json`\n- **Generated output:** `site/device-card.html`\n\nThus, the practical conclusion\u2014supported by both the observed dependency chain and the scripts\u2019 contents\u2014is to change `label` in `specs/device.yaml`, then rerun the documented normalize/render pipeline. Editing `normalized.json` or the HTML directly would edit generated artifacts.\n\nEvidence completeness:\n\n- **Complete for the two generated writes:** the collector directly observed both writers, their inputs, matching file identities, and reported no gaps.\n- **Not complete end-to-end:** the creation of `specs/device.yaml` itself was not observed. It may predate recording or have been created outside visible scope. Therefore, calling it the pipeline\u2019s originating/source input is supported; claiming who originally created that YAML is not.\n\nNo files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' .. | sed -n '1,40p' && rg --files -g 'site/device-card.html' -g '*provenance*' -g '*manifest*' -g '*device*' -g 'Makefile' -g '*.mk' -g '*.sh' -g '*.py' -g '*.js' -g '*.json' -g '*.yaml' -g '*.yml' . | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"find . -maxdepth 4 -type f -printf '%P\\\\n' | sort | sed -n '1,300p'\nprintf '\\\\n--- target ---\\\\n'\nsed -n '1,240p' site/device-card.html\nprintf '\\\\n--- stat and xattrs ---\\\\n'\nstat site/device-card.html\n(getfattr -d -m- site/device-card.html 2>&1 || true)\nprintf '\\\\n--- sources/tools ---\\\\n'\nsed -n '1,240p' specs/device.yaml\nsed -n '1,280p' tools/render-card.js\nsed -n '1,280p' tools/normalize.py\nprintf '\\\\n--- git ---\\\\n'\ngit status --short 2>&1 || true\ngit log --all --oneline --decorate -12 2>&1 || true\ngit log --follow --format=fuller -- site/device-card.html 2>&1 | sed -n '1,240p'\nprintf '\\\\n--- references ---\\\\n'\nrg -n --hidden --glob '\"'!.git/**'\"' 'device-card|device\\\\.yaml|render-card|normalize|Sensor|label|provenance|writer|upstream' . | sed -n '1,320p'\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"printf '%s\\\\n' '--- README / intermediate ---'\nsed -n '1,200p' README.md\nsed -n '1,200p' work/normalized.json\nprintf '%s\\\\n' '--- git tree / history ---'\ngit ls-tree -r --name-only HEAD\ngit show --stat --oneline HEAD\ngit show HEAD:site/device-card.html 2>&1 || true\ngit status --porcelain=v2\nprintf '%s\\\\n' '--- mounts / tools ---'\nfindmnt -T site/device-card.html -o TARGET,SOURCE,FSTYPE,OPTIONS\ncommand -v whyfs || true\ncommand -v why || true\ncommand -v xattr || true\ncommand -v attr || true\nls -la /usr/local/bin 2>/dev/null | rg -i 'why|prov|trace' || true\nfind /usr/local/bin /usr/bin -maxdepth 1 -type f -executable -iname '*why*' -o -iname '*prov*' 2>/dev/null | sort\nprintf '%s\\\\n' '--- proc mounts relevant ---'\nrg -i 'why|fuse|case02' /proc/mounts /proc/self/mountinfo || true\nprintf '%s\\\\n' '--- extended attributes via os API ---'\npython3 - <<'PY'\nimport os\nfor p in ['site/device-card.html','work/normalized.json','specs/device.yaml']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  try: print(' ', n, repr(os.getxattr(p,n)))\n  except OSError as e: print(' ',n,e)\nPY\nprintf '%s\\\\n' '--- neighboring metadata dirs ---'\nfind . -maxdepth 3 -type d -printf '%P\\\\n' | sort\nls -la . .. | sed -n '1,240p'\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc \"whyfs --help 2>&1 | sed -n '1,260p'\nprintf '\\\\n--- version / package ---\\\\n'\nwhyfs --version 2>&1 || true\ndpkg -S /usr/bin/whyfs 2>&1 || true\nfile /usr/bin/whyfs\nhead -80 /usr/bin/whyfs 2>/dev/null || true\nprintf '\\\\n--- service context ---\\\\n'\nsystemctl status whyfs-prov-04-case02-whyfs.service --no-pager 2>&1 | sed -n '1,240p' || true\nsystemctl cat whyfs-prov-04-case02-whyfs.service 2>&1 | sed -n '1,240p' || true\nprintf '\\\\n--- processes ---\\\\n'\nps -ef | rg -i 'whyfs|case02' | rg -v 'rg -i' | sed -n '1,240p'\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc \"whyfs why --help 2>&1\nprintf '\\\\n--- label help ---\\\\n'\nwhyfs label --help 2>&1\nprintf '\\\\n--- history help ---\\\\n'\nwhyfs history --help 2>&1\nprintf '\\\\n--- ask help ---\\\\n'\nwhyfs ask 2>&1 | sed -n '1,280p'\nprintf '\\\\n--- status ---\\\\n'\nwhyfs status 2>&1 | sed -n '1,280p'\"",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"printf '%s\\\\n' '--- why target ---'\nwhyfs why --machine --json site/device-card.html\nprintf '%s\\\\n' '--- history target ---'\nwhyfs history --machine --json site/device-card.html\nprintf '%s\\\\n' '--- ask origin target ---'\nwhyfs ask origin site/device-card.html\nprintf '%s\\\\n' '--- ask sources target ---'\nwhyfs ask sources site/device-card.html\nprintf '%s\\\\n' '--- labels chain files ---'\nwhyfs label --machine --json site/device-card.html\nwhyfs label --machine --json work/normalized.json\nwhyfs label --machine --json specs/device.yaml\nprintf '%s\\\\n' '--- histories chain files ---'\nwhyfs history --machine --json work/normalized.json\nwhyfs history --machine --json specs/device.yaml\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"nl -ba site/device-card.html\nnl -ba work/normalized.json\nnl -ba specs/device.yaml\nnl -ba tools/render-card.js\nnl -ba tools/normalize.py\nnl -ba README.md\nprintf '\\\\n--- compact source origin ---\\\\n'\nwhyfs ask origin specs/device.yaml\nprintf '\\\\n--- compact intermediate origin ---\\\\n'\nwhyfs ask origin work/normalized.json\nprintf '\\\\n--- worktree content changes ---\\\\n'\ngit diff --name-only\ngit diff --cached --name-only\"",
+        "completed_index": 10
+      }
+    ],
+    "context_bytes": 35910,
+    "context_bytes_by_tool": {
+      "filesystem": 0,
+      "git": 7535,
+      "other": 0,
+      "search": 10967,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/objects/43/f0241b2804cce09bb3340bff7323d4e0d5d95d",
+      ".git/objects/69/a7116f9a7c4c050949bb494aa852c192843728",
+      ".git/objects/7e/045545e94448fc2afad49f5e6c75e8894a7f75",
+      ".git/objects/87/eacdc8935f1877081b171765aa6a7bdef952f4",
+      ".git/objects/bf/b4600ceeb74bdc80f0530e98c583eb637780c7",
+      ".git/objects/c9/0637b197debedd91099a0da6fb99cb7b31551c",
+      ".git/objects/e8/1e88eaedc7a95c50feb46fc656d1529dd97d84",
+      ".git/objects/f0/cbc20d5edef703476f8f52a121c5607941782c",
+      ".git/objects/fd/c5be129268a54ae5e34f18c7e0c4123993efe9",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "site/device-card.html",
+      "specs/device.yaml",
+      "tools/normalize.py",
+      "tools/render-card.js",
+      "work/normalized.json"
+    ],
+    "distinct_files_inspected": 38,
+    "file_change_calls": 0,
+    "filesystem_reads": 2,
+    "git_inspection_calls": 3,
+    "manual_reconstruction_operations": 5,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 5,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 35910,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' .. | sed -n '1,40p' && rg --files -g 'site/device-card.html' -g '*provenance*' -g '*manifest*' -g '*device*' -g 'Makefile' -g '*.mk' -g '*.sh' -g '*.py' -g '*.js' -g '*.json' -g '*.yaml' -g '*.yml' . | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find . -maxdepth 4 -type f -printf '%P\\\\n' | sort | sed -n '1,300p'\nprintf '\\\\n--- target ---\\\\n'\nsed -n '1,240p' site/device-card.html\nprintf '\\\\n--- stat and xattrs ---\\\\n'\nstat site/device-card.html\n(getfattr -d -m- site/device-card.html 2>&1 || true)\nprintf '\\\\n--- sources/tools ---\\\\n'\nsed -n '1,240p' specs/device.yaml\nsed -n '1,280p' tools/render-card.js\nsed -n '1,280p' tools/normalize.py\nprintf '\\\\n--- git ---\\\\n'\ngit status --short 2>&1 || true\ngit log --all --oneline --decorate -12 2>&1 || true\ngit log --follow --format=fuller -- site/device-card.html 2>&1 | sed -n '1,240p'\nprintf '\\\\n--- references ---\\\\n'\nrg -n --hidden --glob '\"'!.git/**'\"' 'device-card|device\\\\.yaml|render-card|normalize|Sensor|label|provenance|writer|upstream' . | sed -n '1,320p'\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"printf '%s\\\\n' '--- README / intermediate ---'\nsed -n '1,200p' README.md\nsed -n '1,200p' work/normalized.json\nprintf '%s\\\\n' '--- git tree / history ---'\ngit ls-tree -r --name-only HEAD\ngit show --stat --oneline HEAD\ngit show HEAD:site/device-card.html 2>&1 || true\ngit status --porcelain=v2\nprintf '%s\\\\n' '--- mounts / tools ---'\nfindmnt -T site/device-card.html -o TARGET,SOURCE,FSTYPE,OPTIONS\ncommand -v whyfs || true\ncommand -v why || true\ncommand -v xattr || true\ncommand -v attr || true\nls -la /usr/local/bin 2>/dev/null | rg -i 'why|prov|trace' || true\nfind /usr/local/bin /usr/bin -maxdepth 1 -type f -executable -iname '*why*' -o -iname '*prov*' 2>/dev/null | sort\nprintf '%s\\\\n' '--- proc mounts relevant ---'\nrg -i 'why|fuse|case02' /proc/mounts /proc/self/mountinfo || true\nprintf '%s\\\\n' '--- extended attributes via os API ---'\npython3 - <<'PY'\nimport os\nfor p in ['site/device-card.html','work/normalized.json','specs/device.yaml']:\n print(p, os.listxattr(p))\n for n in os.listxattr(p):\n  try: print(' ', n, repr(os.getxattr(p,n)))\n  except OSError as e: print(' ',n,e)\nPY\nprintf '%s\\\\n' '--- neighboring metadata dirs ---'\nfind . -maxdepth 3 -type d -printf '%P\\\\n' | sort\nls -la . .. | sed -n '1,240p'\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"whyfs --help 2>&1 | sed -n '1,260p'\nprintf '\\\\n--- version / package ---\\\\n'\nwhyfs --version 2>&1 || true\ndpkg -S /usr/bin/whyfs 2>&1 || true\nfile /usr/bin/whyfs\nhead -80 /usr/bin/whyfs 2>/dev/null || true\nprintf '\\\\n--- service context ---\\\\n'\nsystemctl status whyfs-prov-04-case02-whyfs.service --no-pager 2>&1 | sed -n '1,240p' || true\nsystemctl cat whyfs-prov-04-case02-whyfs.service 2>&1 | sed -n '1,240p' || true\nprintf '\\\\n--- processes ---\\\\n'\nps -ef | rg -i 'whyfs|case02' | rg -v 'rg -i' | sed -n '1,240p'\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"whyfs why --help 2>&1\nprintf '\\\\n--- label help ---\\\\n'\nwhyfs label --help 2>&1\nprintf '\\\\n--- history help ---\\\\n'\nwhyfs history --help 2>&1\nprintf '\\\\n--- ask help ---\\\\n'\nwhyfs ask 2>&1 | sed -n '1,280p'\nprintf '\\\\n--- status ---\\\\n'\nwhyfs status 2>&1 | sed -n '1,280p'\"",
+        "completed_index": 7
+      }
+    ],
+    "search_calls": 2,
+    "shell_commands": 7,
+    "thread_id": "01a0eec2-e81a-7890-92a2-50f85a02041a",
+    "tool_calls": 7,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 143104,
+      "input_tokens": 163284,
+      "output_tokens": 3466,
+      "reasoning_tokens": 842,
+      "total_tokens": 166750
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 2,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "4caa8b81a8dfaeebfbc1356efe7f2e296c35dde1135e96c3982ad73fcee8a164",
+  "returncode": 0,
+  "run_id": "04-case02-whyfs"
+}

@@ -1,0 +1,157 @@
+{
+  "case": "case05",
+  "case_name": "sequential-index-overwrite",
+  "changed_files": [],
+  "condition": "baseline",
+  "duration_seconds": 63.202225837000015,
+  "final_response": "The writer cannot be determined from the available evidence.\n\nObserved facts:\n\n- [state/live-index.json](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case05-baseline/state/live-index.json) currently matches [records/current.json](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case05-baseline/records/current.json).\n- [rebuild-index.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case05-baseline/tools/rebuild-index.py:2) is capable of producing those bytes.\n- [bootstrap-index.py](/home/ftmon/whyfs-provenance-decision-20260929T125733/cases/case05-baseline/tools/bootstrap-index.py:2) would instead copy `seed/initial.json`.\n- The live file is ignored by Git, so Git records neither its creation nor its writer.\n- No accessible provenance record identifies a process, PID, executable invocation, or input reads for this file.\n\nConsequently:\n\n- It is reasonable to hypothesize that `rebuild-index.py` produced the current content, but content equality and filenames are not observed execution.\n- There is no observed earlier writer. That means \u201cunknown,\u201d not proof that no earlier write occurred.\n- Birth/mtime metadata can indicate when filesystem activity happened, but cannot identify the process or establish distinct bootstrap and rebuild executions.\n\nChanging the bootstrap tool is therefore not evidence-based as a way to alter the current file. Editing that script would only affect a future execution of it, and the current evidence does not show that bootstrap owns the current version\u2014or that it runs after the rebuild path. The durable decision should wait for actual invocation/provenance evidence; otherwise the proposed change risks modifying the wrong producer and being overwritten later. No files were modified.",
+  "metrics": {
+    "command_rows": [
+      {
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "command": "/bin/bash -lc \"git status --short && git log --all --oneline --decorate --stat && sed -n '1,240p' README.md && sed -n '1,240p' records/current.json && sed -n '1,240p' state/live-index.json && sed -n '1,240p' tools/bootstrap-index.py && sed -n '1,240p' tools/rebuild-index.py && sed -n '1,160p' seed/initial.json\"",
+        "completed_index": 3
+      },
+      {
+        "command": "/bin/bash -lc \"find . -xdev -printf '%y %p\\\\n' | sort && stat -c '%n | inode=%i | size=%s | mtime=%y | ctime=%z | birth=%w' state/live-index.json records/current.json seed/initial.json tools/bootstrap-index.py tools/rebuild-index.py && (getfattr -d -m- state/live-index.json 2>/dev/null || true) && git ls-files --stage && git log --all --full-history --name-status -- state/live-index.json && git check-ignore -v state/live-index.json && git diff --no-index -- records/current.json state/live-index.json; true\"",
+        "completed_index": 5
+      },
+      {
+        "command": "/bin/bash -lc \"find .. -maxdepth 3 -type f -printf '%p\\\\n' | sort | sed -n '1,300p' && env | sort | sed -n '1,240p' && command -v whyfs || true && command -v ausearch || true && ls -la . .. ../..\"",
+        "completed_index": 6
+      },
+      {
+        "command": "/bin/bash -lc 'whyfs --help'",
+        "completed_index": 7
+      },
+      {
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs && file /usr/bin/whyfs && stat /usr/bin/whyfs && ls -la /run/whyfs /var/lib/whyfs /var/log/whyfs 2>&1 || true && find /run /var/lib /var/log -maxdepth 3 -iname '*whyfs*' -ls 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 8
+      },
+      {
+        "command": "/bin/bash -lc \"dpkg -L whyfs | sed -n '1,240p' && sed -n '1,260p' /run/systemd/transient/whyfs-prov-09-case05-baseline.service && journalctl --no-pager --since '2026-09-29 12:50:00' --until '2026-09-29 13:10:00' 2>&1 | rg -i 'case05|live-index|bootstrap-index|rebuild-index|whyfs' | sed -n '1,240p'\"",
+        "completed_index": 9
+      }
+    ],
+    "context_bytes": 28959,
+    "context_bytes_by_tool": {
+      "filesystem": 4625,
+      "git": 4133,
+      "other": 53,
+      "search": 20148,
+      "whyfs": 0
+    },
+    "distinct_file_paths": [
+      ".git/COMMIT_EDITMSG",
+      ".git/HEAD",
+      ".git/config",
+      ".git/description",
+      ".git/hooks/applypatch-msg.sample",
+      ".git/hooks/commit-msg.sample",
+      ".git/hooks/fsmonitor-watchman.sample",
+      ".git/hooks/post-update.sample",
+      ".git/hooks/pre-applypatch.sample",
+      ".git/hooks/pre-commit.sample",
+      ".git/hooks/pre-merge-commit.sample",
+      ".git/hooks/pre-push.sample",
+      ".git/hooks/pre-rebase.sample",
+      ".git/hooks/pre-receive.sample",
+      ".git/hooks/prepare-commit-msg.sample",
+      ".git/hooks/push-to-checkout.sample",
+      ".git/hooks/sendemail-validate.sample",
+      ".git/hooks/update.sample",
+      ".git/index",
+      ".git/info/exclude",
+      ".git/logs/HEAD",
+      ".git/logs/refs/heads/master",
+      ".git/objects/0e/b684bdbcef090d98fa79ab4c159f3521275f9e",
+      ".git/objects/10/78d684c46c3049dc6b11568e143d800645c3c2",
+      ".git/objects/14/b91982210002633d4b83850a286e0ef7886630",
+      ".git/objects/1c/0fb78201159552d71ec5f3c0ed747af2314de2",
+      ".git/objects/29/93d1370c60b09ef7f8dfe9aee8eb257f357a78",
+      ".git/objects/3d/abbbca79923c41b742289493904a922cc8356b",
+      ".git/objects/47/2f8014d7fcc17f712fe8b58aa9e266357da870",
+      ".git/objects/4d/2f80a7d4f6320ea24272c9db21070f7d014491",
+      ".git/objects/74/749648c387717cb5b60d244271b44a5ec67d08",
+      ".git/objects/a3/a7c3cc5c6241f277faaf317b84a9ddd7a943e8",
+      ".git/objects/e1/aac94fcd55cc7801a89dea84db9b25bbbff530",
+      ".git/refs/heads/master",
+      ".gitignore",
+      "README.md",
+      "records/current.json",
+      "seed/initial.json",
+      "state/live-index.json",
+      "tools/bootstrap-index.py",
+      "tools/rebuild-index.py"
+    ],
+    "distinct_files_inspected": 41,
+    "file_change_calls": 0,
+    "filesystem_reads": 4,
+    "git_inspection_calls": 2,
+    "manual_reconstruction_operations": 6,
+    "natural_use": {
+      "calls": 0,
+      "calls_detail": [],
+      "first_tool": null,
+      "ignored": true,
+      "ordinary_reconstruction_after_first_call": 0,
+      "ordinary_reconstruction_before_first_call": 6,
+      "output_bytes": 0,
+      "used": false
+    },
+    "ordinary_context_bytes": 28959,
+    "reconstruction_operations": [
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"pwd && rg --files -uu | sed -n '1,240p'\"",
+        "completed_index": 2
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"git status --short && git log --all --oneline --decorate --stat && sed -n '1,240p' README.md && sed -n '1,240p' records/current.json && sed -n '1,240p' state/live-index.json && sed -n '1,240p' tools/bootstrap-index.py && sed -n '1,240p' tools/rebuild-index.py && sed -n '1,160p' seed/initial.json\"",
+        "completed_index": 3
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find . -xdev -printf '%y %p\\\\n' | sort && stat -c '%n | inode=%i | size=%s | mtime=%y | ctime=%z | birth=%w' state/live-index.json records/current.json seed/initial.json tools/bootstrap-index.py tools/rebuild-index.py && (getfattr -d -m- state/live-index.json 2>/dev/null || true) && git ls-files --stage && git log --all --full-history --name-status -- state/live-index.json && git check-ignore -v state/live-index.json && git diff --no-index -- records/current.json state/live-index.json; true\"",
+        "completed_index": 5
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"find .. -maxdepth 3 -type f -printf '%p\\\\n' | sort | sed -n '1,300p' && env | sort | sed -n '1,240p' && command -v whyfs || true && command -v ausearch || true && ls -la . .. ../..\"",
+        "completed_index": 6
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"ls -l /usr/bin/whyfs && file /usr/bin/whyfs && stat /usr/bin/whyfs && ls -la /run/whyfs /var/lib/whyfs /var/log/whyfs 2>&1 || true && find /run /var/lib /var/log -maxdepth 3 -iname '*whyfs*' -ls 2>/dev/null | sed -n '1,240p'\"",
+        "completed_index": 8
+      },
+      {
+        "before_first_whyfs": true,
+        "command": "/bin/bash -lc \"dpkg -L whyfs | sed -n '1,240p' && sed -n '1,260p' /run/systemd/transient/whyfs-prov-09-case05-baseline.service && journalctl --no-pager --since '2026-09-29 12:50:00' --until '2026-09-29 13:10:00' 2>&1 | rg -i 'case05|live-index|bootstrap-index|rebuild-index|whyfs' | sed -n '1,240p'\"",
+        "completed_index": 9
+      }
+    ],
+    "search_calls": 3,
+    "shell_commands": 7,
+    "thread_id": "01a0eec7-ade0-72f3-aeff-e39de4e04ddc",
+    "tool_calls": 7,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 116992,
+      "input_tokens": 141560,
+      "output_tokens": 2603,
+      "reasoning_tokens": 1094,
+      "total_tokens": 144163
+    },
+    "whyfs_calls": 0,
+    "whyfs_calls_returning_data": 0,
+    "whyfs_operations": []
+  },
+  "prompt_sha256": "7fac19c7f8afb01bda00f0031973702ce3d92cb66aed397cbb89ed954586f6d9",
+  "returncode": 0,
+  "run_id": "09-case05-baseline"
+}
