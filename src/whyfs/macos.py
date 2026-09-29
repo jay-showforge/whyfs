@@ -32,6 +32,7 @@ from pathlib import Path
 LABEL = "org.tenzorpipe.whyfs"                      # launchd job label
 PLIST = Path("/Library/LaunchDaemons") / f"{LABEL}.plist"
 INSTALL = Path("/Library/WhyFS")                     # installed code (pkg)
+INSTALLED_COLLECTOR = INSTALL / "WhyFSCollector.app" / "Contents" / "MacOS" / "whyfs-collect"
 BASE = Path("/Library/Application Support/WhyFS")    # machine store, configuration
 SOCKET_PATH = "/var/run/whyfs/api.sock"
 SOURCE = Path(__file__).resolve().parent / "native" / "whyfs-collect.c"
@@ -93,10 +94,11 @@ def collector_binary() -> Path:
         if os.geteuid() == 0 and not (_is_root_owned_private(o) and _is_root_owned_private(o.parent)):
             raise CollectorUnavailable(f"refusing WHYFS_COLLECT={override}: not root-owned and root-only-writable")
         return o
-    inst = INSTALL / "bin" / "whyfs-collect"
-    if inst.is_file():
-        return inst
-    base = Path("/var/root/Library/Caches/whyfs") if os.geteuid() == 0 else Path.home() / "Library" / "Caches" / "whyfs"
+    if INSTALLED_COLLECTOR.is_file():
+        return INSTALLED_COLLECTOR
+    if Path(__file__).resolve().is_relative_to(INSTALL):  # an installed WhyFS runs only its own, signed collector
+        raise CollectorUnavailable(f"the installed collector is missing: {INSTALLED_COLLECTOR}")
+    base =Path("/var/root/Library/Caches/whyfs") if os.geteuid() == 0 else Path.home() / "Library" / "Caches" / "whyfs"
     base.mkdir(mode=0o700, parents=True, exist_ok=True)
     out = base / f"whyfs-collect-{_source_digest()}"
     return out if out.exists() else build_collector(out)
@@ -396,7 +398,7 @@ def launchd_state() -> dict:
 def capability_report() -> dict:
     es = endpoint_security_state()
     try:
-        binary = str(collector_binary()) if (INSTALL / "bin" / "whyfs-collect").exists() or os.environ.get("WHYFS_COLLECT") else None
+        binary = str(collector_binary()) if INSTALLED_COLLECTOR.exists() or os.environ.get("WHYFS_COLLECT") else None
     except CollectorUnavailable:
         binary = None
     job = launchd_state()

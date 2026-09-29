@@ -1,0 +1,61 @@
+# macOS performance campaign (macos-support branch): the unchanged machine_perf protocol and the
+# frozen 1.0 contract (scripts/real_workload_contract.json: 150 pairs, 5 % threshold,
+# measurability rule), on the installed development package, Intel and Apple Silicon.
+# Runs when this file changes (manual dispatch would need the workflow on the default branch).
+name: macos-perf
+on:
+  push:
+    branches: [macos-support]
+    paths: [.github/workflows/macos-perf.yml]
+permissions: { contents: read }
+jobs:
+  perf:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15-intel, macos-15]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Platform identity
+        run: |
+          mkdir -p ci-results
+          { echo "runner label: ${{ matrix.runner }}"; echo "commit: $GITHUB_SHA"; echo "uname -m: $(uname -m)"; sw_vers
+            echo "cpu: $(sysctl -n machdep.cpu.brand_string)  ncpu: $(sysctl -n hw.ncpu)  mem: $(sysctl -n hw.memsize)"
+            xcodebuild -version; clang --version | head -1; echo "node: $(node --version)"; echo "csrutil: $(csrutil status)"
+          } 2>&1 | tee ci-results/platform.txt
+      - name: Vite template
+        run: |
+          mkdir -p ~/vite-template && cd ~/vite-template
+          echo '{"name":"whyfs-vite-fixture","private":true,"type":"module"}' > package.json
+          npm install --no-audit --no-fund vite@5.4.21 > /dev/null
+      - name: Build and install the package
+        run: |
+          python packaging/macos/build_pkg.py --out dist --version 1.0.0.${{ github.run_number }}1 \
+            --build-id "${GITHUB_SHA::7}-${{ github.run_id }}" > ci-results/build-pkg.log 2>&1
+          shasum -a 256 dist/*.pkg | tee ci-results/pkg-sha256.txt
+          sudo installer -pkg dist/*.pkg -target / > ci-results/install.log 2>&1
+          for i in $(seq 1 90); do whyfs status --json 2>/dev/null | grep -q '"collector_ready": true' && break; sleep 1; done
+          whyfs status
+      - name: machine_perf (150 pairs, 10 min idle)
+        run: |
+          set -o pipefail
+          sudo -E env PATH="$PATH" WHYFS_VITE_TEMPLATE="$HOME/vite-template" python scripts/machine_perf.py \
+            --user "$USER" --pairs 150 --idle-min 10 --out ci-results/machine-perf 2>&1 | tee ci-results/machine-perf.log | tail -40 || true
+      - name: Contract A (frozen measurability rule)
+        run: python scripts/perf_contract.py ci-results/machine-perf/machine_perf.json --out ci-results/perf-contract.json || true
+      - name: Label latency over long histories
+        run: |
+          sudo -E env PATH="$PATH" python scripts/label_latency_gate.py --user "$USER" --out ci-results/label-latency 2>&1 \
+            | grep -v '^generation' | tail -20 || true
+      - name: Collect
+        if: always()
+        run: sudo chown -R "$USER" ci-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "macos-perf-${{ matrix.runner }}", path: ci-results/ }

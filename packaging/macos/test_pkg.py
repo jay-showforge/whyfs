@@ -92,6 +92,18 @@ def job() -> dict:
     return d
 
 
+def running() -> bool:
+    """launchd has the job running with a process (macOS 26 prints state "active", older "running")."""
+    j = job()
+    return j.get("state") in ("running", "active") and bool(j.get("pid"))
+
+
+def collector_processes() -> list[str]:
+    """Command lines of the running Endpoint Security collectors (--es)."""
+    out = sh(["ps", "-axww", "-o", "command="]).stdout.splitlines()
+    return [c for c in out if "whyfs-collect" in c and " --es " in c + " "]
+
+
 def es_state() -> dict | None:
     try:
         return json.loads(ES_STATE.read_text())
@@ -230,7 +242,7 @@ def main() -> int:
                                                                    Path("/Applications/WhyFS.app/Contents/Info.plist"),
                                                                    COLLECTOR_APP / "Contents" / "Info.plist"]}
     t.check("property_lists_valid", len(lint) >= 13 and not any(lint.values()), lint)
-    j = wait(lambda: job().get("state") == "running" and job(), 60)
+    j = wait(lambda: running() and job(), 60)
     t.check("service_running_after_install", bool(j), job())
 
     # ------------------------------------------------ Endpoint Security
@@ -251,6 +263,8 @@ def main() -> int:
     blocked = bool(es and es.get("result") in ("ERR_NOT_ENTITLED",))
     ready = wait(lambda: (t.api("status").get("result") or {}).get("collector_ready"), 90) if es_ok else False
     t.check("collector_ready", bool(ready), t.api("status"))
+    cols = collector_processes()
+    t.check("service_runs_the_packaged_collector", len(cols) == 1 and cols[0].startswith(str(COLLECTOR) + " "), cols)
 
     # ------------------------------------------------ the command and a live label
     work = t.home / f"whyfs-pkgtest-{os.getpid()}"
@@ -317,7 +331,7 @@ def main() -> int:
     (out / "upgrade.log").write_text(p.stdout + p.stderr)
     t.check("upgrade_succeeds", p.returncode == 0, p.stderr[-800:])
     t.check("upgrade_receipt", sh(["pkgutil", "--pkg-info", IDENT]).stdout != info, sh(["pkgutil", "--pkg-info", IDENT]).stdout)
-    j2 = wait(lambda: job().get("state") == "running" and job(), 60)
+    j2 = wait(lambda: running() and job(), 60)
     t.check("service_running_after_upgrade", bool(j2) and j2.get("pid") != before_pid, {"before": before_pid, "after": job()})
     wait(lambda: (t.api("status").get("result") or {}).get("collector_ready"), 90)
     t.check("store_kept_on_upgrade", events_total() >= before_n > 0, {"before": before_n, "after": events_total()})
