@@ -1,22 +1,28 @@
 # whyfs project status
 
-## Current (2026-09-28): WhyFS 1.0.0 NOT COMPLETE: `label` latency on long file histories (Windows ARM64)
+## Current (2026-09-28): WhyFS 1.0 release candidate, public repository, validation complete for 57d60e4
 
-The authoritative run under the frozen measurability rule (36462972085, commit 71bee51,
-150 pairs):
-- **Passed:**
-  - every functional gate on all four platforms;
-  - every real workload, all measurable, including Windows ARM64 MSVC at **+1.72 %** (CI90
-    0.91..2.66);
-  - the spawn stress contract everywhere.
-- **Failed:** the precommitted `label` CLI check on Windows ARM64: **108.8 ms** against < 100 ms.
-  `label`'s cost grows about linearly with the queried file's own history.  The campaign's query
-  targets had been rebuilt hundreds of times.  Measured on the desktop at +3 ms per 100
-  generations.
-- **Fix:** it needs a product change to how the label processes long histories.  Not made in
-  this pass.
+**Verified (executed, evidence in `results/`):**
+- **The label-history fix (d2d7984),** on all four native hosted runners, including native
+  Windows ARM64 and Linux ARM64 ([run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218), commit 57d60e4):
+  - tests, exact-artifact install and upgrade;
+  - the product, outage, corpus and secret gates;
+  - the Windows functional gate;
+  - the long-history label gate: Windows ARM64 `label` 77.1–84.5 ms up to 5,000 generations.
+- **WSL2 (local),** for the same commit: package upgrade, suites, product, outage, corpus and
+  long-history gates.
+- **Real development workloads,** all measurable and all < 5 % at 150 pairs, plus spawn stress
+  on all four platforms: run 36462972085 (identical capture code).
 
-See [BENCHMARK.md section 9](BENCHMARK.md#9-the-authoritative-run-under-the-measurability-rule-run-36462972085-commit-71bee51----fail-windows-arm64-label-cli-latency).
+**Not re-run, by design:** `machine_perf` at 150 pairs, spawn stress and graduation, because
+the fix is query-side only.
+
+**Not done (release steps, not validation):**
+- packages are not code-signed and not published;
+- the BSL Change Date in LICENSE is not set.
+
+See [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md) and
+[BENCHMARK.md](BENCHMARK.md#whyfs-10-performance-contract).
 
 **Product:** WhyFS automatically labels files with their provenance: where, when, how, and what
 or who caused them to exist.

@@ -336,6 +336,61 @@ not repeated.  `results/release-1.0.0-meas/`.  Product code is identical to 80da
 - **Not changed in this pass:** product code.  The fix belongs to the label's history
   processing, bounded or summarised for long histories, and needs a new validation.
 
+### 10. The label-history fix (d2d7984) and its scoped native validation -- **PASS**
+
+Section 9's failure was `label` latency on files with long histories.  Its cost grew with the
+path's number of generations.
+
+**Profiled before any change** (`scripts/profile_label.py`):
+- the real `explain_file` on a snapshot of the 677 MB desktop store;
+- every SQL statement timed, and SQLite VM work counted;
+- probes built through the installed service, each generation written and read by fresh
+  processes.
+
+| Generations | 1 | 100 | 300 | 600 | 1,000 | 5,000 |
+|---|---|---|---|---|---|---|
+| `label`, before (ms) | 7.9 | 12.2 | 19.2 | 30.9 | 47.4 | 227.5 |
+| SQL statements, before | 48 | 246 | 646 | 1,246 | 2,046 | 10,046 |
+| `label`, after (ms) | 8.5 | 10.9 | 12.1 | 12.5 | 12.2 | 7.9 |
+| SQL statements, after | 54 | 199 | 199 | 199 | 199 | 199 |
+
+The fix (commit d2d7984) is query-side only:
+- **No schema change, no migration**, and capture, collectors and writer untouched.
+- **Identical results via bounded lookups:** index-ordered lookups replace whole-history sorts
+  and scans.
+- **The label's dependents and readers:** a path with more than 1,000 events or 50 reader
+  processes gets them from its most recent activity, and the label says so (`scope`).
+- **Nothing is dropped:** `whyfs history FILE --limit 0` and `whyfs impact FILE` still read
+  everything.
+
+**Scoped native validation: [run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218)**, commit 57d60e4 (d2d7984's product
+code plus a README change), on the four native hosted runners.  All jobs passed:
+- tests: Windows 116, Linux 254 + 254, including the 8 new long-history tests;
+- exact-artifact MSI clean install 32/32 and upgrade 16/16; `.deb` 24/24;
+- product 47/47 and 48/48; outage 16/16 and 13/13;
+- both corpora 79/79 with lost 0; secret 22/22; the Windows functional gate PASS;
+- the long-history gate (`scripts/label_latency_gate.py`).
+
+The long-history gate: real histories built through the installed service, then the CLI timed
+round-robin, 25 rounds.
+
+| `label` median (ms) at 1 / 100 / 300 / 600 / 1,000 / 5,000 generations | Worst p95 | `why` median |
+|---|---|---|
+| **Windows ARM64: 77.1 / 80.8 / 83.7 / 84.5 / 84.3 / 83.7** (the 150-pair run had measured 108.8) | 89.1 | 73 |
+| Windows x64: 59.8 / 62.2 / 66.0 / 67.0 / 67.1 / 66.6 | 70.0 | 57 |
+| Linux x86-64: 34.8 / 38.5 / 41.7 / 43.2 / 43.2 / 43.4 | 47.3 | 33 |
+| Linux ARM64: 29.6 / 33.2 / 36.5 / 38.0 / 38.0 / 38.2 | 38.9 | 28 |
+| WSL2 (local, Linux x86-64 package): 22.5 / 24.8 / 27.0 / 27.9 / 27.6 / 27.7 | 30.3 | 21 |
+
+At every depth on every platform, the label names the latest generation's writer, and
+`history --limit 0` returns every generation.
+
+**Not re-run, by design.**  The capture and performance campaigns were not repeated for this
+query-side change: `machine_perf` at 150 pairs, spawn stress and graduation.  Their
+authoritative results remain those of run 36462972085 (71bee51, identical capture code).  That
+run's CLI measurement is the one that failed at 108.8 ms; the long-history gate above measures
+the same situation directly, up to 5,000 generations.
+
 ---
 
 # v0.1 development benchmark

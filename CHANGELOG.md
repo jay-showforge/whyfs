@@ -72,6 +72,9 @@ inputs contributed and, when reliably known, which person or software agent caus
   machine: +5.16 % → +4.17 %.
 - The `why`/`label` fast path no longer imports the `json` package (Windows ARM64 CLI
   100 → 88 ms), with byte-identical output.
+- `whyfs label` no longer slows with a file's history: it read every generation of the path
+  (108.8 ms on Windows ARM64 for a file rebuilt hundreds of times; now 77-85 ms up to 5,000
+  generations).  `whyfs history FILE --limit 0` returns the complete history.
 - Windows: `whyfs label FILE` crashed when its output was piped.
 - `status` wrote a file as a side effect.
 - Label: "created" means since the path last existed; there is no invented working folder.

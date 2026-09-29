@@ -8,7 +8,25 @@ and performance.  The source archive is `git archive` of the same commit.
 An artifact is never rebuilt after its hash is recorded.  A rebuild is a new artifact: it
 needs a new run and new hashes, and the old ones are invalidated here.
 
-## Status: NO approved release artifacts (authoritative run 36462972085, commit 71bee51)
+## Release-candidate artifacts: [run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218), commit 57d60e4
+
+- **How they were built and tested:** on the four native hosted runners, from commit 57d60e4.
+  Each passed its own platform's exact-artifact tests in that run: MSI clean install 32/32 and
+  upgrade 16/16, or `.deb` 24/24.
+- **Not published and not code-signed.**
+- **Candidates only:** they become release artifacts only when a public release is approved,
+  and the BSL Change Date must be set first.
+- **An artifact is never rebuilt after its hash is recorded.**
+
+| Artifact | Built on | SHA-256 |
+|---|---|---|
+| `whyfs-1.0.0-x64.msi` | `windows-2022` (x64) | `beecc859da3d4bc13e2d15e8a9b76b5e8c0e5bf1868b2fd0f1efe88f5caee53e` |
+| `whyfs-1.0.0-arm64.msi` | `windows-11-arm` (ARM64) | `5d5182cc1718eea411a58c50fdfba751594f57c0993d52bec4b8b284425f7882` |
+| `whyfs_1.0.0_amd64.deb` | `ubuntu-24.04` (x86-64) | `8017cd9d863764dd27b8b6c165823b328039319938c781449e5c2d527374d5e0` |
+| `whyfs_1.0.0_arm64.deb` | `ubuntu-24.04-arm` (ARM64) | `3f14bd61d6b46f5dac105c74f75f54c866f2baef2db6a8c4bb33ef7b08eadcc2` |
+| `whyfs-1.0.0-src.tar.gz` | `git archive --format=tar.gz --prefix=whyfs-1.0.0/ 57d60e4` (reproducible) | `b9c0bd642f3e3e2127eab9fe9f51f7fa9b5c21d58ad746620e41a9ef0126ddd5` |
+
+## Invalidated: the 71bee51 candidates (never approved)
 
 The authoritative run under the measurability rule failed one precommitted check: Windows ARM64
 `label` CLI median 108.8 ms (< 100 ms).  Its packages are recorded to identify them and are

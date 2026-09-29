@@ -23,6 +23,33 @@ machine.  Cross-compilation, PE/ELF header checks and emulation are supporting e
 Linux requires a kernel with BTF, BPF trampolines (fentry) and the BPF ring buffer
 (Ubuntu 24.04's kernels have all three; `whyfs doctor` checks).
 
+## Current state (commit 57d60e4)
+
+**Verified:**
+- **The label-history fix (d2d7984)** passed its scoped validation on all four native hosted
+  runners ([run 36500071218](https://github.com/jay-showforge/whyfs/actions/runs/36500071218), commit 57d60e4).  That includes native **Windows ARM64**
+  (`windows-11-arm`, Cobalt 100) and native **Linux ARM64** (`ubuntu-24.04-arm`, aarch64).
+  - Every functional, product, observation, corpus, secret, package and upgrade gate passed.
+  - Windows ARM64 `label` is 77.1–84.5 ms median from 1 to 5,000 generations; the limit is
+    100 ms.
+  - Details: [BENCHMARK.md section 10](../BENCHMARK.md#10-the-label-history-fix-d2d7984-and-its-scoped-native-validation----pass).
+- **WSL2 (local):** the same commit's package upgraded in place, with suites, product, outage,
+  corpus and long-history gates all passing (`results/wsl2-d2d7984/`).
+- **The dedicated Windows x64 desktop:**
+  - The d2d7984 query code passed the outage, corpus, secret and long-history gates
+    (`results/desktop-d2d7984/`).
+  - Its product gate was 46/47.  The one failure (`P.store_free_of_secrets`) is this desktop's
+    non-fresh store: it holds the command lines of earlier `grep … SECRETVAL` evidence scans.
+    No secret passed redaction.
+- **Performance of real workloads and spawn stress:** run 36462972085 (71bee51, the same
+  capture code).
+
+**Not re-run, by design:** the capture and performance campaigns, for a query-side change.
+
+**Observed:** with the WhyFS service running, WSL2's 6.6 kernel hung the live eBPF unit tests
+in `bpf_trampoline_get` (`results/wsl2-hang-evidence.txt`).  CI runs them before the service
+is installed, and so does the WSL2 rerun; both pass.
+
 ## Authoritative run 36462972085 (commit 71bee51, 150 pairs, measurability rule): **FAIL on one check**
 
 `results/release-1.0.0-meas/`.  Details in

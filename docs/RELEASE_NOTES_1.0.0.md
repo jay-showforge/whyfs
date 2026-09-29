@@ -1,9 +1,10 @@
 # WhyFS 1.0.0: release notes (draft for the release review; not published)
 
-> **Status: not releasable as is.**  The latest authoritative run (BENCHMARK.md section 9)
-> passed every functional gate and every real workload, including Windows ARM64 MSVC at
-> +1.72 %.  It failed the `label` CLI latency check on Windows ARM64: 108.8 ms for a file with
-> hundreds of recorded generations, against < 100 ms.
+> **Status: release candidate (commit 57d60e4), not published.**
+> - **Validated:** every gate on the four native platforms and WSL2 (BENCHMARK.md sections 9
+>   and 10).
+> - **Before a public release:** the BSL Change Date must be set, and the packages built,
+>   signed if desired, and published.
 
 **Know why a file exists.**  WhyFS automatically labels files with their provenance: what
 created them, when, how, which inputs contributed and, when it is reliably known, which person

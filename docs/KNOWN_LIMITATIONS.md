@@ -78,10 +78,14 @@ loss and query latency, under the 1.0 contract ([BENCHMARK.md](../BENCHMARK.md#w
   MSVC measured +0.72 to +5.18 % with identical code, and its CI90 was 7–14 pp wide, because
   that runner's own build time moves by up to 30 % within a run.  At 150 pairs it measured
   +1.72 % (CI90 0.91..2.66).
-- **`label` slows with a file's own history.**  Its cost grows about linearly with the number
-  of recorded generations of the queried path: about 3 ms per 100 on a 10-core desktop.  A build
-  output rebuilt hundreds of times reached 108.8 ms on the Windows ARM64 runner, over the
-  100 ms criterion; `why` is much less affected.
+- **Long histories: the label's readers and dependents are the recent ones.**  For a path with
+  more than 1,000 recorded events or 50 reader processes, `label` takes readers and dependents from
+  its most recent activity, and says so.  `whyfs history FILE --limit 0` and `whyfs impact FILE`
+  read everything.  (Until d2d7984, `label` slowed with a file's history: 108.8 ms on the Windows
+  ARM64 runner for a file rebuilt hundreds of times; now 77–85 ms up to 5,000 generations.)
+- **WSL2: live eBPF tests alongside the running service.**  With the WhyFS service running,
+  WSL2's 6.6 kernel hung the test suite's own eBPF attach (`bpf_trampoline_get`).  Run the live
+  tests with the service stopped, as CI does.
 - **Query latency** is dominated by process start-up: about 25–30 ms on Linux, 65 ms on Windows
   x64, and 88–92 ms median on Windows ARM64 (Cobalt 100), where the 95th percentile exceeds
   100 ms.  The API itself answers in milliseconds.
