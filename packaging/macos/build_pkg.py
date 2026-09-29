@@ -77,8 +77,17 @@ def fetch_runtime(arch: str, cache: Path) -> Path:
                + name.replace("+", "%2B"))
         cache.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_suffix(".part")
-        with urllib.request.urlopen(url, timeout=120) as r, open(tmp, "wb") as f:
-            shutil.copyfileobj(r, f)
+        for attempt in range(4):  # a dropped connection is retried; the digest below is checked regardless
+            try:
+                with urllib.request.urlopen(url, timeout=120) as r, open(tmp, "wb") as f:
+                    shutil.copyfileobj(r, f)
+                break
+            except OSError as exc:  # URLError, RemoteDisconnected, timeouts
+                if attempt == 3:
+                    raise SystemExit(f"runtime download failed: {exc}")
+                print(f"runtime download attempt {attempt + 1} failed ({exc}); retrying", flush=True)
+                import time
+                time.sleep(10 * (attempt + 1))
         tmp.rename(dest)
     digest = hashlib.sha256(dest.read_bytes()).hexdigest()
     if digest != RUNTIME_SHA256[arch]:
