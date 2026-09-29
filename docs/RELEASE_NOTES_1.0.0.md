@@ -1,12 +1,12 @@
-# WhyFS 1.0.0: release notes (draft for the release review; not published)
+# WhyFS 1.0.0: release notes
 
-> **Status: final artifacts verified (release commit f6c6010), not yet published.**
+> **Status: published as [GitHub Release v1.0.0](https://github.com/jay-showforge/whyfs/releases/tag/v1.0.0) (tag `v1.0.0` = release commit
+> f6c6010).**
 > - **Validated:** every gate on the four native platforms and WSL2 (BENCHMARK.md sections 9
 >   and 10).
 > - **License:** BSL 1.1, Change Date 2030-09-28, Change License Apache 2.0.
 > - **Final artifacts:** rebuilt from release commit f6c6010 and verified, including the
->   embedded LICENSE ([RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md)).  Not yet published, not
->   code-signed.
+>   embedded LICENSE ([RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md)).  Not code-signed.
 
 **Know why a file exists.**  WhyFS automatically labels files with their provenance: what
 created them, when, how, which inputs contributed and, when it is reliably known, which person
@@ -59,7 +59,8 @@ Windows x64, Windows ARM64, Linux x86-64, Linux ARM64, WSL2.  Each was validated
 | `whyfs_1.0.0_arm64.deb` | Linux ARM64 |
 | `whyfs-1.0.0-src.tar.gz` | source |
 
-Check each file against `SHA256SUMS` ([RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md)).  The
+Check each file against its SHA-256 ([RELEASE_ARTIFACTS.md](RELEASE_ARTIFACTS.md), and the
+release description).  The
 packages are not code-signed.
 
 ## Measured cost

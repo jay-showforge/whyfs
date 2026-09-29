@@ -1,6 +1,10 @@
 # whyfs project status
 
-## Current (2026-09-28): WhyFS 1.0 release candidate, public repository, validation complete for 57d60e4
+## Current (2026-09-29 UTC): WhyFS 1.0.0 published as [GitHub Release v1.0.0](https://github.com/jay-showforge/whyfs/releases/tag/v1.0.0)
+
+The tag `v1.0.0` is the release commit f6c6010.  Its five assets are the verified final
+artifacts ([docs/RELEASE_ARTIFACTS.md](docs/RELEASE_ARTIFACTS.md)); each was downloaded back
+from the release and matched its recorded SHA-256.
 
 **Verified (executed, evidence in `results/`):**
 - **The label-history fix (d2d7984),** on all four native hosted runners, including native
@@ -20,7 +24,7 @@ the fix is query-side only.
 **License:** source available under BSL 1.1; Change Date **2030-09-28**; Change License
 Apache 2.0.
 
-**Final artifacts: verified, not yet published.**
+**Final artifacts: verified and published ([v1.0.0](https://github.com/jay-showforge/whyfs/releases/tag/v1.0.0)).**
 - Rebuilt from release commit f6c6010 because both packages embed LICENSE ([run 36510467027](https://github.com/jay-showforge/whyfs/actions/runs/36510467027)).
 - Exact-artifact install, upgrade and gates PASS, and the embedded LICENSE check PASS, on all
   four platforms.

@@ -24,7 +24,9 @@ needs a new run and new hashes, and the old ones are invalidated here.
   - The packaged license (`LICENSE` in the MSI, `/usr/share/doc/whyfs/copyright` in the
     `.deb`) contains `Change Date:          2030-09-28` and not the old placeholder.
   - Evidence: `results/release-final-f6c6010/embedded-license/`.
-- **Not code-signed.  Not yet published.**
+- **Published** as the five assets of [GitHub Release v1.0.0](https://github.com/jay-showforge/whyfs/releases/tag/v1.0.0); the tag `v1.0.0` is
+  f6c6010.  Each asset was downloaded back from the release and matched the SHA-256 below.
+- **Not code-signed.**
 
 | Artifact | Architecture | Built on | SHA-256 |
 |---|---|---|---|

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 (not yet published)
+## 1.0.0 (2026-09-29 UTC)
 
 WhyFS automatically labels files with their provenance: what created them, when, how, which
 inputs contributed and, when reliably known, which person or software agent caused the activity.

@@ -17,8 +17,8 @@ an external provenance label, without touching the file.
 - **AI is optional.**  WhyFS works without any AI; AI agents are simply clients that can ask it.
 - **Source available** under the Business Source License 1.1.
 
-> **Status: 1.0 release candidate, public development.**  No installer or package has been
-> published yet; build them from source (below).  What has and has not been validated, per
+> **WhyFS 1.0.0 is released:** [GitHub Release v1.0.0](https://github.com/jay-showforge/whyfs/releases/tag/v1.0.0), with installers for
+> Windows and Linux (below).  What has and has not been validated, per
 > platform, is in [PROJECT_STATUS.md](PROJECT_STATUS.md) and
 > [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
 
@@ -105,7 +105,8 @@ whyfs status                       # what WhyFS records, recording gaps, store s
 | Linux x86-64 or ARM64 (Debian/Ubuntu) | `whyfs_1.0.0_amd64.deb`, `whyfs_1.0.0_arm64.deb` | `sudo apt install ./whyfs_1.0.0_<arch>.deb`.  `whyfs.service` starts at once and at every boot.  Check the kernel with `whyfs doctor`. |
 | WSL2 | the Linux package | Labels Linux-side activity.  Enable systemd in `/etc/wsl.conf`, or run `sudo whyfs machine run`. |
 
-No packages are published yet.  Build them from source:
+Download the packages from the [v1.0.0 release](https://github.com/jay-showforge/whyfs/releases/tag/v1.0.0) and check each against its SHA-256
+([docs/RELEASE_ARTIFACTS.md](docs/RELEASE_ARTIFACTS.md)).  To build them from source instead:
 - **Linux:** `bash packaging/linux/build_deb.sh dist` (on the target architecture);
 - **Windows:** `native\windows\build.ps1`, then `native\windows\make_msi.py` (see
   `.github/workflows/native-validation.yml` for the exact commands).
