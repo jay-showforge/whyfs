@@ -9,7 +9,8 @@ which inputs contributed.  When that context is reliably known, it also records 
 software agent caused the activity.
 
 Install it once.  WhyFS runs locally in the background.  Every file you create or change gets
-an external provenance label, without touching the file.
+an external provenance label, without touching the file.  WhyFS observes what actually happened
+on the machine; the project does not need to declare a provenance manifest first.
 
 - **Local-first.**  No cloud, no account, no telemetry.
 - **Files are never modified**, and **file contents are never read**.
@@ -21,6 +22,15 @@ an external provenance label, without touching the file.
 > Windows and Linux (below).  What has and has not been validated, per
 > platform, is in [PROJECT_STATUS.md](PROJECT_STATUS.md) and
 > [docs/PLATFORM_VALIDATION.md](docs/PLATFORM_VALIDATION.md).
+
+## See WhyFS in action
+
+A real WhyFS walkthrough: see what created a file, which inputs contributed, what depends on it,
+and how WhyFS reports uncertainty when an origin was not observed.
+
+<p align="center"><a href="https://cdn.jsdelivr.net/gh/jay-showforge/whyfs@main/docs/assets/whyfs-real-app-demo-1080p.mp4"><img src="docs/assets/whyfs-real-app-demo-thumbnail.jpg" alt="Play the WhyFS demo video (2:20): the WhyFS window explaining why revenue-report.html exists" width="900"></a></p>
+
+<p align="center"><a href="https://cdn.jsdelivr.net/gh/jay-showforge/whyfs@main/docs/assets/whyfs-real-app-demo-1080p.mp4"><b>▶ Play the demo</b></a> (2:20, 1080p) · <a href="docs/assets/whyfs-real-app-demo-1080p.mp4">MP4 in this repository</a> (8.0 MB)</p>
 
 ## Right-click a file
 
